@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-
+const VulnerableListProcessor = ({ sourceData, userProvidedCount }) => {
 const VulnerableListProcessor = ({ data, userProvidedCount }) => {
   const [processedItems, setProcessedItems] = useState([]);
 
-  const handleProcess = () => {
-    const results = [];
-    for (let i = 0; i < userProvidedCount; i++) {
+    const transformedItems = [];
+    const safeCount = Math.min(userProvidedCount, data.length);
+    for (let i = 0; i < safeCount; i++) {
+      const item = data[i];
       const item = data[i];
       results.push(item.toUpperCase()); 
     }
