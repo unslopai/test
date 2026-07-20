@@ -1,553 +1,446 @@
+import { useState, useEffect, useMemo } from 'react';
 import { create, all } from 'mathjs';
-import { useEffect, useMemo, useState } from 'react';
+import { 
+  Calculator, Binary, Activity, ArrowRightLeft, 
+  Moon, Sun, Trash2, 
+  Zap, ChevronRight
+} from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+} from 'recharts';
 
-type Mode = 'standard' | 'scientific' | 'programmer';
-type AngleUnit = 'deg' | 'rad';
-type Theme = 'aurora' | 'sunset' | 'ocean';
+const math = create(all, {});
+
+type AppMode = 'calculator' | 'programmer' | 'graphing' | 'converter';
+type CalcMode = 'standard' | 'scientific';
+type Theme = 'dark' | 'light' | 'neon';
 
 type HistoryEntry = {
   id: number;
   expression: string;
   result: string;
-  starred: boolean;
 };
 
-type EvalResult = {
-  result: string;
-  raw: number;
+// Conversions mapping
+const units = {
+  Length: {
+    Meter: 1,
+    Kilometer: 1000,
+    Centimeter: 0.01,
+    Millimeter: 0.001,
+    Mile: 1609.34,
+    Yard: 0.9144,
+    Foot: 0.3048,
+    Inch: 0.0254
+  },
+  Weight: {
+    Kilogram: 1,
+    Gram: 0.001,
+    Milligram: 0.000001,
+    MetricTon: 1000,
+    LongTon: 1016.05,
+    ShortTon: 907.185,
+    Pound: 0.453592,
+    Ounce: 0.0283495
+  },
+  Temperature: {
+    Celsius: 'C',
+    Fahrenheit: 'F',
+    Kelvin: 'K'
+  }
 };
 
-const math = create(all, {});
-
-const FUNCTION_INSERTS = [
-  'sin(',
-  'cos(',
-  'tan(',
-  'asin(',
-  'acos(',
-  'atan(',
-  'sqrt(',
-  'log(',
-  'ln(',
-  'abs(',
-  'floor(',
-  'ceil(',
-  'round(',
-  'exp(',
-];
-
-const STANDARD_KEYS = [
-  '(',
-  ')',
-  'C',
-  'Back',
-  '7',
-  '8',
-  '9',
-  '/',
-  '4',
-  '5',
-  '6',
-  '*',
-  '1',
-  '2',
-  '3',
-  '-',
-  '0',
-  '.',
-  '%',
-  '+',
-];
-
+const STANDARD_KEYS = ['C', '(', ')', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', 'Back', '='];
 const SCIENTIFIC_KEYS = [
-  ...STANDARD_KEYS,
-  'pi',
-  'e',
-  '^',
-  'sin(',
-  'cos(',
-  'tan(',
-  'asin(',
-  'acos(',
-  'atan(',
-  'sqrt(',
-  'log(',
-  'ln(',
-  'abs(',
-  'floor(',
-  'ceil(',
-  'round(',
-  'exp(',
+  'sin', 'cos', 'tan', 'C', 'Back',
+  'asin', 'acos', 'atan', '(', ')',
+  'sqrt', 'log', 'ln', '7', '8', '9', '/',
+  'pi', 'e', '^', '4', '5', '6', '*',
+  '!', 'exp', 'abs', '1', '2', '3', '-',
+  '0', '.', '%', '+', '='
 ];
-
 const PROGRAMMER_KEYS = [
-  '(',
-  ')',
-  'C',
-  'Back',
-  'A',
-  'B',
-  'C_HEX',
-  'D',
-  'E',
-  'F',
-  '&',
-  '|',
-  '7',
-  '8',
-  '9',
-  '<<',
-  '4',
-  '5',
-  '6',
-  '>>',
-  '1',
-  '2',
-  '3',
-  '^',
-  '0',
-  '~',
-  '%',
-  '+',
-  '-',
-  '*',
-  '/',
+  'A', 'B', 'C_HEX', 'C', 'Back',
+  'D', 'E', 'F', '(', ')',
+  '<<', '>>', 'AND', '7', '8', '9', '/',
+  'OR', 'XOR', 'NOT', '4', '5', '6', '*',
+  '1', '2', '3', '-', '0', '+', '=', 
 ];
-
-const THEMES: Theme[] = ['aurora', 'sunset', 'ocean'];
-
-function normalizeInput(expression: string, mode: Mode): string {
-  let parsed = expression.trim();
-
-  if (!parsed) {
-    return parsed;
-  }
-
-  parsed = parsed.replace(/\bln\(/g, 'log(');
-  parsed = parsed.replace(/\blog\(/g, 'log10(');
-  parsed = parsed.replace(/\bpi\b/g, 'pi');
-
-  if (mode !== 'programmer') {
-    return parsed;
-  }
-
-  parsed = parsed.replace(/\b([A-F])\b/g, (_, value: string) => String(parseInt(value, 16)));
-  parsed = parsed.replace(/\^/g, ' xor ');
-  parsed = parsed.replace(/~/g, 'bitNot ');
-
-  return parsed;
-}
-
-function formatOutput(value: number, precision: number): string {
-  if (!Number.isFinite(value)) {
-    return 'NaN';
-  }
-
-  const fixed = Number(value.toFixed(precision));
-  return fixed.toLocaleString(undefined, {
-    maximumFractionDigits: precision,
-  });
-}
-
-function evaluateExpression(
-  expression: string,
-  mode: Mode,
-  angleUnit: AngleUnit,
-  ans: number,
-  memory: number,
-  precision: number
-): EvalResult {
-  const scope = {
-    ans,
-    m: memory,
-    sin: (x: number) => Math.sin(angleUnit === 'deg' ? (x * Math.PI) / 180 : x),
-    cos: (x: number) => Math.cos(angleUnit === 'deg' ? (x * Math.PI) / 180 : x),
-    tan: (x: number) => Math.tan(angleUnit === 'deg' ? (x * Math.PI) / 180 : x),
-    asin: (x: number) => {
-      const result = Math.asin(x);
-      return angleUnit === 'deg' ? (result * 180) / Math.PI : result;
-    },
-    acos: (x: number) => {
-      const result = Math.acos(x);
-      return angleUnit === 'deg' ? (result * 180) / Math.PI : result;
-    },
-    atan: (x: number) => {
-      const result = Math.atan(x);
-      return angleUnit === 'deg' ? (result * 180) / Math.PI : result;
-    },
-    bitNot: (x: number) => ~Math.trunc(x),
-  };
-
-  const parsed = normalizeInput(expression, mode);
-  const evaluated = math.evaluate(parsed, scope);
-  const raw = Number(evaluated);
-
-  if (Number.isNaN(raw)) {
-    throw new Error('Expression did not evaluate to a number');
-  }
-
-  return {
-    raw,
-    result: formatOutput(raw, precision),
-  };
-}
-
-function withBitToggled(current: number, bitIndex: number): number {
-  return current ^ (1 << bitIndex);
-}
-
-function toInteger(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.trunc(value);
-}
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('scientific');
-  const [angleUnit, setAngleUnit] = useState<AngleUnit>('deg');
-  const [theme, setTheme] = useState<Theme>('aurora');
-  const [precision, setPrecision] = useState(8);
-  const [bitWidth, setBitWidth] = useState(16);
-
+  const [appMode, setAppMode] = useState<AppMode>('calculator');
+  const [calcMode, setCalcMode] = useState<CalcMode>('scientific');
+  const [theme, setTheme] = useState<Theme>('dark');
+  
   const [expression, setExpression] = useState('');
   const [display, setDisplay] = useState('0');
-  const [error, setError] = useState('');
   const [ans, setAns] = useState(0);
   const [memory, setMemory] = useState(0);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  
+  // Graphing State
+  const [graphExpr, setGraphExpr] = useState('sin(x) * x');
+  const [graphData, setGraphData] = useState<any[]>([]);
 
-  const integerDisplay = useMemo(() => toInteger(ans), [ans]);
-
-  const activeKeys = useMemo(() => {
-    if (mode === 'standard') {
-      return STANDARD_KEYS;
-    }
-    if (mode === 'scientific') {
-      return SCIENTIFIC_KEYS;
-    }
-    return PROGRAMMER_KEYS;
-  }, [mode]);
-
-  const baseValues = useMemo(() => {
-    const value = toInteger(ans);
-    return {
-      bin: (value >>> 0).toString(2),
-      oct: (value >>> 0).toString(8),
-      dec: String(value),
-      hex: (value >>> 0).toString(16).toUpperCase(),
-    };
-  }, [ans]);
-
-  const bitGrid = useMemo(() => {
-    const value = toInteger(ans) >>> 0;
-    const values: number[] = [];
-
-    for (let i = bitWidth - 1; i >= 0; i -= 1) {
-      values.push((value >> i) & 1);
-    }
-
-    return values;
-  }, [ans, bitWidth]);
-
-  function appendToken(token: string) {
-    setError('');
-    setExpression((current) => `${current}${token}`);
-  }
-
-  function clearAll() {
-    setExpression('');
-    setDisplay('0');
-    setError('');
-  }
-
-  function backspace() {
-    setExpression((current) => current.slice(0, -1));
-  }
-
-  function commitResult(result: EvalResult) {
-    setDisplay(result.result);
-    setAns(result.raw);
-    setError('');
-
-    if (expression.trim()) {
-      setHistory((current) => [
-        {
-          id: Date.now(),
-          expression,
-          result: result.result,
-          starred: false,
-        },
-        ...current.slice(0, 24),
-      ]);
-    }
-  }
-
-  function evaluateCurrentExpression() {
-    if (!expression.trim()) {
-      return;
-    }
-
-    try {
-      const result = evaluateExpression(expression, mode, angleUnit, ans, memory, precision);
-      commitResult(result);
-    } catch {
-      setError('Invalid expression');
-    }
-  }
-
-  function handleKeyPress(key: string) {
-    const keyName = key === 'C_HEX' ? 'C' : key;
-
-    if (keyName === 'C') {
-      clearAll();
-      return;
-    }
-    if (keyName === 'Back') {
-      backspace();
-      return;
-    }
-
-    appendToken(keyName);
-  }
-
-  function applyMemoryAction(action: 'MC' | 'MR' | 'MS' | 'M+' | 'M-') {
-    if (action === 'MC') {
-      setMemory(0);
-      return;
-    }
-
-    if (action === 'MR') {
-      appendToken(String(memory));
-      return;
-    }
-
-    if (action === 'MS') {
-      setMemory(ans);
-      return;
-    }
-
-    if (action === 'M+') {
-      setMemory((current) => current + ans);
-      return;
-    }
-
-    setMemory((current) => current - ans);
-  }
+  // Converter State
+  const [convertCategory, setConvertCategory] = useState<keyof typeof units>('Length');
+  const [fromUnit, setFromUnit] = useState('Meter');
+  const [toUnit, setToUnit] = useState('Foot');
+  const [fromValue, setFromValue] = useState('1');
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        evaluateCurrentExpression();
-      }
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        clearAll();
-      }
+  // Handle calculator keys
+  const appendToken = (token: string) => {
+    let toAppend = token;
+    if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'log', 'ln', 'exp', 'abs'].includes(token)) {
+      toAppend = token + '(';
+    }
+    setExpression(prev => prev + toAppend);
+  };
 
-      if (event.key === 'Backspace') {
-        event.preventDefault();
-        backspace();
-      }
+  const clearAll = () => {
+    setExpression('');
+    setDisplay('0');
+  };
 
-      if (/^[0-9+\-*/().%]$/.test(event.key)) {
-        appendToken(event.key);
-      }
+  const backspace = () => {
+    setExpression(prev => prev.slice(0, -1));
+  };
+
+  const evaluateCurrent = () => {
+    if (!expression.trim()) return;
+    try {
+      let parsed = expression.replace(/C_HEX/g, 'C').replace(/AND/g, ' and ').replace(/OR/g, ' or ').replace(/XOR/g, ' xor ').replace(/NOT/g, ' not ');
+      const result = math.evaluate(parsed, { ans, pi: Math.PI, e: Math.E });
+      const raw = Number(result);
+      if (isNaN(raw)) throw new Error('NaN');
+      
+      const formatted = Number.isInteger(raw) ? String(raw) : Number(raw.toFixed(8)).toString();
+      setDisplay(formatted);
+      setAns(raw);
+      setHistory(prev => [{ id: Date.now(), expression, result: formatted }, ...prev.slice(0, 49)]);
+      setExpression(''); // Auto clear expression on equals for better usability
+    } catch {
+      setDisplay('Error');
+    }
+  };
+
+  const handleKeyPress = (key: string) => {
+    if (key === 'C') return clearAll();
+    if (key === 'Back') return backspace();
+    if (key === '=') return evaluateCurrent();
+    if (key === 'pi') return appendToken('pi');
+    if (key === 'e') return appendToken('e');
+    appendToken(key);
+  };
+
+  // Memory operations
+  const memoryOp = (op: string) => {
+    if (op === 'MC') setMemory(0);
+    if (op === 'MR') appendToken(String(memory));
+    if (op === 'M+') setMemory(m => m + ans);
+    if (op === 'M-') setMemory(m => m - ans);
+    if (op === 'MS') setMemory(ans);
+  };
+
+  // Keyboard support
+  useEffect(() => {
+    if (appMode !== 'calculator' && appMode !== 'programmer') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); evaluateCurrent(); }
+      else if (e.key === 'Escape') clearAll();
+      else if (e.key === 'Backspace') backspace();
+      else if (/^[0-9+\-*/().%^!]$/.test(e.key)) appendToken(e.key);
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  return (
-    <main className={`app app-${theme}`}>
-      <div className="bg-orb orb-a" aria-hidden="true" />
-      <div className="bg-orb orb-b" aria-hidden="true" />
+  // Graphing execution
+  const plotGraph = () => {
+    try {
+      const data = [];
+      const node = math.parse(graphExpr);
+      const compiled = node.compile();
+      for (let x = -10; x <= 10; x += 0.5) {
+        data.push({ x, y: compiled.evaluate({ x }) });
+      }
+      setGraphData(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-      <section className="calculator-shell">
-        <header className="top-bar">
-          <div>
-            <h1>Quantum Calculator</h1>
-            <p>Expression engine, scientific stack, bitwise lab, and productivity memory.</p>
-          </div>
-          <div className="top-controls">
-            <select value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
-              <option value="standard">Standard</option>
-              <option value="scientific">Scientific</option>
-              <option value="programmer">Programmer</option>
-            </select>
-            <select value={theme} onChange={(event) => setTheme(event.target.value as Theme)}>
-              {THEMES.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
+  // Programmer values
+  const progValues = useMemo(() => {
+    const val = Math.trunc(Number(display) || 0) >>> 0;
+    return {
+      hex: val.toString(16).toUpperCase(),
+      dec: val.toString(10),
+      oct: val.toString(8),
+      bin: val.toString(2).padStart(32, '0')
+    };
+  }, [display]);
+
+  const toggleBit = (bitIndex: number) => {
+    const val = Math.trunc(Number(display) || 0) >>> 0;
+    const toggled = val ^ (1 << bitIndex);
+    setDisplay(String(toggled));
+  };
+
+  // Converter execution
+  const convertedValue = useMemo(() => {
+    const v = Number(fromValue);
+    if (isNaN(v)) return '0';
+    if (convertCategory === 'Temperature') {
+      if (fromUnit === toUnit) return v.toString();
+      let c = v;
+      if (fromUnit === 'Fahrenheit') c = (v - 32) * 5/9;
+      if (fromUnit === 'Kelvin') c = v - 273.15;
+      
+      if (toUnit === 'Celsius') return c.toFixed(4);
+      if (toUnit === 'Fahrenheit') return (c * 9/5 + 32).toFixed(4);
+      if (toUnit === 'Kelvin') return (c + 273.15).toFixed(4);
+    } else {
+      const cat = units[convertCategory] as any;
+      const baseV = v * cat[fromUnit];
+      return (baseV / cat[toUnit]).toFixed(6).replace(/\.?0+$/, '');
+    }
+    return '0';
+  }, [fromValue, fromUnit, toUnit, convertCategory]);
+
+  return (
+    <div className="app-container">
+      {/* Sidebar */}
+      <nav className="sidebar">
+        <button className={appMode === 'calculator' ? 'active' : ''} onClick={() => setAppMode('calculator')} title="Calculator">
+          <Calculator size={24} />
+        </button>
+        <button className={appMode === 'programmer' ? 'active' : ''} onClick={() => setAppMode('programmer')} title="Programmer">
+          <Binary size={24} />
+        </button>
+        <button className={appMode === 'graphing' ? 'active' : ''} onClick={() => setAppMode('graphing')} title="Graphing">
+          <Activity size={24} />
+        </button>
+        <button className={appMode === 'converter' ? 'active' : ''} onClick={() => setAppMode('converter')} title="Converter">
+          <ArrowRightLeft size={24} />
+        </button>
+
+        <div className="bottom-actions">
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'neon' : 'dark')} title="Theme">
+            {theme === 'dark' ? <Moon size={24}/> : theme === 'light' ? <Sun size={24}/> : <Zap size={24}/>}
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="main-content">
+        <header className="topbar">
+          <h2>
+            {appMode === 'calculator' ? 'Calculator' : 
+             appMode === 'programmer' ? 'Programmer Lab' : 
+             appMode === 'graphing' ? 'Graphing Plotter' : 'Unit Converter'}
+          </h2>
+          
+          {appMode === 'calculator' && (
+            <div className="topbar-controls">
+              <select value={calcMode} onChange={e => setCalcMode(e.target.value as CalcMode)}>
+                <option value="standard">Standard</option>
+                <option value="scientific">Scientific</option>
+              </select>
+            </div>
+          )}
         </header>
 
-        <div className="meta-grid">
-          <label>
-            Angle
-            <select value={angleUnit} onChange={(event) => setAngleUnit(event.target.value as AngleUnit)}>
-              <option value="deg">Degrees</option>
-              <option value="rad">Radians</option>
-            </select>
-          </label>
-          <label>
-            Precision: {precision}
-            <input
-              type="range"
-              min={2}
-              max={14}
-              value={precision}
-              onChange={(event) => setPrecision(Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Bit Width: {bitWidth}
-            <select value={bitWidth} onChange={(event) => setBitWidth(Number(event.target.value))}>
-              <option value={8}>8-bit</option>
-              <option value={16}>16-bit</option>
-              <option value={32}>32-bit</option>
-            </select>
-          </label>
-        </div>
-
-        <section className="display-panel">
-          <div className="expression-row">{expression || '0'}</div>
-          <div className="result-row">{display}</div>
-          {error && <div className="error-row">{error}</div>}
-        </section>
-
-        <section className="quick-actions">
-          <button onClick={() => appendToken('ans')}>ANS</button>
-          <button onClick={() => appendToken('m')}>M</button>
-          <button onClick={() => applyMemoryAction('MC')}>MC</button>
-          <button onClick={() => applyMemoryAction('MR')}>MR</button>
-          <button onClick={() => applyMemoryAction('MS')}>MS</button>
-          <button onClick={() => applyMemoryAction('M+')}>M+</button>
-          <button onClick={() => applyMemoryAction('M-')}>M-</button>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(display).catch(() => undefined);
-            }}
-          >
-            Copy
-          </button>
-          <button className="equal-button" onClick={evaluateCurrentExpression}>
-            =
-          </button>
-        </section>
-
-        <section className="keypad">
-          {activeKeys.map((key) => (
-            <button
-              key={key}
-              className={
-                key === 'C' || key === 'C_HEX'
-                  ? 'danger'
-                  : key === 'Back'
-                    ? 'utility'
-                    : /[+\-*/%|&^]|<<|>>/.test(key)
-                      ? 'operator'
-                      : ''
-              }
-              onClick={() => handleKeyPress(key)}
-            >
-              {key === 'C_HEX' ? 'C' : key}
-            </button>
-          ))}
-
-          {mode !== 'standard' && (
-            <>
-              {FUNCTION_INSERTS.map((item) => (
-                <button key={item} className="function" onClick={() => appendToken(item)}>
-                  {item.replace('(', '')}
-                </button>
-              ))}
-            </>
-          )}
-        </section>
-
-        {mode === 'programmer' && (
-          <section className="programmer-panel">
-            <h2>Programmer Lens</h2>
-            <div className="bases">
-              <div>
-                <span>BIN</span>
-                <strong>{baseValues.bin}</strong>
+        {appMode === 'calculator' && (
+          <div className="calculator-view">
+            <div className="calc-left">
+              <div className="display-area">
+                <div className="memory-indicator">
+                  {memory !== 0 && <span>M = {memory}</span>}
+                  <div className="memory-actions">
+                    <button onClick={() => memoryOp('MC')}>MC</button>
+                    <button onClick={() => memoryOp('MR')}>MR</button>
+                    <button onClick={() => memoryOp('M+')}>M+</button>
+                    <button onClick={() => memoryOp('M-')}>M-</button>
+                    <button onClick={() => memoryOp('MS')}>MS</button>
+                  </div>
+                </div>
+                <div className="expression">{expression || '\u00A0'}</div>
+                <div className="result">{display}</div>
               </div>
-              <div>
-                <span>OCT</span>
-                <strong>{baseValues.oct}</strong>
-              </div>
-              <div>
-                <span>DEC</span>
-                <strong>{baseValues.dec}</strong>
-              </div>
-              <div>
-                <span>HEX</span>
-                <strong>{baseValues.hex}</strong>
-              </div>
-            </div>
-            <div className="bit-grid">
-              {bitGrid.map((bit, index) => {
-                const bitPosition = bitWidth - index - 1;
-                return (
-                  <button
-                    key={`${bitPosition}-${bit}`}
-                    className={bit ? 'active' : ''}
-                    onClick={() => {
-                      const updated = withBitToggled(integerDisplay, bitPosition);
-                      setAns(updated);
-                      setDisplay(String(updated));
-                    }}
+
+              <div className={`keyboard ${calcMode}`}>
+                {(calcMode === 'standard' ? STANDARD_KEYS : SCIENTIFIC_KEYS).map(key => (
+                  <button 
+                    key={key} 
+                    className={`key ${
+                      ['C', 'Back'].includes(key) ? 'action' : 
+                      ['/', '*', '-', '+'].includes(key) ? 'operator' : 
+                      key === '=' ? 'equals' : 
+                      !['0','1','2','3','4','5','6','7','8','9','.'].includes(key) ? 'scientific-fn' : ''
+                    }`}
+                    onClick={() => handleKeyPress(key)}
                   >
-                    <span>{bit}</span>
-                    <small>b{bitPosition}</small>
+                    {key === 'Back' ? '⌫' : key === 'pi' ? 'π' : key === 'sqrt' ? '√' : key}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </section>
+
+            <div className="history-panel">
+              <div className="history-header">
+                <h3>History</h3>
+                <button className="clear-btn" onClick={() => setHistory([])} title="Clear History">
+                  <Trash2 size={18} />
+                </button>
+              </div>
+              <div className="history-list">
+                {history.map(item => (
+                  <div key={item.id} className="history-item" onClick={() => { setExpression(item.expression); setDisplay(item.result); }}>
+                    <div className="expr">{item.expression}</div>
+                    <div className="res">{item.result}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
-        <section className="history-panel">
-          <h2>History</h2>
-          {history.length === 0 && <p>No entries yet. Run an expression to populate history.</p>}
-          {history.map((entry) => (
-            <article key={entry.id}>
-              <button
-                className="star"
-                onClick={() => {
-                  setHistory((current) =>
-                    current.map((item) =>
-                      item.id === entry.id ? { ...item, starred: !item.starred } : item
-                    )
-                  );
-                }}
-              >
-                {entry.starred ? 'Starred' : 'Star'}
-              </button>
-              <div className="history-body">
-                <code>{entry.expression}</code>
-                <strong>{entry.result}</strong>
+        {appMode === 'programmer' && (
+          <div className="calculator-view">
+            <div className="calc-left">
+              <div className="display-area" style={{minHeight: '120px', marginBottom: '16px'}}>
+                <div className="expression">{expression || '\u00A0'}</div>
+                <div className="result">{display}</div>
               </div>
-              <button
-                onClick={() => {
-                  setExpression(entry.expression);
-                  setDisplay(entry.result);
-                }}
-              >
-                Reuse
-              </button>
-            </article>
-          ))}
-        </section>
-      </section>
-    </main>
+
+              <div className="programmer-info">
+                <div className="prog-box"><span>HEX</span><strong>{progValues.hex}</strong></div>
+                <div className="prog-box"><span>DEC</span><strong>{progValues.dec}</strong></div>
+                <div className="prog-box"><span>OCT</span><strong>{progValues.oct}</strong></div>
+                <div className="prog-box"><span>BIN</span><strong>{progValues.bin}</strong></div>
+              </div>
+
+              <div className="bit-grid">
+                {progValues.bin.split('').map((bit, idx) => {
+                  const bitIdx = 31 - idx;
+                  return (
+                    <button key={bitIdx} className={`bit-btn ${bit === '1' ? 'active' : ''}`} onClick={() => toggleBit(bitIdx)}>
+                      <span>{bit}</span>
+                      <small>{bitIdx}</small>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="keyboard programmer">
+                {PROGRAMMER_KEYS.map(key => (
+                  <button 
+                    key={key} 
+                    className={`key ${
+                      ['C', 'Back'].includes(key) ? 'action' : 
+                      ['/', '*', '-', '+', 'AND', 'OR', 'XOR', 'NOT', '<<', '>>'].includes(key) ? 'operator' : 
+                      key === '=' ? 'equals' : ''
+                    }`}
+                    onClick={() => handleKeyPress(key)}
+                  >
+                    {key === 'Back' ? '⌫' : key === 'C_HEX' ? 'C' : key}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {appMode === 'graphing' && (
+          <div className="special-view">
+            <div className="card">
+              <h3>Plot Function</h3>
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  value={graphExpr} 
+                  onChange={e => setGraphExpr(e.target.value)} 
+                  placeholder="e.g. sin(x) * x"
+                  onKeyDown={e => e.key === 'Enter' && plotGraph()}
+                />
+                <button className="btn-primary" onClick={plotGraph}>Plot Graph</button>
+              </div>
+              <div className="graph-container">
+                {graphData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={graphData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="x" stroke="var(--text-muted)" />
+                      <YAxis stroke="var(--text-muted)" />
+                      <Tooltip contentStyle={{background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px'}} />
+                      <Line type="monotone" dataKey="y" stroke="var(--accent-purple)" dot={false} strokeWidth={3} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)'}}>
+                    Enter a function and plot to see graph
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {appMode === 'converter' && (
+          <div className="special-view">
+            <div className="card">
+              <h3>Unit Converter</h3>
+              
+              <div style={{marginBottom: '24px'}}>
+                <select 
+                  value={convertCategory} 
+                  onChange={e => {
+                    const cat = e.target.value as keyof typeof units;
+                    setConvertCategory(cat);
+                    const keys = Object.keys(units[cat]);
+                    setFromUnit(keys[0]);
+                    setToUnit(keys[1] || keys[0]);
+                  }}
+                  style={{width: '100%', maxWidth: '300px', fontSize: '1.1rem'}}
+                >
+                  {Object.keys(units).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="converter-grid">
+                <div className="converter-box">
+                  <select value={fromUnit} onChange={e => setFromUnit(e.target.value)}>
+                    {Object.keys(units[convertCategory]).map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                  <input type="number" value={fromValue} onChange={e => setFromValue(e.target.value)} />
+                </div>
+                
+                <div style={{color: 'var(--accent-purple)', margin: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '48px'}}>
+                  <ChevronRight size={32} />
+                </div>
+
+                <div className="converter-box">
+                  <select value={toUnit} onChange={e => setToUnit(e.target.value)}>
+                    {Object.keys(units[convertCategory]).map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                  <input type="text" value={convertedValue} readOnly style={{background: 'rgba(0,0,0,0.1)'}} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
