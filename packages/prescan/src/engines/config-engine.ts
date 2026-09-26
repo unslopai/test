@@ -5,7 +5,8 @@
  */
 import { LineCounter, isMap, isScalar, isSeq, parseAllDocuments } from 'yaml';
 import { RULE_REGISTRY } from '../rules/registry';
-import type { Node as YamlNode, Pair, YAMLMap, YAMLSeq } from 'yaml';
+import { asMap, mapValue, scalarBool } from './config/yaml-helpers';
+import type { Node as YamlNode, YAMLMap, YAMLSeq } from 'yaml';
 import type { PrescanFinding, PrescanSeverity } from '../types';
 
 const SECRET_KEY_PATTERN = /(password|passwd|secret|token|api[-_]?key|credential|client_secret|private[-_]?key)/i;
@@ -209,25 +210,8 @@ function checkHttpLiterals(state: ConfigScanState, node: YamlNode | null): void 
 }
 
 // =============================================================================
-// YAML-Helfer
+// Helfer
 // =============================================================================
-
-function mapValue(mapNode: YAMLMap | null, key: string): YamlNode | null {
-    if (!mapNode) return null;
-    const matchingPair = mapNode.items.find(
-        (pair: Pair) => isScalar(pair.key) && pair.key.value === key,
-    );
-    return (matchingPair?.value as YamlNode | undefined) ?? null;
-}
-
-function asMap(node: YamlNode | null): YAMLMap | null {
-    return isMap(node) ? node : null;
-}
-
-function scalarBool(mapNode: YAMLMap | null, key: string): boolean | null {
-    const valueNode = mapValue(mapNode, key);
-    return isScalar(valueNode) && typeof valueNode.value === 'boolean' ? valueNode.value : null;
-}
 
 function containerLabel(container: YAMLMap): string {
     const nameNode = mapValue(container, 'name');

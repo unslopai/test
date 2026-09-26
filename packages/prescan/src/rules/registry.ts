@@ -215,6 +215,35 @@ const RULE_LIST: readonly RuleDescriptor[] = [
         ruleId: 'INFRA-011', title: 'Insecure http:// literal', severity: 'WARNING', engine: 'config',
         explanation: 'A plaintext http:// endpoint in a manifest moves real traffic unencrypted. Use https:// (localhost is exempt).',
     },
+    // ── Config-Engine v4 (Security-Header, IAM/Serverless, Agent-Configs) ────
+    {
+        ruleId: 'SEC-019', title: 'Missing HTTP security headers', severity: 'WARNING', engine: 'config',
+        explanation: 'This entrypoint shapes HTTP responses but sets none of the baseline security headers (Content-Security-Policy, X-Frame-Options / frame-ancestors, Strict-Transport-Security, Referrer-Policy). Without them the app is open to clickjacking, protocol downgrade and script injection by default.',
+        fixTemplate: 'Set the baseline headers where responses are shaped (Next.js: next.config headers() or the middleware response; Express: helmet(); Flask: flask-talisman).',
+    },
+    {
+        ruleId: 'SEC-032', title: 'Wildcard IAM permissions on a serverless execution role', severity: 'CRITICAL', engine: 'config',
+        explanation: 'An Allow statement with Resource "*" and a wildcard or privilege-escalating action turns a compromised function into an account-wide foothold. Scope actions and resources to what the function actually touches.',
+        fixTemplate: 'Replace "*" with the concrete ARNs and list only the actions the handler calls.',
+    },
+    {
+        ruleId: 'SEC-033', title: 'High-privilege execution role shared by several functions', severity: 'WARNING', engine: 'config',
+        explanation: 'Several functions share one execution role that carries administrative or wildcard permissions — every function inherits the full blast radius of the most privileged one. Give each function its own least-privilege role.',
+    },
+    {
+        ruleId: 'SEC-034', title: 'Cross-account Lambda layer or image without provenance control', severity: 'WARNING', engine: 'config',
+        explanation: 'This function loads code from a layer or container image owned by a different AWS account. A compromise of that account executes inside your function. Pin the artifact (digest / own copy) or restrict to an allow-listed publisher.',
+    },
+    {
+        ruleId: 'SEC-042', title: 'Denylist-only agent shell gate', severity: 'CRITICAL', engine: 'config',
+        explanation: 'The agent harness auto-runs every command that is not on a deny list. Deny lists are bypassed by aliasing, encoding and wrappers — restrict shell access with an allow list instead.',
+        fixTemplate: 'Switch off the bypass mode and enumerate the permitted commands in an allow list.',
+    },
+    {
+        ruleId: 'SEC-043', title: 'Unscoped agent tool grant', severity: 'WARNING', engine: 'config',
+        explanation: 'A tool is granted without any resource scope (shell without a command pattern, or a mode that skips permission checks entirely). Grant tools with the narrowest pattern that still lets the agent do its job.',
+        fixTemplate: 'Replace the bare grant with scoped patterns such as Bash(npm test:*) and drop the bypass mode.',
+    },
     // ── Registry-Engine (Netzwerk) ───────────────────────────────────────────
     {
         ruleId: 'SEC-035', title: 'Package does not exist on its registry', severity: 'CRITICAL', engine: 'registry',

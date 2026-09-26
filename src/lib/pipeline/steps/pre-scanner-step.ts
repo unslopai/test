@@ -15,6 +15,7 @@
 import { extractErrorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { assignFindingIds } from '@/lib/pipeline/helpers';
+import { loadCompanionFiles } from '@/lib/prescan/companion-loader';
 import { loadPrescanFiles } from '@/lib/prescan/file-content-loader';
 import { requestInternalPrescan } from '@/lib/prescan/internal-client';
 import type { PrescanFinding } from '@unslop/prescan';
@@ -75,8 +76,18 @@ async function runPrescanStep(context: PipelineContext): Promise<PipelineContext
         maxFileBytes: context.prescanConfig.maxFileBytes,
     });
 
+    // Begleitdateien (v4, SEC-019): next.config.* neben einer Next-Middleware —
+    // der Core sieht nur den Diff und wuesste sonst nichts von Headern in next.config.
+    const companionFiles = await loadCompanionFiles({
+        githubToken: context.githubToken,
+        repoFullName: context.repoFullName,
+        headSha: context.headSha,
+        scannedPaths: prescanFiles.map((file) => file.path),
+    });
+
     const prescanResult = await requestInternalPrescan({
         files: prescanFiles,
+        companionFiles,
         prescanConfig: context.prescanConfig,
         repoFullName: context.repoFullName,
         headSha: context.headSha,

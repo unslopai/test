@@ -10,9 +10,10 @@ import type { PrescanFinding, PrescanResult } from '@unslop/prescan';
 
 import { InternalPrescanError } from '@/lib/prescan/internal-contract';
 
-const { runPrescanMock, loadPrescanFilesMock, partialUpdateMock, partialUpdateEqMock } = vi.hoisted(() => ({
+const { runPrescanMock, loadPrescanFilesMock, loadCompanionFilesMock, partialUpdateMock, partialUpdateEqMock } = vi.hoisted(() => ({
     runPrescanMock: vi.fn(),
     loadPrescanFilesMock: vi.fn(),
+    loadCompanionFilesMock: vi.fn(),
     partialUpdateMock: vi.fn(),
     partialUpdateEqMock: vi.fn(),
 }));
@@ -21,6 +22,7 @@ const { runPrescanMock, loadPrescanFilesMock, partialUpdateMock, partialUpdateEq
 // mehr selbst, sondern POST /api/internal/prescan über den internal-client.
 vi.mock('@/lib/prescan/internal-client', () => ({ requestInternalPrescan: runPrescanMock }));
 vi.mock('@/lib/prescan/file-content-loader', () => ({ loadPrescanFiles: loadPrescanFilesMock }));
+vi.mock('@/lib/prescan/companion-loader', () => ({ loadCompanionFiles: loadCompanionFilesMock }));
 // Partial-Write-Grenze (MCP_SPEC.md §4.1): from('review_jobs').update(...).eq('id', jobId)
 vi.mock('@/lib/supabase', () => ({
     supabase: {
@@ -73,6 +75,8 @@ describe('preScannerStep', () => {
         runPrescanMock.mockReset();
         loadPrescanFilesMock.mockReset();
         loadPrescanFilesMock.mockResolvedValue([]);
+        loadCompanionFilesMock.mockReset();
+        loadCompanionFilesMock.mockResolvedValue([]);
         resetPartialWriteMocks();
     });
 
@@ -168,6 +172,26 @@ describe('preScannerStep', () => {
         }));
     });
 
+    it('loads next.config companions for the scanned paths and forwards them (v4, SEC-019)', async () => {
+        runPrescanMock.mockResolvedValue(buildPrescanResult([]));
+        loadPrescanFilesMock.mockResolvedValue([{ path: 'middleware.ts', content: 'export function middleware() {}', patch: '' }]);
+        const companions = [{ path: 'next.config.ts', content: 'export default {};' }];
+        loadCompanionFilesMock.mockResolvedValue(companions);
+
+        await preScannerStep.execute(buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'middleware.ts' })],
+            repoFullName: 'unslopai/test33',
+            headSha: 'abc1234',
+        }));
+
+        expect(loadCompanionFilesMock).toHaveBeenCalledWith(expect.objectContaining({
+            repoFullName: 'unslopai/test33',
+            headSha: 'abc1234',
+            scannedPaths: ['middleware.ts'],
+        }));
+        expect(runPrescanMock).toHaveBeenCalledWith(expect.objectContaining({ companionFiles: companions }));
+    });
+
     it('respects shouldAbort and does not scan', async () => {
         const abortedContext = buildPipelineContext({ shouldAbort: true });
 
@@ -198,6 +222,8 @@ describe('preScannerStep — early partial results (MCP_SPEC §4.1)', () => {
         runPrescanMock.mockReset();
         loadPrescanFilesMock.mockReset();
         loadPrescanFilesMock.mockResolvedValue([]);
+        loadCompanionFilesMock.mockReset();
+        loadCompanionFilesMock.mockResolvedValue([]);
         resetPartialWriteMocks();
     });
 
@@ -258,6 +284,8 @@ describe('preScannerStep — short-circuit (§5.3)', () => {
         runPrescanMock.mockReset();
         loadPrescanFilesMock.mockReset();
         loadPrescanFilesMock.mockResolvedValue([]);
+        loadCompanionFilesMock.mockReset();
+        loadCompanionFilesMock.mockResolvedValue([]);
         resetPartialWriteMocks();
     });
 

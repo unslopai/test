@@ -1,6 +1,6 @@
 # Deterministic Pre-Scanner (Zero-Token Filter) — Design Blueprint
 
-**Roadmap §1 · Status: DESIGN (not implemented) · 2026-07-19**
+**Roadmap §1 · Status: IMPLEMENTED v1–v4 (rollout §8, v4 decisions §9) · designed 2026-07-19, last update 2026-09-26**
 
 The pre-scanner is a deterministic static-analysis layer that runs **after `diff-loader` and before `rag-loader`**, producing `PipelineIssue`s with zero LLM tokens, zero hallucination risk, and structural immunity from the verifier cascade. It is the direct implementation of **PROC-001** ("CI gates must be deterministic; an LLM may explain findings but never be the pass/fail criterion") and **PROC-003** ("run the deterministic detector *before* any AI step").
 
@@ -59,7 +59,7 @@ The pre-scanner is a deterministic static-analysis layer that runs **after `diff
 | SEC-016 RSA < 2048 bit | AST: `initialize(n)` / `modulusLength: n` integer literal `< 2048` | tree-sitter java/ts | Sonar S4426 | full |
 | SEC-017 disabled TLS verification | RGX: `verify=False`, `rejectUnauthorized: false`, `InsecureSkipVerify: true`, `CURLOPT_SSL_VERIFY*` = 0; AST: empty `checkServerTrusted`, `return true` HostnameVerifier | regex + tree-sitter java | Bandit B501–B503, gosec G402, Sonar S4830 (cert validation) + S5527 (hostname) | full |
 | SEC-018 OAuth w/o state/PKCE | RGX presence: auth-URL construction without `state`/`code_challenge` params (secret part → SEC-005) | regex | Semgrep oauth pack | partial |
-| SEC-019 missing security headers | CFG-P: parse `next.config.*`/middleware/bootstrap for CSP, X-Frame-Options, HSTS, Referrer-Policy; new `express()`/`Flask()` without helmet/secure_headers | config engine | — | partial (file-level) |
+| SEC-019 missing security headers | CFG-P: parse `next.config.*`/middleware/bootstrap for CSP, X-Frame-Options, HSTS, Referrer-Policy; new `express()`/`Flask()` without helmet/secure_headers | config engine | — | partial (file-level; v4 ships the Next.js middleware/proxy form only, §9.1) |
 | SEC-020 account enumeration | AST heuristic: distinct error literals in user-lookup vs password-compare branches — FP-prone | — (LLM) | Semgrep custom | — |
 | SEC-021 no rate-limit on login | AST presence: route handler matching `/(login\|signin\|auth\|password\|token)/i` + credential compare, no known limiter import/call | tree-sitter ts | — | partial |
 | SEC-022 insecure session cookies | AST: `cookies().set`/`res.cookie`/`Set-Cookie` options object missing `httpOnly`/`secure`/`sameSite` | tree-sitter ts | Sonar S2092 (`secure`) + S3330 (`httpOnly`) | full (flag part) |
@@ -540,6 +540,65 @@ Per file: language detection → cheap engines first (regex, config) → tree-si
 3. **v2**: CLI local prescan (`StaticAnalysisAdapter` tier: semgrep/gitleaks/checkov/kube-linter/PSScriptAnalyzer), CLI payload extension for full-file cloud AST mode, Law-block slimming behind cache telemetry.
 
 **Definition of Done per phase (DOC-001)**: ROADMAP §1 item moves to Done only with receipts — passing rule-fixture tests, a live job whose persisted result contains a non-empty `prescan` block, and the migrations verified via MCP against the live schema.
+
+---
+
+## 9. v4 (2026-09-24) — Config-Engine gaps closed: SEC-019, SEC-032/033/034, SEC-042/043, pyproject.toml
+
+Closes ROADMAP To-Do §1 "Config-Engine-Lücken vs. Design §1". Every check below is **fail-safe by construction**: whenever the single-file view cannot prove the violation, the check stays silent (or records a `skippedCheck`), it never guesses. Code: `packages/prescan/src/engines/config/` (dispatcher `index.ts`) and `engines/registry/pyproject-deps.ts`. Core version `0.4.0`, 50 implemented rule IDs.
+
+### 9.1 SEC-019 — missing security headers (`security-headers.ts`)
+
+**Scope: Next.js `middleware.*` / `proxy.*` only.** The first v4 cut (2026-09-24) also had Express- and Flask-bootstrap forms; the review of 2026-09-24 built seven realistic files on which the committed check fired although nothing in the file proved a violation (`@/`-alias security helper, `headers()` in `next.config.js` fed from another module, `@nosecone/next` / `next-safe-middleware`, `lusca`, inline `require('./middleware/security')`, `@/`-alias Express middleware, gunicorn-served Flask with Talisman in `extensions.py`) — a breach of the fail-safe rule above. Express and Flask were dropped on 2026-09-26 (not narrowed: headers there live in other modules or the hosting layer — `vercel.json`, `_headers`, `netlify.toml`, a reverse proxy — which a single file cannot disprove); they return only after being tested against real repositories (ROADMAP To-Do §1). All seven cases are unit tests in `security-headers.test.ts` and stay silent.
+
+The Next form fires only when the file itself proves the violation:
+
+| Fires when (all of) | Suppressed when (any of — fail-safe) |
+|---|---|
+| file imports `next/server`; ≥ 1 `.headers.set/append('literal', …)` on a **response** receiver; no security header anywhere in the file; every mutated response is declared exactly once as `NextResponse.next/rewrite/redirect/json(…)` or `new NextResponse(…)` and otherwise appears only in its own header mutations and a bare `return <name>` | the response **escapes** — any other use, e.g. as a call argument (`return withSecurityHeaders(response)`), reassignment or property access; it does not come from `NextResponse.*` (e.g. a package middleware's result); the receiver is a request or not a plain identifier; a header name is computed; a `headers:` object or `new Headers(` is used; the export is wrapped (`export default chain(…)`, `export const middleware = withX(…)`); a local import (relative, `@/`, `~/`, `#/`) mentions `secur|header|csp|helmet|nonce|harden`; a visible `next.config.*` has a `headers()` function / `headers` key or names a security header |
+
+**Companion files** (new in `PrescanInput.companionFiles` / `InternalPrescanRequest.companionFiles`): a Next middleware alone proves nothing about the app, the headers may live in `next.config.*`. The worker (`src/lib/prescan/companion-loader.ts`) lists the middleware's directory (and the parent for `src/`) at `headSha` and passes every `next.config.*` it finds. Contract: listed = exists, `content: null` = unreadable **or unknown** ⇒ `skippedChecks: SEC-019 companion-unavailable`, not listed = does not exist. "Unknown" covers a truncated directory listing (the Contents API returns at most 1000 entries, unpaginated) and a `next.config.*` that is not a regular file (symlink, submodule). Every companion request carries a 10 s `AbortSignal.timeout` (below the 15 s `totalBudgetMs`); a timeout is an error ⇒ unreadable. A `next.config.*` inside the diff itself counts too. CLI jobs run patch-only, so SEC-019 never fires there (no full content). The benchmark rig passes no companions, which is truthful for synthetic fixtures.
+
+Security-header set: CSP, X-Frame-Options, frame-ancestors, HSTS, Referrer-Policy, Permissions-Policy, X-Content-Type-Options. Presence of **any** of them suppresses the check (partial coverage: the LLM keeps "incomplete set").
+
+Realism probe: this repo's own `src/proxy.ts` sets a *request* header and delegates to `updateSession` — correctly silent.
+
+### 9.2 SEC-032 / SEC-033 / SEC-034 — IAM & serverless (`iam-model.ts`, `iam-from-hcl.ts`, `iam-from-cfn.ts`, `iam-serverless.ts`)
+
+- **Formats**: Terraform HCL via a purpose-built reader (`hcl-reader.ts`, ~350 lines: blocks, attributes, strings with `${}`/nested quotes, heredocs, lists, objects, calls, references; operators/conditionals degrade to `raw`). **No external HCL parser** — `hcl2-parser`/`@cdktf/hcl2json` are multi-MB Go-WASM bundles, unacceptable in the memory-critical prescan Lambda (§1 route-instance leak). CloudFormation/SAM in YAML **and** JSON through the existing `yaml` parser (`!GetAtt`/`!Ref`/`!Sub` survive as tagged scalars).
+- **Serverless gate**: the file must mention `lambda` or `serverless` (Terraform: `aws_lambda_function`, `lambda.amazonaws.com`, a `lambda-assume.json` path; CFN: the resource types). Wildcard policies on human/admin roles are not SEC-032 and stay with the LLM.
+- **Identity policies only**: `aws_iam_role_policy`, `aws_iam_role.inline_policy`/`managed_policy_arns`, `aws_iam_role_policy_attachment`, `aws_iam_policy`; `data.aws_iam_policy_document` only when a role references it. Statements with `Condition` or `Principal` are never flagged (PassRole-with-condition, KMS key policies with `kms:*` on `*` are standard).
+- **SEC-032** (CRITICAL): `Effect: Allow` + `Resource: "*"` + an action that is `*`, `service:*`, or in the high-risk set (`sts:AssumeRole`, `iam:PassRole`, `iam:CreateRole`, `iam:AttachRolePolicy`, `iam:PutRolePolicy`, `lambda:CreateFunction`, `lambda:UpdateFunctionCode`, `s3:PutBucketPolicy`, `kms:PutKeyPolicy`). Anchored at the statement.
+- **SEC-033** (WARNING): ≥ 2 functions referencing the same role **and** that role (in the same file) carries `AdministratorAccess`/`PowerUserAccess`/`IAMFullAccess` or a high-risk/wildcard action. One finding per function at its `role` attribute. Roles whose policies live in another file are unknown ⇒ silent (partial).
+- **SEC-034** (WARNING, CRITICAL when the same function runs under a SEC-032 role): a layer ARN or ECR image URI whose 12-digit account differs from **own-account evidence in the same file** (account IDs in non-layer ARNs, `account_id`/`SourceAccount` attributes). Without contrast evidence "foreign" is undecidable and the check stays silent — the bare r12 fixture therefore remains an LLM catch by design. Digest-pinned images (`@sha256:`) are exempt.
+
+### 9.3 SEC-042 / SEC-043 — agent configs (`agent-config.ts`)
+
+Only **Claude Code settings** (`.claude/settings.json`, `.claude/settings.local.json`) — the one harness format with documented permission semantics. Generic `deny`/`allow` keys in arbitrary YAML/JSON stay out (no semantics ⇒ FP-prone).
+- **SEC-042** (CRITICAL): `permissions.defaultMode: bypassPermissions` **plus** a non-empty `permissions.deny`. A deny list in the default (ask) mode is *not* a denylist gate — the human approval is the gate — and is deliberately not flagged.
+- **SEC-043** (WARNING): `bypassPermissions` without a deny list (binary full access), or an unscoped shell grant in `permissions.allow` (`Bash`, `Bash(*)`, `Bash(*:*)`). Bare `Edit`/`Read` grants are not flagged (ubiquitous in real settings; the rule's letter would allow it, the fail-safe posture does not).
+Both rules stay excluded from the benchmark fixtures (`excluded-rules.json`): the LLM lane cannot attribute them from a hunk, and adding fixtures would change the 126-rule universe the reference series is measured against.
+
+### 9.4 pyproject.toml — registry engine (`registry/pyproject-deps.ts`)
+
+Line-oriented TOML scanner with table/array state (no TOML dependency). Covered: PEP 621 `[project] dependencies`, `[project.optional-dependencies]`, PEP 735 `[dependency-groups]` (inline `{ include-group = … }` ignored), `[build-system] requires`, Poetry `dependencies`/`dev-dependencies`/`group.<x>.dependencies` (`python` skipped), uv `dev-dependencies`, PDM `dev-dependencies`. Candidates only for added lines; context lines (table headers, array openers) come from the full line map that `index.ts` passes solely for `pyproject.toml` (`RegistryEngineFile.lineTexts`) to keep the registry phase memory-flat. Lookups reuse the SEC-035 HEAD path and cache.
+
+### 9.5 Deliberately left out — MAINT-009 (unused new dependency)
+
+Rejected as a deterministic check, same reasoning as CONC-008 / SEC-012 / SEC-021 (ROADMAP §7): a diff-only view cannot distinguish "unused" from **peer dependencies** (`react-dom`, `postcss`, `graphql` for `@apollo/client`), **implicit runtime dependencies** (`sharp` for `next/image`, `tslib`, optional native peers) and **usage in files outside the diff**. Every gate tried (dependencies-only, `@types/*` skip, new-manifest-only, name appears anywhere in the diff) still fires on a freshly scaffolded Next app adding `react-dom`. WARNING-level noise on every second dependency bump would erode the zero-FP promise of the deterministic lane; MAINT-009 stays with the LLM reviewer (r06 catches it there). `golden_standards.deterministic_coverage` for MAINT-009 should move to `none` (draft migration `046`, blocked: tooling).
+
+### 9.6 Receipts (2026-09-24, zero-token lanes only)
+
+- `npx vitest run packages/prescan`: 125/125 (35 new tests across `hcl-reader`, `iam-serverless`, `security-headers`, `agent-config`, `registry-engine` pyproject, `index` companion routing).
+- `npm test`: 1220 passed / 21 skipped / 98 files; the single failure is the documented `git.test.ts` timeout flake (ROADMAP §8), 18/18 in isolation.
+- `npm run benchmark:rules -- --prescan-only`: **49/126 deterministic (38.9 %)**, up from 46/126 (v3 reference `results/2026-08-25-prescan-only-v3.json`), **0 false positives on all four negative controls**, no collateral finding on the target bundles: r08 `middleware.ts` SEC-019 ✓ (the last stable benchmark miss), r12 `exporter-role.tf` SEC-032 ✓, `order-functions.tf` SEC-033 ✓ (2 findings, one per function), `pdf-render.tf` SEC-034 silent by design (no contrast evidence).
+- No LLM benchmark run and no Vertex call were made for this change; the combined recall claim (SEC-019 now deterministic ⇒ expected 126/126 combined) awaits the next paid full run.
+
+**Revision 2026-09-26 (fixes for the review of 2026-09-24, zero-token lanes only):** SEC-019 narrowed to Next.js (§9.1), companion timeout + "unknown" listing cases (§9.1 companion contract), the intentional swallow in `iam-model.ts` stated.
+- `npx vitest run packages/prescan`: 127/127; the seven review cases were red against the 2026-09-24 code and are silent now, r08 still fires.
+- Dogfood on PR #9 (job `83f211d3`, prod core 0.3.0, 2026-09-26) flagged three issues in this code, fixed the same day: MAINT-002 on the `iam-model.ts` catch (a comment does not satisfy the rule — the parse error is now logged as `[Prescan]` warning), ARCH-001 on `runIamServerlessChecks` (split into one helper per rule), and a **CRITICAL SEC-035 false positive in the registry engine**: `import … from '${specifier}'` inside a template literal was looked up on npm as the package `${specifier}` (404). `normalizeNpmImport` now drops every root that is not a valid npm name; regression test in `registry-engine.test.ts`. Local re-scan of the four files: none of the three fires; prescan-only still 49/126, 0 FP.
+- `npm test`: 1225 passed / 21 skipped / 98 files, 0 failures.
+- `npm run benchmark:rules -- --prescan-only`: **49/126 unchanged, 0 false positives** on all four negative controls; r08 `middleware.ts` SEC-019 still `caughtByPrescan` (the fixture is a confined `NextResponse.next()` with literal non-security headers). Express/Flask had no benchmark fixture, so dropping them costs no measured recall.
 
 ---
 

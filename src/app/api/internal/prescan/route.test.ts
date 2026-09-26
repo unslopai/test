@@ -83,7 +83,7 @@ describe('POST /api/internal/prescan — payload + result contract', () => {
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual(ENGINE_RESULT);
         const [engineInput, resolvedConfig, ports] = runPrescanMock.mock.calls[0];
-        expect(engineInput).toEqual({ files: VALID_BODY.files });
+        expect(engineInput).toEqual({ files: VALID_BODY.files, companionFiles: [] });
         // resolvePrescanConfig: feldweiser Fallback — gesetzte Felder bleiben, Rest Default.
         expect(resolvedConfig).toMatchObject({ registryChecks: false, totalBudgetMs: 1000, maxFileBytes: 262144 });
         expect(ports).toMatchObject({ registryCache: { label: 'registry-cache-stub' } });
@@ -95,7 +95,18 @@ describe('POST /api/internal/prescan — payload + result contract', () => {
         expect((await POST(buildRequest({ ...VALID_BODY, files: 'nope' }))).status).toBe(400);
         expect((await POST(buildRequest({ ...VALID_BODY, files: [{ path: 'a', content: 42, patch: '' }] }))).status).toBe(400);
         expect((await POST(buildRequest({ ...VALID_BODY, headSha: undefined }))).status).toBe(400);
+        expect((await POST(buildRequest({ ...VALID_BODY, companionFiles: [{ path: 'next.config.ts' }] }))).status).toBe(400);
         expect(runPrescanMock).not.toHaveBeenCalled();
+    });
+
+    it('passes companion files through to the engines (v4, SEC-019)', async () => {
+        runPrescanMock.mockResolvedValue(ENGINE_RESULT);
+        const companionFiles = [{ path: 'next.config.ts', content: null }, { path: 'apps/web/next.config.mjs', content: 'export default {};' }];
+
+        const response = await POST(buildRequest({ ...VALID_BODY, companionFiles }));
+
+        expect(response.status).toBe(200);
+        expect(runPrescanMock.mock.calls[0][0]).toEqual({ files: VALID_BODY.files, companionFiles });
     });
 
     it('maps an engine crash to 500 with the error message (the step degrades on it)', async () => {

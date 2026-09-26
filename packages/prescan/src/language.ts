@@ -19,6 +19,8 @@ export type PrescanLanguage =
     | 'powershell'
     | 'yaml'
     | 'json'
+    | 'hcl'
+    | 'toml'
     | 'other';
 
 const EXTENSION_LANGUAGE_MAP: ReadonlyMap<string, PrescanLanguage> = new Map([
@@ -45,6 +47,8 @@ const EXTENSION_LANGUAGE_MAP: ReadonlyMap<string, PrescanLanguage> = new Map([
     ['.yaml', 'yaml'],
     ['.yml', 'yaml'],
     ['.json', 'json'],
+    ['.tf', 'hcl'],
+    ['.toml', 'toml'],
 ]);
 
 export function detectLanguage(filePath: string): PrescanLanguage {
@@ -54,10 +58,14 @@ export function detectLanguage(filePath: string): PrescanLanguage {
     return EXTENSION_LANGUAGE_MAP.get(lowerPath.substring(dotIndex)) ?? 'other';
 }
 
+/** Config-/Skript-Sprachen ohne tree-sitter-Grammatik (regex + config engine only). */
+const LANGUAGES_WITHOUT_GRAMMAR: ReadonlySet<PrescanLanguage> = new Set([
+    'powershell', 'yaml', 'json', 'hcl', 'toml', 'other',
+]);
+
 /** Sprachen, für die eine tree-sitter-Grammatik geladen wird. */
 export function hasTreeSitterGrammar(language: PrescanLanguage): boolean {
-    return language !== 'powershell' && language !== 'yaml'
-        && language !== 'json' && language !== 'other';
+    return !LANGUAGES_WITHOUT_GRAMMAR.has(language);
 }
 
 /** Test-Datei-Muster (TEST-010, pre_scanner_design.md §2). */
