@@ -1,6 +1,6 @@
 # Sprachabdeckung: wie unslop Nicht-JS/TS-Code prüft
 
-**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
+**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
 
 Code-Stand aller Belege und Messungen: `main` bei `17ee7ec` (2026-09-30). Rohdaten: `fixtures/rule-recall/results/2026-09-30-langcov-*.json`. Die Benchmark-Jobs liegen mit `--keep` in `review_jobs` und `review_job_llm_calls`. Modelle laut `src/lib/pipeline/models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (in keiner Messung gerufen).
 
@@ -336,6 +336,19 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 - PR-Kommentar nennt, dass kein Modell-Review lief und warum.
 - CLI/MCP: gleicher Zustand, mit dem Hinweis, dass lokal nur Regex- und Registry-Regeln laufen (7/69).
 
+**Stand nach Stufe 1 (2026-09-30), mit den Entscheidungen beim Bau:**
+
+- **Wer entscheidet.** `planUnreviewableDiff` (`src/lib/pipeline/review-scope.ts`) für beide Diff-Loader. `resolveReviewOutcome` liefert das Urteil für Persister, Reporter, Check Run und Summary.
+- **Deterministische Lane.** `isDeterministicLaneFile` (`packages/prescan/src/language.ts`): Python, Java, Go, C/C++, PowerShell, Terraform, YAML, JSON, dazu `requirements.txt` und `pyproject.toml`. Nicht dabei: Prosa-Dateien (§4.4), generierte Pfade und Lockfiles, entfernte Dateien, Dateien mit nur den universellen Regeln. **Abweichung von §6.1:** Rust hat Regeln, ist aber nicht in der Lane, weil es keinen Korpus gibt (Kriterium 2 ungemessen). JSON ist in der Lane trotz eines bekannten CRITICAL-Fehlalarms auf einer Datendatei (§4.4 „Rest“), weil `package.json`, CloudFormation und Agent-Settings der Zweck der Lane sind.
+- **Pre-Scanner läuft nicht oder scheitert.** Ist der Step für das Repo abgeschaltet oder endet er degradiert, heißt das Ergebnis weiter „Nothing to review“ (`nothing_reviewed`). `deterministic_only` gibt es nur nach einem tatsächlich gelaufenen Pre-Scan.
+- **Persistenz.** `result.deterministic_only: true`, `nothing_reviewed: false`, `files_reviewed: 0`. Kein Schema-Wechsel. Die Poll-Route liefert `outcome: deterministic_only` und `filesScanned`.
+- **Check Run (E2).** CRITICAL ⇒ `failure` mit dem üblichen Titel. Nur WARNINGs ⇒ `neutral`. Keine Findings ⇒ `neutral`, Titel „Deterministic checks only“. Die Summary nennt in allen drei Fällen, dass kein Modell gelesen hat. Das Score-Gate greift nicht, es gibt keinen Score.
+- **PR-Kommentar.** Ohne Findings: „ℹ️ Anti-Slop Gatekeeper: Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it. The pre-scanner checked N files and found nothing.“ Mit Findings steht derselbe Satz in der Summary des Reviews. Der Integrity-Score-Block entfällt.
+- **CLI, Extension, MCP.** CLI: gelbe Zeile „Deterministic checks only — no model reviewed this diff.“, Findings wie sonst, nie der grüne Haken. Extension: Statusleiste „Deterministic only“ mit Warnfarbe. MCP: `unslop_scan` liefert bei einem fertigen Scan `outcome`, `filesReviewed` und einen `nextStep`, der „NOT a clean verdict“ sagt. Das war nötig, weil ein solcher Scan in unter 10 s fertig ist und sonst wie ein sauberes Review aussähe; es schließt auch den größten Teil der Lücke aus §2.3. Der Text für lokale Diffs nennt, dass ohne Dateiinhalt nur Regex- und Registry-Regeln laufen.
+- **Dashboard.** Ein Lauf ohne Modell-Review ohne Findings ist „neutral“, nicht „clean“.
+- **Deckel E4.** `capRepeatedRuleHits` (`src/lib/pipeline/prescan-hit-cap.ts`): je Regel und Severity bleiben die ersten drei Treffer einzelne Findings, ab dem vierten steht ein Sammelfinding am vierten Treffer und nennt jede weitere Fundstelle. Das gilt für jeden Review, auch den gemischten PR. `prescan.findingsCount` und `criticalCount` zählen weiter jeden Treffer.
+- **Belege.** G3: `--prescan-only` 68/177 auf beiden Pfaden, 0 Fehlalarme auf 7 Kontrollen, neu `r26-clean-config.diff` (Kubernetes, Terraform, `package.json`, Markdown). G4: `review-scope.test.ts`. G5: Tests je Oberfläche; die Sicht-Belege an einem echten PR und G10 stehen aus (ROADMAP).
+
 **Stufe 2, Python, Go, Java in der LLM-Lane:**
 
 - `REVIEWABLE_EXTENSIONS` um `.py`, `.go`, `.java`. Zuerst nur für `unslopai/test` per Repo-Config, dann als Default.
@@ -351,7 +364,7 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 
 | Stufe | Schalter | Wirkung |
 |---|---|---|
-| 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute |
+| 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute. Gebaut: `isPrescanOnlyReviewEnabled`, zur Laufzeit gelesen, greift mit dem nächsten Job |
 | 1, je Repo | `pipeline_config.enabledStepIds` ohne `pre-scanner` | besteht schon (`worker.ts:100-107`) |
 | 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS |
 | 2 und 3, global | Env `UNSLOP_LLM_LANE_JSTS_ONLY=1` | übersteuert die Config, Rollback ohne Deploy |
@@ -386,7 +399,7 @@ Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
 
 ### 7.2 Welche Aussage nach welcher Option stimmt
 
-Claim-Policy `MARKETING_CLAIMS.md` §00: eigene Messungen nur mit Methode, Datum, Modell und Grenze an derselben Stelle. Texte werden in diesem PR nicht geändert.
+Claim-Policy `MARKETING_CLAIMS.md` §00: eigene Messungen nur mit Methode, Datum, Modell und Grenze an derselben Stelle. Mit Stufe 1 geändert (EN und DE): der FAQ-Satz zum PR ohne TypeScript/JavaScript, der Onboarding-Satz `honestyFileTypes` und die Extension-README. Die übrigen Zeilen der Spalte „nach Stufe 1“ stimmen ohne Änderung.
 
 | Aussage | heute | nach Stufe 1 | nach Stufe 2 |
 |---|---|---|---|

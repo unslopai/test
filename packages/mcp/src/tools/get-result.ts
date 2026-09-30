@@ -58,6 +58,8 @@ function buildResultResponse(jobId: string, pollResponse: ScanPollResponse): Mcp
         filesReviewed: scanResult?.filesReviewed ?? 0,
         // Honesty contract (ROADMAP §3): zero findings with outcome
         // 'nothing_reviewed' means the review never ran — not a clean verdict.
+        // 'deterministic_only' means no model read the diff, only the
+        // deterministic pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2).
         outcome: scanResult?.outcome ?? null,
         omittedFiles: scanResult?.omittedFiles ?? [],
         cognitiveIntegrityScore: scanResult?.cognitiveIntegrityScore ?? null,

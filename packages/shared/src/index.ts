@@ -75,9 +75,12 @@ export interface ScanIssue {
  * 'reviewed' = mindestens eine Datei wurde tatsächlich geprüft;
  * 'nothing_reviewed' = die Pipeline hat 0 Dateien geprüft (Size-Cap, kein
  * reviewbarer Diff, Abort). hasSlop:false ist dann KEIN Clean-Urteil und
- * darf nie als "No slop ✓" gerendert werden.
+ * darf nie als "No slop ✓" gerendert werden;
+ * 'deterministic_only' = kein Modell hat den Diff gelesen (keine JS/TS-Datei),
+ * nur der deterministische Pre-Scanner lief (LANGUAGE_COVERAGE_SPEC §6.2).
+ * Findings sind echt, aber 0 Findings sind auch hier KEIN Clean-Urteil.
  */
-export type ScanOutcome = 'reviewed' | 'nothing_reviewed';
+export type ScanOutcome = 'reviewed' | 'nothing_reviewed' | 'deterministic_only';
 
 /** Stufen, die der Deadline Guard übersprungen oder abgebrochen hat (DEADLINE_GUARD_SPEC D6). */
 export type SkippedStage = 'second_opinion' | 'escalation' | 'verifier';
@@ -88,6 +91,11 @@ export interface ScanResult {
     readonly issues: readonly ScanIssue[];
     readonly summary: string;
     readonly filesReviewed: number;
+    /**
+     * Dateien, die der deterministische Pre-Scanner geprüft hat. Additiv: fehlt
+     * bei Ergebnissen vor 2026-09-30 und wenn der Pre-Scanner nicht lief.
+     */
+    readonly filesScanned?: number;
     readonly outcome: ScanOutcome;
     /** Wegen des Review-Size-Caps ausgelassene Dateipfade (auch bei outcome 'reviewed' befüllt). */
     readonly omittedFiles: readonly string[];

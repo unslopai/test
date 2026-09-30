@@ -83,6 +83,24 @@ export function isProseFile(filePath: string): boolean {
     return PROSE_EXTENSION_PATTERN.test(normalizedPath) || TRANSLATION_CATALOG_PATTERN.test(normalizedPath);
 }
 
+/**
+ * Deterministische Lane (LANGUAGE_COVERAGE_SPEC §6.1): Dateitypen mit
+ * mindestens einer sprachspezifischen Regel. Nur sie lösen einen Review ohne
+ * Modell aus. JS/TS gehört nicht dazu, weil es die LLM-Lane erreicht; Dateien
+ * mit nur den universellen Regeln (Dockerfile, Shell, SQL) und Prosa auch nicht.
+ */
+const DETERMINISTIC_LANE_LANGUAGES: ReadonlySet<PrescanLanguage> = new Set([
+    'python', 'java', 'go', 'c', 'cpp', 'powershell', 'yaml', 'json', 'hcl',
+]);
+/** Python-Manifeste: SEC-035 prüft ihre Deklarationen, die Endung allein sagt das nicht. */
+const DETERMINISTIC_LANE_MANIFESTS: ReadonlySet<string> = new Set(['requirements.txt', 'pyproject.toml']);
+
+export function isDeterministicLaneFile(filePath: string): boolean {
+    if (isProseFile(filePath)) return false;
+    const fileName = filePath.replace(/\\/g, '/').split('/').pop() ?? '';
+    return DETERMINISTIC_LANE_MANIFESTS.has(fileName) || DETERMINISTIC_LANE_LANGUAGES.has(detectLanguage(filePath));
+}
+
 /** Test-Datei-Muster (TEST-010, pre_scanner_design.md §2). */
 const TEST_FILE_PATTERN = /\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]*\.py$|Test\.java$/;
 

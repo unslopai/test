@@ -192,6 +192,41 @@ describe('preScannerStep', () => {
         expect(runPrescanMock).toHaveBeenCalledWith(expect.objectContaining({ companionFiles: companions }));
     });
 
+    it('keeps the LLM skip for a diff without reviewable files and caps repeated hits of one rule (E4)', async () => {
+        const manifestFindings = [1, 2, 3, 4, 5].map((manifestIndex) => buildPrescanFinding({
+            ruleId: 'INFRA-002',
+            ruleTitle: 'Container may run as root',
+            severity: 'WARNING',
+            path: `manifests/deployment-${manifestIndex}.yaml`,
+        }));
+        runPrescanMock.mockResolvedValue(buildPrescanResult(manifestFindings));
+
+        const scannedContext = await preScannerStep.execute(buildPipelineContext({
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+        }));
+
+        expect(scannedContext.llmSkipped).toBe(true);
+        expect(scannedContext.reviewSummary).toBe('');
+        expect(scannedContext.prescanIssues).toHaveLength(4);
+        expect(scannedContext.prescanIssues[3].critique).toContain('matched 5 times');
+        expect(scannedContext.prescanStats?.findingsCount).toBe(5);
+    });
+
+    it('keeps the LLM skip when the pre-scan fails for a diff without reviewable files', async () => {
+        runPrescanMock.mockRejectedValue(new Error('internal route down'));
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        const degradedContext = await preScannerStep.execute(buildPipelineContext({
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+        }));
+
+        expect(degradedContext.llmSkipped).toBe(true);
+        expect(degradedContext.prescanStats?.degraded).toBe(true);
+        errorSpy.mockRestore();
+    });
+
     it('respects shouldAbort and does not scan', async () => {
         const abortedContext = buildPipelineContext({ shouldAbort: true });
 

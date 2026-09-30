@@ -174,6 +174,12 @@ describe('mapLastScan (§4.2 Embed)', () => {
         expect(mapLastScan([{ status: 'done' }])).toBeNull(); // created_at fehlt
     });
 
+    it('treats a deterministic-only run without findings as neutral, with findings as slop', () => {
+        const deterministicOnlyRun = { status: 'done', nothingReviewed: false, deterministicOnly: true, hasSlop: false };
+        expect(deriveScanVerdict({ ...deterministicOnlyRun, issueCount: 0 })).toBe('neutral');
+        expect(deriveScanVerdict({ ...deterministicOnlyRun, issueCount: 2 })).toBe('slop');
+    });
+
     it('treats a nothing_reviewed run as neutral, not clean', () => {
         const lastScan = mapLastScan([{
             created_at: '2026-08-29T10:00:00+00:00',

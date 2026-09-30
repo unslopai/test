@@ -12,7 +12,7 @@ import { localToolError, mapApiError, pollFailureToToolError, toolErrorResult } 
 import type { McpToolResult, UnslopToolError } from '../errors.js';
 import type { RepoContextFailureKind } from '../repo-context.js';
 import type { ToolDeps } from '../tool-deps.js';
-import type { ScanIssue, ScanPhase, ScanResult } from '@unslop/shared';
+import type { ScanIssue, ScanOutcome, ScanPhase, ScanResult } from '@unslop/shared';
 
 const PARTIAL_POLL_BUDGET_MS = 10_000;
 const PARTIAL_POLL_INTERVAL_MS = 1_000;
@@ -135,9 +135,13 @@ function buildScanResponse(
         phase,
         deepAnalysisPending: phase !== 'complete',
         findings: safeFindings,
-        nextStep: phase === 'complete'
-            ? 'The review is complete; no deeper analysis is pending.'
-            : 'Call unslop_get_result with this jobId for the LLM analysis.',
+        // Honesty contract (ROADMAP §3, LANGUAGE_COVERAGE_SPEC §6.2): a finished
+        // scan names what it covered. Without these fields an agent read an
+        // aborted or deterministic-only scan with zero findings as a clean review.
+        ...(phase === 'complete' && scanResult
+            ? { outcome: scanResult.outcome, filesReviewed: scanResult.filesReviewed }
+            : {}),
+        nextStep: describeNextStep(phase, scanResult),
     };
 
     if (issues.length === 0) {
@@ -151,6 +155,19 @@ function buildScanResponse(
     return {
         content: [{ type: 'text', text: buildEnvelopedResponseText(safePayload, untrustedPayload) }],
     };
+}
+
+const COMPLETE_NEXT_STEPS: Readonly<Record<ScanOutcome, string>> = {
+    reviewed: 'The review is complete; no deeper analysis is pending.',
+    nothing_reviewed: 'The scan finished, but nothing was reviewed. This is NOT a clean verdict.',
+    deterministic_only: 'The scan finished with deterministic checks only: the diff changes no TypeScript or '
+        + 'JavaScript file, so no model reviewed it, and without file contents only the regex and registry '
+        + 'rules ran. Zero findings is NOT a clean verdict.',
+};
+
+function describeNextStep(phase: ScanPhase, scanResult: ScanResult | null): string {
+    if (phase !== 'complete') return 'Call unslop_get_result with this jobId for the LLM analysis.';
+    return COMPLETE_NEXT_STEPS[scanResult?.outcome ?? 'reviewed'];
 }
 
 function repoFailureToToolError(failureKind: RepoContextFailureKind): UnslopToolError {

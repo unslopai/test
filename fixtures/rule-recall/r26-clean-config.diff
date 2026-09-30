@@ -1,0 +1,85 @@
+=== FILE: deploy/k8s/invoice-mailer.yaml (modified) ===
+@@ -1,0 +1,22 @@
++apiVersion: v1
++kind: Pod
++metadata:
++  name: invoice-mailer
++  namespace: billing
++spec:
++  automountServiceAccountToken: false
++  containers:
++    - name: invoice-mailer
++      image: registry.internal/invoice-mailer@sha256:5e18c07f2a9d46b3c1e7f08d25a94b6c3d1f7e029a8b4c65d0e3f9a172b84c6d
++      securityContext:
++        runAsNonRoot: true
++        privileged: false
++        allowPrivilegeEscalation: false
++        readOnlyRootFilesystem: true
++        seccompProfile:
++          type: RuntimeDefault
++        capabilities:
++          drop: ["ALL"]
++      resources:
++        requests: { cpu: 100m, memory: 128Mi }
++        limits: { cpu: 400m, memory: 256Mi }
+
+=== FILE: infra/storage/report-archive.tf (modified) ===
+@@ -1,0 +1,21 @@
++resource "aws_s3_bucket" "report_archive" {
++  bucket = "acme-report-archive"
++}
++
++resource "aws_s3_bucket_public_access_block" "report_archive" {
++  bucket                  = aws_s3_bucket.report_archive.id
++  block_public_acls       = true
++  block_public_policy     = true
++  ignore_public_acls      = true
++  restrict_public_buckets = true
++}
++
++resource "aws_s3_bucket_server_side_encryption_configuration" "report_archive" {
++  bucket = aws_s3_bucket.report_archive.id
++
++  rule {
++    apply_server_side_encryption_by_default {
++      sse_algorithm = "aws:kms"
++    }
++  }
++}
+
+=== FILE: tools/report-cli/package.json (modified) ===
+@@ -1,0 +1,20 @@
++{
++  "name": "report-cli",
++  "version": "1.4.0",
++  "description": "Command line client for the reporting service",
++  "license": "MIT",
++  "bin": {
++    "report-cli": "./dist/index.js"
++  },
++  "engines": {
++    "node": ">=20"
++  },
++  "dependencies": {
++    "commander": "^12.1.0",
++    "zod": "^3.23.8"
++  },
++  "devDependencies": {
++    "typescript": "^5.6.3",
++    "vitest": "^2.1.4"
++  }
++}
+
+=== FILE: docs/runbooks/tls-verification.md (modified) ===
+@@ -1,0 +1,11 @@
++# TLS verification runbook
++
++Outbound HTTP clients must verify certificates. The reviewer flags these patterns:
++
++| Pattern | Why it is rejected |
++|---|---|
++| `verify=False` | disables certificate validation in requests |
++| `rejectUnauthorized: false` | disables it in Node TLS options |
++| `Access-Control-Allow-Origin: *` | opens the API to every origin |
++
++If a staging host uses a private CA, add the CA bundle instead of turning verification off.

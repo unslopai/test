@@ -19,7 +19,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
-import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
+import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
+import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
@@ -31,13 +32,16 @@ export const githubReporterStep: PipelineStep = {
     displayName: 'GitHub Reporter',
 
     async execute(context: PipelineContext): Promise<PipelineContext> {
-        if (context.shouldAbort) {
+        const reviewOutcome = resolveReviewOutcome(context);
+        if (reviewOutcome === 'nothing_reviewed') {
             await postAbortComment(context);
             return context;
         }
 
         if (collectReportableIssues(context).length > 0) {
             await postReviewWithIssues(context);
+        } else if (reviewOutcome === 'deterministic_only') {
+            await postDeterministicOnlyComment(context);
         } else {
             await postApprovalComment(context);
         }
@@ -79,7 +83,7 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
         resolvePublishedSummary(context, reportableIssues),
         unanchoredIssues,
         context.omittedFiles,
-    ) + buildIntegrityScoreBlock(context.cascade, reportableIssues);
+    ) + buildScoreBlockFor(context, reportableIssues);
 
     const postedReviewId = await createGatekeeperReview(context, reviewBody, inlineComments);
 
@@ -248,6 +252,33 @@ async function loadPostedCommentIds(
     }
 
     return commentIdByFindingId;
+}
+
+/**
+ * Kein Modell hat gelesen und der Pre-Scanner fand nichts (LANGUAGE_COVERAGE_SPEC
+ * §6.2, E2): kein grünes Häkchen, kein „meets the quality standards“ — der
+ * Kommentar nennt, was geprüft wurde und was nicht.
+ */
+async function postDeterministicOnlyComment(context: PipelineContext): Promise<void> {
+    await postReviewIdempotently(
+        context,
+        `ℹ️ **Anti-Slop Gatekeeper**: ${buildDeterministicOnlySummary(context, [])}`,
+        [],
+        'COMMENT',
+    );
+
+    console.log('[GitHubReporter] Nur deterministisch geprüft, keine Findings — Hinweis-Kommentar gepostet.');
+}
+
+/**
+ * Der Integrity Score misst, wie LLM-Claims die Verifikation überstehen. Ohne
+ * Modell-Review gibt es keine Claims: der Block entfiele sonst auf „Confidence
+ * verification was unavailable“, was nach einem Ausfall klingt.
+ */
+function buildScoreBlockFor(context: PipelineContext, reportableIssues: readonly PipelineIssue[]): string {
+    return resolveReviewOutcome(context) === 'deterministic_only'
+        ? ''
+        : buildIntegrityScoreBlock(context.cascade, reportableIssues);
 }
 
 async function postApprovalComment(context: PipelineContext): Promise<void> {

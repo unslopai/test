@@ -144,6 +144,35 @@ describe('unslop_scan — timing (MCP_SPEC §10)', () => {
         expect(safePayload.phase).toBe('complete');
         expect(safePayload.deepAnalysisPending).toBe(false);
     });
+
+    it('names the outcome of a finished scan: deterministic-only with zero findings is not a clean review', async () => {
+        const deps = buildDeps({
+            api: buildApi({
+                fetchScanStatus: vi.fn().mockResolvedValue({
+                    status: 'done',
+                    phase: 'complete',
+                    result: {
+                        hasSlop: false,
+                        issues: [],
+                        summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+                        filesReviewed: 0,
+                        filesScanned: 2,
+                        outcome: 'deterministic_only',
+                        omittedFiles: [],
+                        cognitiveIntegrityScore: null,
+                    },
+                } satisfies ScanPollResponse),
+            }),
+        });
+
+        const toolResult = await runScanTool(deps, {});
+
+        const safePayload = parseSafeSection(toolResult.content[0].text);
+        expect(safePayload.outcome).toBe('deterministic_only');
+        expect(safePayload.filesReviewed).toBe(0);
+        expect(safePayload.nextStep).toContain('no model reviewed it');
+        expect(safePayload.nextStep).toContain('NOT a clean verdict');
+    });
 });
 
 describe('unslop_scan — envelope (MCP_SPEC §5.2)', () => {

@@ -33,7 +33,7 @@
     "copyFailed": "Copying failed — please copy the command manually.",
     "copyCommand": "Copy command",
     "guideLink": "Full guide →",
-    "honestyFileTypes": "Only .ts, .tsx, .js, .jsx, .mjs and .cjs files are reviewed — other file types are skipped.",
+    "honestyFileTypes": "The model review reads only .ts, .tsx, .js, .jsx, .mjs and .cjs files. A pull request without them gets deterministic checks only, and the result says so.",
     "honestyMergeBase": "Reviewed are your changes against the merge-base — code that was already committed and pushed before is not part of the diff scan.",
     "tabs": {
       "github": "PR reviews on GitHub",
@@ -493,7 +493,7 @@
         },
         "languages": {
           "question": "Which languages are covered?",
-          "answer": "The model review reads TypeScript and JavaScript files. The deterministic pre-scan also covers Python, Java, Go, Rust, C and C++ and common config files. Today a pull request is only reviewed if it contains at least one TypeScript or JavaScript file; otherwise the check concludes as neutral with “Nothing to review”."
+          "answer": "The model review reads TypeScript and JavaScript files. The deterministic pre-scan also covers Python, Java, Go, Rust, C and C++ and common config files. A pull request without a TypeScript or JavaScript file gets deterministic checks only, if it changes Python, Java, Go, C, C++, PowerShell, Terraform, YAML or JSON files. No model reads it then: the check is titled “Deterministic checks only” and stays neutral unless a critical finding fails it. Anything else, such as a docs-only pull request, still concludes as neutral with “Nothing to review”."
         },
         "outage": {
           "question": "What happens when a review fails?",

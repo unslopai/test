@@ -59,6 +59,7 @@ interface TerminalUpdatePayload {
         };
         files_reviewed: number;
         nothing_reviewed: boolean;
+        deterministic_only: boolean;
         omitted_files: readonly string[];
     };
 }
@@ -180,6 +181,53 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
         const persistedResult = capturedUpdatePayload().result;
         expect(persistedResult.nothing_reviewed).toBe(false);
         expect(persistedResult.files_reviewed).toBe(1);
+    });
+
+    it('persists a run without model review as deterministic_only, with its findings and the reason in the summary', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            prescanIssues: [buildReviewIssue({ rule: 'SEC-005 (Hardcoded secret)', source: 'pre-scanner' })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        }));
+
+        const persistedResult = capturedUpdatePayload().result;
+        expect(persistedResult.deterministic_only).toBe(true);
+        expect(persistedResult.nothing_reviewed).toBe(false);
+        expect(persistedResult.files_reviewed).toBe(0);
+        expect(persistedResult.review.issues).toHaveLength(1);
+        expect(persistedResult.review.summary).toBe(
+            'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model '
+            + 'reviewed it. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+        );
+    });
+
+    it('falls back to nothing_reviewed when the pre-scanner did not run for a diff without reviewable files', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            llmSkipped: true,
+            abortReason: 'No reviewable code files in this pull request.',
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+            prescanStats: null,
+        }));
+
+        const persistedResult = capturedUpdatePayload().result;
+        expect(persistedResult.nothing_reviewed).toBe(true);
+        expect(persistedResult.deterministic_only).toBe(false);
+        expect(persistedResult.review.summary).toBe('No reviewable code files in this pull request.');
     });
 
     it('writes no fingerprint in the abort path', async () => {

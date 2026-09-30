@@ -941,5 +941,11 @@
     ],
     "negativeControl": true,
     "expected": []
+  },
+  "r26-clean-config.diff": {
+    "description": "Negative control for the deterministic lane: clean Kubernetes, Terraform, package.json and a Markdown runbook that quotes insecure patterns (no JS/TS file, so production runs the pre-scanner only)",
+    "detectedEcosystems": null,
+    "negativeControl": true,
+    "expected": []
   }
 }

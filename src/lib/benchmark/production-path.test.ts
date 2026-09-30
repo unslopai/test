@@ -23,12 +23,21 @@ describe('planProductionPath', () => {
         expect(resolveProductionLane(pythonFile.filename, mixedPlan)).toBe('prescan-only');
     });
 
-    it('aborts a fixture without a reviewable file: no lane scans it', () => {
+    it('gives a fixture without a reviewable file to the pre-scanner only (stage 1)', () => {
         const pythonOnlyPlan = planProductionPath([pythonFile]);
 
-        expect(pythonOnlyPlan.aborted).toBe(true);
-        expect(pythonOnlyPlan.prescanFiles).toEqual([]);
-        expect(resolveProductionLane(pythonFile.filename, pythonOnlyPlan)).toBe('not-scanned');
+        expect(pythonOnlyPlan.aborted).toBe(false);
+        expect(pythonOnlyPlan.reviewableFiles).toEqual([]);
+        expect(resolveProductionLane(pythonFile.filename, pythonOnlyPlan)).toBe('prescan-only');
+    });
+
+    it('aborts a docs-only fixture: no lane scans it', () => {
+        const markdownFile = buildPullRequestFile({ filename: 'docs/CHANGELOG.md' });
+        const docsOnlyPlan = planProductionPath([markdownFile]);
+
+        expect(docsOnlyPlan.aborted).toBe(true);
+        expect(docsOnlyPlan.prescanFiles).toEqual([]);
+        expect(resolveProductionLane(markdownFile.filename, docsOnlyPlan)).toBe('not-scanned');
     });
 });
 

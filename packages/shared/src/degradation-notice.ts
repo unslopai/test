@@ -36,3 +36,25 @@ export function formatDraftPartialNotice(unreviewedFiles: readonly string[] | un
     return `Reduced coverage: the AI review failed on ${unreviewedFiles.length} ${fileNoun} — `
         + `not reviewed: ${unreviewedFiles.join(', ')}.`;
 }
+
+/** Wo ein Lauf ohne Modell-Review stattfand: im PR (voller Dateiinhalt) oder auf einem hochgeladenen Diff. */
+export type DeterministicOnlySurface = 'pull_request' | 'local_diff';
+
+const DETERMINISTIC_ONLY_NOTICES: Readonly<Record<DeterministicOnlySurface, string>> = {
+    pull_request: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, '
+        + 'so no model reviewed it.',
+    // CLI, Extension und MCP laden nur den Diff hoch: ohne Dateiinhalt laufen
+    // keine AST- und Config-Regeln (LANGUAGE_COVERAGE_SPEC §4.2: 7 statt 27 von 69).
+    local_diff: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, '
+        + 'so no model reviewed it. Without file contents only the regex and registry rules ran; '
+        + 'the AST and config rules need a pull request.',
+};
+
+/**
+ * EINE Formulierung dafür, dass kein Modell gelesen hat und warum
+ * (LANGUAGE_COVERAGE_SPEC §6.2) — für Check Run, PR-Kommentar und die
+ * gespeicherte Summary, die CLI, Extension und MCP anzeigen.
+ */
+export function formatDeterministicOnlyNotice(surface: DeterministicOnlySurface): string {
+    return DETERMINISTIC_ONLY_NOTICES[surface];
+}

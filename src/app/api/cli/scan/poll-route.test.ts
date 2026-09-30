@@ -147,6 +147,27 @@ describe('GET /api/cli/scan/[jobId] — phase contract (MCP_SPEC §4.1)', () => 
         expect(pollResponse.result.summary).toBe('All changed code files exceed the review size cap.');
     });
 
+    it("returns outcome 'deterministic_only' with the scanned-file count, not 'nothing_reviewed' (LANGUAGE_COVERAGE_SPEC §6.2)", async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: false, issues: [], summary: 'Deterministic checks only: no model reviewed it.' },
+                files_reviewed: 0,
+                nothing_reviewed: false,
+                deterministic_only: true,
+                prescan: { filesScanned: 2 },
+                omitted_files: [],
+                cognitive_integrity_score: null,
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.outcome).toBe('deterministic_only');
+        expect(pollResponse.result.filesReviewed).toBe(0);
+        expect(pollResponse.result.filesScanned).toBe(2);
+    });
+
     it("derives 'nothing_reviewed' for legacy terminal blobs without the marker (files_reviewed 0)", async () => {
         // Jobs, die vor dem Ehrlichkeits-Fix persistiert wurden, tragen weder
         // nothing_reviewed noch omitted_files — 0 geprüfte Dateien dürfen sich
