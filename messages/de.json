@@ -1,0 +1,555 @@
+{
+  "common": {
+    "appName": "Unslop",
+    "loading": "Wird geladen…",
+    "backToDashboard": "Dashboard"
+  },
+  "localeSwitcher": {
+    "label": "Sprache",
+    "en": "Englisch",
+    "de": "Deutsch",
+    "switchTo": "Zu {locale} wechseln"
+  },
+  "login": {
+    "heading": "Anmelden",
+    "back": "Zurück",
+    "subtitle": "Melde dich an, um deine Repositories zu verbinden.",
+    "loginWithGitHub": "Mit GitHub anmelden",
+    "scopesNotice": "Wir fordern die Scopes <repo>repo</repo>, <hook>admin:repo_hook</hook> und <org>read:org</org> an, um deine Repositories zu lesen, Webhooks zu verwalten und die Berechtigung für Organisations-Installationen zu prüfen; die Anmeldung selbst liest deine GitHub-E-Mail-Adresse (user:email)."
+  },
+  "dashboardNav": {
+    "brand": "Gatekeeper",
+    "repositories": "Repositories",
+    "apiKeys": "API-Schlüssel",
+    "billing": "Abrechnung",
+    "getStarted": "Erste Schritte"
+  },
+  "onboarding": {
+    "title": "Erste Schritte",
+    "previewBadge": "Vorschau",
+    "comingSoon": "Bald verfügbar",
+    "cliComingSoonNote": "CLI und Editor-Erweiterung sind noch nicht veröffentlicht — dieser Weg wird zum Launch freigeschaltet.",
+    "copied": "Kopiert",
+    "copyFailed": "Kopieren fehlgeschlagen — bitte kopiere den Befehl manuell.",
+    "copyCommand": "Befehl kopieren",
+    "guideLink": "Ausführliche Anleitung →",
+    "honestyFileTypes": "Geprüft werden nur .ts-, .tsx-, .js-, .jsx-, .mjs- und .cjs-Dateien — andere Dateitypen werden übersprungen.",
+    "honestyMergeBase": "Geprüft werden deine Änderungen gegen die Merge-Base — bereits committeter und gepushter Code ist nicht Teil des Diff-Scans.",
+    "tabs": {
+      "github": "PR-Reviews auf GitHub",
+      "cli": "Terminal & Editor"
+    },
+    "steps": {
+      "installApp": {
+        "title": "GitHub App installieren",
+        "description": "Autorisiere die offizielle Unslop GitHub App für deine Repositories.",
+        "action": "GitHub App installieren"
+      },
+      "activateRepo": {
+        "title": "Repository aktivieren",
+        "description": "Nutze den Aktivieren-Button in der Repository-Liste unten."
+      },
+      "openPr": {
+        "title": "Pull Request öffnen",
+        "description": "Das Review erscheint als Check direkt am PR."
+      },
+      "installCli": {
+        "title": "CLI installieren"
+      },
+      "login": {
+        "title": "Anmelden"
+      },
+      "firstScan": {
+        "title": "Ersten Scan laufen lassen"
+      }
+    },
+    "guide": {
+      "intro": "Wähle, wie du Unslop nutzen willst — beide Wege enden beim ersten Scan-Ergebnis. Der Fortschritt unten wird live aus deinem Account abgeleitet.",
+      "github": {
+        "installApp": "Die GitHub App postet Reviews als native Checks an deine Pull Requests. Installiere sie einmal für deinen Account oder deine Organisation und wähle, welche Repositories sie sehen darf.",
+        "activateRepo": "Das Aktivieren registriert ein Repository beim Gatekeeper und startet eine einmalige Indexierung seiner API-Oberfläche. Nur aktivierte Repositories werden reviewt.",
+        "openPr": "Ab jetzt wird jeder Pull Request automatisch reviewt — Findings landen als Check Run und als Review-Kommentare am PR."
+      },
+      "cli": {
+        "installCli": "Die CLI lässt dieselbe Review-Pipeline über deine lokalen Änderungen laufen, bevor etwas einen Pull Request erreicht.",
+        "login": "Öffnet das Dashboard im Browser und hinterlegt einen API-Schlüssel für diesen Rechner. Unter API-Schlüssel kannst du Schlüssel jederzeit einsehen und widerrufen.",
+        "firstScan": "Scannt deine getrackten Änderungen gegen die Merge-Base und zeigt die Findings im Terminal — ganz ohne Konfiguration."
+      },
+      "extensionTitle": "VS-Code-Erweiterung",
+      "extensionBody": "Die Erweiterung zeigt Findings direkt im Editor und lässt dich Fixes prüfen und übernehmen, ohne ihn zu verlassen. Sie nutzt dieselbe Anmeldung wie die CLI.",
+      "extensionInstall": "Installiere sie aus dem VS Code Marketplace und klicke das Schild in der Statusleiste, um zu scannen.",
+      "ciNote": "CI-Hinweis: unslop scan beendet sich mit einem Exit-Code ungleich 0, sobald ein CRITICAL-Finding bestätigt ist — der Build schlägt fehl."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "activeBadge": "{count} aktiv",
+    "signOut": "Abmelden",
+    "scansPausedBanner": "Scans sind pausiert — kein aktives Abo oder Trial. <trialLink>Starte deine 14-tägige Testphase</trialLink>",
+    "yourRepositories": "Deine Repositories",
+    "installGitHubApp": "GitHub App installieren",
+    "refresh": "Aktualisieren",
+    "refreshing": "Laden…",
+    "loadingRepos": "Lade Repositories…",
+    "noRepos": "Keine Repositories gefunden.",
+    "signInAgain": "Neu anmelden",
+    "tryAgain": "Erneut versuchen",
+    "statusActive": "Gatekeeper aktiv",
+    "statusSyncing": "Synchronisiert…",
+    "statusError": "Fehler",
+    "statusPendingActivation": "GitHub App installiert — noch nicht aktiviert",
+    "statusNotConnected": "Nicht verbunden",
+    "privateBadge": "Privat",
+    "prReviewsBadge": "PR Reviews",
+    "prReviewsTooltip": "Webhook registriert — PRs werden automatisch reviewt",
+    "cliOnlyBadge": "Nur CLI",
+    "cliOnlyTooltip": "Kein Webhook registriert — Reviews nur per CLI-Scan. Auf der Repo-Detailseite aktivierbar.",
+    "detailsLink": "Details",
+    "band": {
+      "quotaLabel": "Scans diesen Monat",
+      "quotaTrialLabel": "Testphase-Scans",
+      "quotaValue": "{used} / {limit}",
+      "activeReposLabel": "Aktive Repositories",
+      "lastScanLabel": "Letzter Scan",
+      "lastScanNone": "Noch keine Scans"
+    },
+    "lastScan": {
+      "never": "nie gescannt",
+      "clean": "{relativeTime} · ✓ kein Slop",
+      "slop": "{relativeTime} · ✗ {count, plural, one {# Finding} other {# Findings}}",
+      "neutral": "{relativeTime} · — nichts geprüft"
+    },
+    "webhook": {
+      "description": "Automatische PR-Reviews laufen über einen Repo-Webhook (per GitHub OAuth, Admin-Recht erforderlich). CLI-Scans funktionieren unabhängig davon.",
+      "checking": "Prüfe Webhook auf GitHub…",
+      "recheck": "Neu prüfen",
+      "enablePrReviews": "PR Reviews aktivieren",
+      "repairWebhook": "Webhook reparieren",
+      "settingUp": "Richte ein…",
+      "staleUrlDetail": "Registriert: <registered>{hookUrl}</registered> — erwartet: <expected>{expectedUrl}</expected>",
+      "health": {
+        "healthy": "Aktiv",
+        "app_managed": "GitHub App",
+        "not_configured": "Nicht eingerichtet",
+        "broken_missing": "Webhook gelöscht",
+        "broken_stale_url": "Veraltete URL",
+        "broken_delivery": "Zustellung gestört"
+      },
+      "errors": {
+        "healthCheckFailed": "Health-Check fehlgeschlagen.",
+        "webhookSetupFailed": "Webhook-Einrichtung fehlgeschlagen.",
+        "network": "Netzwerkfehler"
+      }
+    },
+    "errors": {
+      "connected": "GitHub App verbunden. Deine Repositories erscheinen gleich hier.",
+      "not_owner": "Diese Installation gehört einem GitHub-Account, den du nicht verwaltest. Für Organisationen musst du Owner (Admin) der Organisation sein.",
+      "already_linked": "Diese Installation ist bereits mit einem anderen Unslop-Account verknüpft.",
+      "reauth_required": "Wir dürfen deine Organisations-Rolle noch nicht prüfen. Melde dich einmal neu an und rufe die Installation danach erneut auf.",
+      "link_failed": "Die Installation konnte nicht verknüpft werden.",
+      "sync_failed": "Die Installation ist verknüpft, aber deine Repositories konnten nicht vollständig geladen werden.",
+      "invalid_installation": "Ungültige Installations-ID.",
+      "not_configured": "Die GitHub App ist in dieser Umgebung nicht konfiguriert.",
+      "reposLoadFailed": "Repositories konnten nicht geladen werden.",
+      "network": "Netzwerkfehler",
+      "connectFailed": "Verbindung fehlgeschlagen.",
+      "disconnectFailed": "Trennung fehlgeschlagen.",
+      "repository_empty": "Repository ist leer — ersten Commit pushen.",
+      "unknown": "Etwas ist schiefgelaufen."
+    }
+  },
+  "repoActions": {
+    "activate": "Aktivieren",
+    "connecting": "Verbinde…",
+    "syncing": "Synchronisiere…",
+    "reconnect": "Erneut verbinden"
+  },
+  "repoDetail": {
+    "backToRepos": "← Repos",
+    "viewOnGitHub": "Auf GitHub ansehen",
+    "webhookHeading": "PR-Webhook",
+    "history": {
+      "heading": "Scan-Historie",
+      "refresh": "Aktualisieren",
+      "refreshing": "Laden…",
+      "loading": "Lade Scan-Historie…",
+      "loadFailed": "Die Scan-Historie konnte nicht geladen werden.",
+      "empty": "Noch kein Scan — öffne einen Pull Request, dann erscheint das erste Review hier.",
+      "loadMore": "Ältere Scans laden",
+      "loadingMore": "Laden…",
+      "prLink": "PR #{number}",
+      "localScan": "Lokaler Scan",
+      "integrity": "Integrity {score}",
+      "statusRunning": "Läuft…",
+      "statusError": "Scan fehlgeschlagen",
+      "verdictClean": "✓ kein Slop",
+      "verdictSlop": "✗ {count, plural, one {# Finding} other {# Findings}}",
+      "verdictNeutral": "— nichts geprüft",
+      "toggleFindings": "Findings"
+    },
+    "findings": {
+      "sourcePrescan": "Pre-Scan",
+      "sourceLlm": "LLM",
+      "confidence": "Konfidenz {value}"
+    },
+    "dangerZone": {
+      "heading": "Gefahrenzone",
+      "description": "Das Deaktivieren stoppt PR-Reviews für dieses Repository sofort.",
+      "deactivate": "Repository deaktivieren"
+    }
+  },
+  "confirmDialogs": {
+    "deactivateRepo": {
+      "title": "Repository deaktivieren?",
+      "body": "PR-Reviews für {fullName} stoppen sofort. Du kannst das Repository jederzeit wieder aktivieren.",
+      "confirm": "Deaktivieren",
+      "busy": "Deaktiviere…",
+      "cancel": "Abbrechen"
+    },
+    "revokeKey": {
+      "title": "API-Schlüssel widerrufen?",
+      "body": "<name>{label}</name> (<code>{prefix}</code>) funktioniert danach sofort nicht mehr — in CLI, IDE-Erweiterung und CI.",
+      "lastUsed": "Zuletzt genutzt {relativeTime}.",
+      "neverUsed": "Dieser Schlüssel wurde nie genutzt.",
+      "irreversible": "Das kann nicht rückgängig gemacht werden.",
+      "confirm": "Schlüssel widerrufen",
+      "busy": "Widerrufe…",
+      "cancel": "Abbrechen"
+    },
+    "cancelSubscription": {
+      "title": "Abo kündigen?",
+      "body": "Dein Abo läuft bis {date}. Danach stoppen Scans.",
+      "resumeNote": "Bis dahin kannst du das Abo jederzeit fortsetzen.",
+      "confirm": "Abo kündigen",
+      "cancel": "Abo behalten"
+    }
+  },
+  "toasts": {
+    "close": "Schließen",
+    "repoActivated": "{fullName} aktiviert — erste Synchronisierung läuft.",
+    "keyCreated": "API-Schlüssel erstellt.",
+    "reviewsStopped": "PR-Reviews für {fullName} gestoppt."
+  },
+  "installAppModal": {
+    "title": "GitHub App erforderlich",
+    "body": "Um Unslop Gatekeeper für <name>{repoName}</name> zu aktivieren, musst du unsere offizielle GitHub App auf diesem Repository autorisieren.",
+    "costNote": "Nach der Installation kehrst du hierher zurück und das Repository lässt sich aktivieren. Die Indexierung startet erst dann — die Installation allein verursacht keine Kosten.",
+    "install": "GitHub App installieren",
+    "later": "Später"
+  },
+  "billing": {
+    "heading": "Abrechnung",
+    "intro": "Scans erfordern ein aktives Abo oder eine Testphase. Zahlung, Rechnungen und Steuern werden von Paddle abgewickelt.",
+    "loadError": "Der Abrechnungsstatus konnte nicht geladen werden.",
+    "actionError": "Die Abrechnungsaktion ist fehlgeschlagen. Versuche es erneut.",
+    "currentPlan": "Aktueller Plan",
+    "cancellationNotice": "⚠️ Kündigung geplant — der Zugang endet am {date}. Bis dahin kannst du das Abo fortsetzen.",
+    "resubscribe": "Erneut abonnieren",
+    "startTrial": "14-tägige Testphase starten",
+    "cancelSubscription": "Abo kündigen",
+    "resumeSubscription": "Abo fortsetzen",
+    "processingCheckout": "Zahlung eingegangen — dein Abo wird aktiviert…",
+    "processingTimeout": "Zahlung eingegangen — die Aktivierung dauert etwas länger. Lade die Seite gleich neu.",
+    "showInvoices": "Rechnungen anzeigen",
+    "invoicesLoading": "Rechnungen werden geladen…",
+    "invoicesEmpty": "Noch keine Rechnungen.",
+    "invoiceDownload": "PDF",
+    "scansThisMonth": "{used} / {limit} Scans diesen Monat genutzt",
+    "trialScansOnly": "Testphase: {used} / {limit} Scans genutzt",
+    "trialScansAndEscalations": "Testphase: {scansUsed} / {scansLimit} Scans genutzt · {escalationsUsed} / {escalationsLimit} tiefe Eskalationen genutzt",
+    "trialLimitReached": "Testphase-Limit erreicht — upgrade, um weiter zu scannen.",
+    "trialLimitInfo": "Testphase-Limits gelten für die gesamte Testphase, nicht pro Monat.",
+    "status": {
+      "none": "Kein Abo — Scans sind pausiert",
+      "trialing": "{planName} — Testphase bis {date}",
+      "active": "{planName} — aktiv, verlängert sich am {date}",
+      "pastDue": "Zahlung fehlgeschlagen — Scans sind pausiert, bis die Zahlung gelingt",
+      "paused": "Abo pausiert — Scans sind pausiert",
+      "canceled": "Abo beendet — erneut abonnieren, um Scans fortzusetzen",
+      "complimentary": "Kostenloser Zugang",
+      "unknown": "{status} — Scans sind pausiert"
+    }
+  },
+  "apiKeys": {
+    "heading": "API-Schlüssel",
+    "intro": "Maschinen-Zugangsdaten für CLI, IDE-Erweiterung und CI. Schlüssel werden bei der Erstellung nur einmal angezeigt.",
+    "loadError": "Die API-Schlüssel konnten nicht geladen werden.",
+    "createError": "Erstellung des Schlüssels fehlgeschlagen.",
+    "revokeError": "Widerruf des Schlüssels fehlgeschlagen.",
+    "labelPlaceholder": "Label (z.B. laptop-cli, ci-pipeline)",
+    "create": "Schlüssel erstellen",
+    "creating": "Wird erstellt…",
+    "copyOnce": "Kopiere diesen Schlüssel jetzt — er wird nicht erneut angezeigt:",
+    "active": "Aktiv",
+    "revoked": "Widerrufen",
+    "lastUsed": "Zuletzt genutzt {date}",
+    "neverUsed": "Nie genutzt",
+    "revoke": "Widerrufen",
+    "empty": "Noch keine API-Schlüssel."
+  },
+  "cliAuth": {
+    "heading": "Die unslop-CLI autorisieren",
+    "intro": "Ein Terminal auf diesem Rechner (<device>{deviceLabel}</device>) fordert einen API-Schlüssel an. Der Schlüssel wird für dein Konto erstellt und an <host>{callbackHost}</host> gesendet — er verlässt deinen Computer nie.",
+    "needsSubscription": "Du brauchst ein aktives Abo oder eine Testphase, um API-Schlüssel zu erstellen. <billingLink>Abrechnung öffnen</billingLink>, dann führe <cmd>unslop login</cmd> erneut aus.",
+    "keyLimit": "API-Schlüssel-Limit erreicht — widerrufe zuerst einen ungenutzten Schlüssel unter <keysLink>API-Schlüssel</keysLink>.",
+    "failed": "Autorisierung fehlgeschlagen. Versuche es erneut.",
+    "authorizing": "Autorisiere…",
+    "authorize": "CLI autorisieren"
+  },
+  "marketing": {
+    "meta": {
+      "title": "Unslop — Review-Gate für KI-generierten Code",
+      "description": "Unslop prüft KI-generierten Code an jedem Pull Request: erst deterministische Checks, dann ein Modell-Review, dessen Findings ein zweites Modell blind gegenprüft. Jedes Finding nennt seine Regel. In der Private Beta.",
+      "ogTitle": "Review-Gate für KI-generierten Code",
+      "ogTagline": "Erst deterministische Checks. Modell-Findings blind gegengeprüft. Übersprungene Stufen ausgewiesen."
+    },
+    "a11y": {
+      "skipToContent": "Zum Inhalt springen",
+      "mainNavigation": "Hauptnavigation",
+      "languageSwitcher": "Sprache"
+    },
+    "nav": {
+      "findings": "Findings",
+      "mechanism": "So funktioniert’s",
+      "architecture": "Plattform",
+      "faq": "FAQ",
+      "login": "Anmelden"
+    },
+    "hero": {
+      "eyebrow": "Review-Gate für KI-generierten Code",
+      "headline": "Sieht im Review gut aus. <accent>Bricht in Produktion.</accent>",
+      "bluf": "Unslop prüft jeden Pull Request auf die Art, wie KI-geschriebener Code scheitert: verschluckte Fehler, Pakete, die es nicht gibt, SQL aus zusammengesetzten Strings, Tests ohne Assertion.",
+      "sub": "Zuerst läuft ein deterministischer Pre-Scan. Dann prüft ein Modell den Diff, und ein zweites Modell prüft dessen Findings gegen, ohne die Begründung des ersten zu sehen. Jedes Finding nennt seine Regel und zitiert den Code.",
+      "status": "Private Beta. Die Registrierung ist geschlossen, und CLI, Editor-Extension und MCP-Server sind noch nicht veröffentlicht.",
+      "ctaPrimary": "Echtes Finding ansehen",
+      "ctaSecondary": "So entsteht das Urteil",
+      "tagline": "Das Finding zeigen. Das Urteil erklären. Sagen, was übersprungen wurde.",
+      "exhibitCaption": "Echte Ausgabe, kein Mock-up: Check Run und Review-Kommentar an Pull Request #20 in unserem eigenen Test-Repository, 30.09.2026. Dieses Finding stammt aus dem deterministischen Pre-Scan."
+    },
+    "findings": {
+      "eyebrow": "Zeigen statt behaupten",
+      "heading": "Zwei weitere Findings, so wie sie gespeichert sind",
+      "intro": "Beide stammen aus Scans unseres eigenen Test-Repositorys. Regel, zitierter Code, Erklärung und Fix sind Produktausgabe, unbearbeitet. Das Produkt schreibt seine Findings auf Englisch.",
+      "quoteLabel": "Zitierter Code",
+      "fixLabel": "Vorgeschlagener Fix",
+      "cards": {
+        "confirmed": {
+          "label": "Modell-Finding, von der blinden Gegenprüfung bestätigt",
+          "caption": "CLI-Scan vom 17.09.2026, Job 0cf82b14. Das prüfende Modell hat das Finding entworfen. Das zweite Modell hat es allein aus Regel und zitiertem Code bestätigt."
+        },
+        "downgraded": {
+          "label": "Modell-Finding, herabgestuft, weil eine Stufe übersprungen wurde",
+          "caption": "Pull Request #17, 26.09.2026, Job f2c676ba. Für diesen Lauf haben wir das Zeitbudget absichtlich auf 150 Sekunden gekürzt, um diesen Pfad zu testen. Der dritte Durchgang lief nicht, also wurde das Finding zur Warnung herabgestuft, und der Kommentar sagt, warum."
+        }
+      },
+      "measurement": {
+        "eyebrow": "Unsere eigene Messung",
+        "heading": "Eine Zahl, mit ihren Grenzen",
+        "result": "<strong>125 von 126</strong> absichtlich eingebauten Regelverstößen gefunden, <strong>0</strong> Fehlalarme auf 4 sauberen Kontroll-Fixtures.",
+        "method": "Methode: unser Rule-Recall-Benchmark. Wir bauen bekannte Verstöße in Test-Fixtures ein und zählen einen als gefunden, wenn der Pre-Scan oder das Modell-Review die erwartete Regel in der erwarteten Datei meldet.",
+        "run": "Lauf: 16.09.2026, ein Volllauf. Modelle: Gemini 3.8 Flash für das Review, Gemini 3.6 Flash für die blinde Gegenprüfung.",
+        "limits": "Grenzen: Die Fixtures haben wir selbst geschrieben; es sind keine Kunden-Repositorys. Es ist ein einzelner Lauf, und Ergebnisse schwanken zwischen Läufen. Der Benchmark läuft ohne Zeitbudget und ohne Repository-Kontext, und er gibt jede Fixture-Datei an das Modell-Review. In Produktion liest das Modell-Review nur TypeScript- und JavaScript-Dateien. 69 der 126 Verstöße liegen in anderen Dateitypen, die das Modell im echten Pull Request nicht sieht. Auf einer größeren Fixture mit 48 eingebauten Verstößen (29.09.2026, zwei Läufe) lag das Ergebnis beide Male bei 46 von 48. Das Modell für den dritten Durchgang wurde seit diesem Lauf gewechselt."
+      }
+    },
+    "pillarDeterministic": {
+      "eyebrow": "Erst deterministisch",
+      "header": "55 Regeln prüft Code, kein Modell.",
+      "paragraphDetectors": "Der Pre-Scan läuft vor jedem Modell-Aufruf. Er nutzt Pattern-Matcher, Syntaxbaum-Abfragen, Config-Checks, Lint-Regeln und Abfragen der Paket-Registry und hat einen Detektor für <strong>55 Regel-IDs</strong>.",
+      "paragraphNoRejudge": "Ein deterministisches Finding wird nie von einem Modell neu beurteilt. Meldet das Modell dieselbe Regel an derselben Stelle, gewinnt das deterministische Finding. Im Ergebnis ist es als <strong>deterministic</strong> markiert."
+    },
+    "pillarModel": {
+      "eyebrow": "Modell-Review, blind gegengeprüft",
+      "header": "Ein zweites Modell prüft jedes Finding gegen, ohne die Begründung des ersten.",
+      "paragraphDraft": "Der Regelkatalog hat <strong>119 Einträge</strong>. Regeln ohne Detektor brauchen Urteilsvermögen, also prüft ein Modell den Diff gegen die Regeln, die zu deinem Stack passen. Manche Regeln beschreiben Prozesse und lassen sich an einem Diff gar nicht prüfen. Was das Modell meldet, ist eine Behauptung, noch kein Finding.",
+      "paragraphBlind": "Ein zweites Modell bekommt nur die Regel, die Fundstelle, den zitierten Code und den Diff. Erklärung, Schweregrad und Fix des ersten Modells sieht es nicht. Es antwortet <strong>confirmed</strong>, <strong>refuted</strong> oder <strong>uncertain</strong>. Widerlegte Behauptungen fallen weg. Unsichere sowie kritische, die widerlegt oder nur schwach bestätigt wurden, bekommen einen dritten Durchgang. Was unsicher bleibt, wird zur Warnung und sagt das auch.",
+      "paragraphHonest": "Zwei Dinge solltest du wissen. Alle Modelle sind Gemini-Modelle eines Anbieters: Die Unabhängigkeit kommt daher, was das zweite Modell nicht zu sehen bekommt, nicht aus einer anderen Modellfamilie. Und nicht jedes Finding bekommt die blinde Gegenprüfung: Große Diffs können in einem einzelnen Durchgang ohne sie geprüft werden, und das Review sagt das dann."
+    },
+    "pillarDegradation": {
+      "eyebrow": "Wenn eine Stufe ausfällt",
+      "header": "Eine übersprungene Stufe wird ausgewiesen, nicht versteckt.",
+      "paragraphBudget": "Jedes Review hat ein Zeitbudget von <strong>300 Sekunden</strong>. Wenn die Gegenprüfung oder der dritte Durchgang wegen Zeit, eines Modellfehlers oder eines aufgebrauchten Budgets nicht laufen kann, gelten die Findings nicht stillschweigend als verifiziert. Ein Finding, das auf den dritten Durchgang gewartet hat, wird mit einem Hinweis zur Warnung herabgestuft. Lief die Gegenprüfung nicht, steht beim Konfidenz-Score „n/a“ statt einer Zahl.",
+      "paragraphNotice": "Pull Request, Check Run und CLI tragen dann dieselbe Zeile, zum Beispiel: „Reduced confidence: time budget exhausted — skipped: blind verification (some or all findings).“ Scheitert das Modell-Review an einzelnen Dateien, werden diese Dateien namentlich genannt.",
+      "punchlineLabel": "Aus der CLI",
+      "punchline": "„Nothing was reviewed — this is NOT a clean verdict.“"
+    },
+    "verdictTable": {
+      "eyebrow": "Wer entscheidet",
+      "heading": "Welcher Teil des Urteils woher kommt",
+      "columnCheck": "Frage",
+      "columnPrescan": "Deterministischer Pre-Scan",
+      "columnModel": "Modell-Review",
+      "rows": {
+        "rules": {
+          "check": "Regeln",
+          "prescan": "55 Regel-IDs mit Detektor",
+          "model": "Regeln, die Urteilsvermögen brauchen, aus einem Katalog von 119"
+        },
+        "production": {
+          "check": "So entsteht ein Finding",
+          "prescan": "Code: Patterns, Syntaxbaum, Config-Checks, Lint-Regeln, Registry-Abfragen",
+          "model": "Ein Modell entwirft es, ein zweites prüft es blind gegen"
+        },
+        "files": {
+          "check": "Dateien",
+          "prescan": "TypeScript, JavaScript, Python, Java, Go, Rust, C und C++, dazu Config-Dateien wie YAML, JSON, Terraform und TOML",
+          "model": "Nur TypeScript und JavaScript"
+        },
+        "gate": {
+          "check": "Kann es den Check scheitern lassen?",
+          "prescan": "Ja. Ein CRITICAL-Finding lässt den Check scheitern.",
+          "model": "Ja. Ein CRITICAL-Finding lässt den Check scheitern, ein Urteil kann also auf einem Modell-Finding beruhen."
+        },
+        "label": {
+          "check": "Im Ergebnis markiert als",
+          "prescan": "deterministic",
+          "model": "confirmed, uncertain oder unverified"
+        }
+      }
+    },
+    "problems": {
+      "eyebrow": "Das Problem",
+      "heading": "Was durchs Review rutscht",
+      "items": {
+        "swallowedErrors": {
+          "claim": "„Es lief ohne Fehler.“",
+          "rebuttal": "Weil der Fehler gefangen und verworfen wurde. Ein catch-Block, der loggt und null zurückgibt, sieht im Diff ordentlich aus und versteckt den Ausfall in Produktion. Das bestätigte Finding oben ist genau das."
+        },
+        "inventedPackages": {
+          "claim": "„Der Import sah plausibel aus.“",
+          "rebuttal": "Der Paketname war erfunden. Unslop schlägt die in package.json, requirements.txt, pyproject.toml und Cargo.toml deklarierten Abhängigkeiten in ihrer Registry nach (Regel SEC-035)."
+        },
+        "greenTests": {
+          "claim": "„Die Tests sind grün.“",
+          "rebuttal": "Ein Test ohne Assertion ist immer grün. Tests ohne Assertion sind eine der deterministischen Regeln (TEST-001)."
+        },
+        "unreadDiff": {
+          "claim": "„Ich habe nicht alle vierzig Dateien gelesen.“",
+          "rebuttal": "Der Agent hat mehr geändert, als irgendjemand gelesen hat. Unslop prüft jeden Push auf den Pull Request erneut und kommentiert an der betroffenen Zeile."
+        }
+      }
+    },
+    "architectureSpec": {
+      "eyebrow": "Plattform",
+      "heading": "Ein Review, vier Oberflächen",
+      "intro": "Pull Request, Terminal, Editor, Coding-Agent.",
+      "rows": {
+        "rules": {
+          "term": "Regelkatalog",
+          "definition": "119 Regeln, jede mit einer ID. 55 haben einen deterministischen Detektor. Das Modell-Review bekommt die Regeln, die zu deinem Stack passen; manche Regeln beschreiben Prozesse und lassen sich an einem Diff nicht prüfen."
+        },
+        "enforcement": {
+          "term": "PR-Gate",
+          "definition": "GitHub App. Jedes Review ist ein Check Run namens „Anti-Slop Gatekeeper“ plus Kommentare an den Zeilen. Ein CRITICAL-Finding lässt den Check scheitern; Warnungen enden als neutral."
+        },
+        "retrieval": {
+          "term": "Repository-Kontext",
+          "definition": "Bei verbundenen Repositorys werden Signaturen und Typdefinitionen aus deinem Code als Kontext für das Modell abgerufen. Sie informieren das Review; einen Regelverstoß entschuldigen sie nie."
+        },
+        "rescans": {
+          "term": "Jeder Push",
+          "definition": "Jeder Push auf einen Pull Request wird für sich geprüft. Einen Vergleich mit der vorigen Revision gibt es nicht."
+        },
+        "integration": {
+          "term": "CLI, Editor, MCP",
+          "definition": "„unslop scan“ prüft deine lokalen Änderungen gegen die Merge-Base und kann vorgeschlagene Fixes anwenden. Die VS-Code-Extension zeigt Findings als Diagnostics. Ein MCP-Server bietet den Scan für Coding-Agents an. Alle drei sind gebaut und noch nicht veröffentlicht."
+        },
+        "webhooks": {
+          "term": "Webhook-Sicherheit",
+          "definition": "Jeder GitHub-Webhook wird über seine HMAC-SHA256-Signatur geprüft."
+        },
+        "tokens": {
+          "term": "Verschlüsselung",
+          "definition": "GitHub-OAuth-Tokens liegen mit AES-256-GCM verschlüsselt in der Datenbank. API-Keys werden als Hash gespeichert."
+        },
+        "planned": {
+          "term": "Geplant (Konzept)",
+          "definition": "Noch nicht gebaut: den Check scheitern lassen, wenn eine Revision mehr Findings bringt als die vorige, und ein zweiter Modellanbieter für die Gegenprüfung."
+        },
+        "limits": {
+          "term": "Ehrliche Grenzen",
+          "definition": "Nichts findet jeden Fehler in KI-geschriebenem Code, auch wir nicht. Das Modell-Review liest nur TypeScript und JavaScript, und seine Ergebnisse schwanken zwischen Läufen."
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "heading": "Häufige Fragen",
+      "items": {
+        "sourceCode": {
+          "question": "Speichert ihr unseren Quellcode oder trainiert ihr damit?",
+          "answer": "Wir trainieren nicht damit, und Google auch nicht: Die Service-Bedingungen von Vertex AI schließen aus, dass Google Prompts und Antworten von Kunden zum Training eigener Modelle nutzt. Die Review-Modelle laufen auf dem EU-Multiregion-Endpunkt von Vertex AI, für den Google zusagt, dass die ML-Verarbeitung innerhalb der EU-Mitgliedstaaten bleibt. Für einen Pull Request lesen wir den Diff und die geänderten Dateien von GitHub für das Review und speichern die Findings mit den zitierten Zeilen, nicht den Diff. Ein Scan aus der CLI oder dem MCP-Server lädt einen Diff hoch, und dieser Diff wird mit dem Scan gespeichert; vor dem Upload verweigert der Client jeden Diff, in dem er ein Secret erkennt. Der Repository-Index entsteht aus Signaturen, Interfaces und Typdefinitionen, nicht aus Implementierungslogik. GitHub-OAuth-Tokens liegen mit AES-256-GCM verschlüsselt in der Datenbank."
+        },
+        "ciSpeed": {
+          "question": "Bremst das unsere CI/CD oder blockiert unsere Merges?",
+          "answer": "Es läuft neben deiner CI, nicht in ihr. Der Webhook antwortet, sobald das Review registriert ist; das Review läuft dann als GitHub Check Run mit einer harten Grenze von 300 Sekunden. Nur CRITICAL-Findings lassen den Check scheitern; Warnungen enden als neutral und blockieren keinen Merge. Ob der Check verpflichtend ist, legst du in deiner Branch Protection fest."
+        },
+        "adoption": {
+          "question": "Muss mein Team noch ein Dashboard lernen?",
+          "answer": "Nein. Findings erscheinen als Check Run und als Review-Kommentare am Pull Request. Die CLI vergleicht deine getrackten Änderungen mit der Merge-Base, und die VS-Code-Extension zeigt Findings und wendet vorgeschlagene Fixes im Editor an; beide sind gebaut und noch nicht veröffentlicht. Das Dashboard ist für Repositorys, Scan-Historie, API-Keys und Abrechnung da."
+        },
+        "determinism": {
+          "question": "Ist das nur ein weiterer KI-Reviewer?",
+          "answer": "Zum Teil, und wir sagen, welcher Teil. 55 Regeln prüfen deterministische Detektoren, und diese Findings laufen nie durch ein Modell. Der Rest ist ein Modell-Review, und ein Finding daraus kann den Check scheitern lassen. Deshalb prüft ein zweites Modell die Findings gegen, ohne die Begründung des ersten zu sehen, und deshalb sagt das Review, wenn diese Gegenprüfung nicht stattgefunden hat. Modell-Aufrufe laufen mit Temperature 0; Ergebnisse schwanken trotzdem etwas zwischen Läufen."
+        },
+        "languages": {
+          "question": "Welche Sprachen werden abgedeckt?",
+          "answer": "Das Modell-Review liest TypeScript- und JavaScript-Dateien. Der deterministische Pre-Scan deckt zusätzlich Python, Java, Go, Rust, C und C++ sowie gängige Config-Dateien ab. Heute wird ein Pull Request nur geprüft, wenn er mindestens eine TypeScript- oder JavaScript-Datei enthält; sonst endet der Check als neutral mit „Nothing to review“."
+        },
+        "outage": {
+          "question": "Was passiert, wenn ein Review scheitert?",
+          "answer": "Der Check wird geschlossen und bleibt nicht hängen. Ein gescheitertes Review endet als Failure mit dem Grund im Check, zum Beispiel „Review timed out“. Ein Review, das gar nicht startet (kein Abo, Kontingent aufgebraucht, Repository deaktiviert), postet einen abgeschlossenen Check mit dem Ergebnis „action required“, der den Grund nennt. Ist der Check bei dir verpflichtend, gelten weiter die Branch-Protection-Overrides von GitHub."
+        }
+      }
+    },
+    "closingCta": {
+      "heading": "Das Finding zeigen. Das Urteil erklären. Sagen, was übersprungen wurde.",
+      "sub": "Unslop ist in der Private Beta. Die Registrierung ist vorerst geschlossen.",
+      "button": "Zurück zu den Findings",
+      "secondary": "Anmelden"
+    },
+    "waitlist": {
+      "emailLabel": "E-Mail-Adresse",
+      "placeholder": "du@firma.de",
+      "button": "Auf die Warteliste",
+      "sending": "Wird gesendet…",
+      "sent": "Schau in dein Postfach und bestätige den Link. Dann stehst du auf der Liste.",
+      "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "rateLimited": "Zu viele Versuche aus diesem Netzwerk. Probiere es in einer Stunde erneut.",
+      "error": "Das hat nicht geklappt. Bitte versuche es gleich noch einmal.",
+      "consent": "Double-Opt-In. Wir schreiben dir, wenn die private Beta öffnet, sonst nichts. <privacy>Datenschutz</privacy>",
+      "confirmed": {
+        "title": "Du stehst auf der Liste — Unslop",
+        "heading": "Du stehst auf der Liste.",
+        "body": "Deine E-Mail ist bestätigt. Wir melden uns, sobald die private Beta öffnet.",
+        "backLink": "Zurück zu unslop.codes"
+      }
+    },
+    "footer": {
+
+      "tagline": "Review-Gate für KI-generierten Code.",
+      "languageLabel": "Sprache",
+      "languageEnglish": "English",
+      "languageGerman": "Deutsch",
+      "loginLink": "Anmelden",
+      "dashboardLink": "Dashboard",
+      "rights": "© {year} Unslop. Alle Rechte vorbehalten."
+    },
+    "legal": {
+      "navLabel": "Rechtliches",
+      "links": {
+        "impressum": "Impressum",
+        "privacy": "Datenschutz",
+        "terms": "Nutzungsbedingungen",
+        "refund": "Erstattung",
+        "dpa": "AVV"
+      },
+      "titles": {
+        "impressum": "Impressum",
+        "privacy": "Datenschutzerklärung",
+        "terms": "Nutzungsbedingungen",
+        "refund": "Erstattungsrichtlinie",
+        "dpa": "Auftragsverarbeitungsvertrag"
+      }
+    }
+  }
+}
