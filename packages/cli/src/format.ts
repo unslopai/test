@@ -140,6 +140,18 @@ function printFixHint(): void {
     );
 }
 
+/**
+ * AI Act Art. 50(2): a review a model took part in is labelled as AI-generated.
+ * The server sets the flag; deterministic-only and nothing-reviewed results
+ * never carry it, and neither branch reaches this line. A server that predates
+ * the field sends none: only reviewed results get here, so label when in doubt.
+ */
+function printAiDisclosure(scanResult: ScanResult): void {
+    if (scanResult.aiGenerated ?? true) {
+        console.log(dim('AI-generated review. Check it before you rely on it.'));
+    }
+}
+
 export function printHumanResult(scanResult: ScanResult): void {
     // Before the zero-files guard: a deterministic-only scan reviewed 0 files
     // with a model by definition, but the pre-scanner did run.
@@ -156,6 +168,7 @@ export function printHumanResult(scanResult: ScanResult): void {
     if (!scanResult.hasSlop || scanResult.issues.length === 0) {
         console.log(green('✔ No AI slop found.') + dim(` (${scanResult.filesReviewed} file(s) reviewed)`));
         console.log(integrityScoreLine(scanResult));
+        printAiDisclosure(scanResult);
         return;
     }
 
@@ -163,6 +176,7 @@ export function printHumanResult(scanResult: ScanResult): void {
     const criticalCount = printResultCounts(scanResult.issues);
     console.log(dim(`Summary: ${sanitizeModelText(scanResult.summary)}`));
     console.log(integrityScoreLine(scanResult));
+    printAiDisclosure(scanResult);
 
     if (criticalCount > 0) printFixHint();
 }

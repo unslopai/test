@@ -383,3 +383,94 @@ describe('GET /api/cli/scan/[jobId] — reroll notice (MCP_SPEC §4.5)', () => {
         expect(pollResponse.rerollNotice).toBeUndefined();
     });
 });
+
+describe('GET /api/cli/scan/[jobId] — Feld aiGenerated (LEGAL_PAGES_SPEC §4a.3)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        resolveApiKeyMock.mockResolvedValue({ id: 'api-key-under-test', userId: 'user-under-test' });
+        repoSingleMock.mockResolvedValue({ data: { id: 'repo-under-test' }, error: null });
+    });
+
+    it('ist true für ein terminales Ergebnis mit Modell-Review, auch ohne Findings', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: false, issues: [], summary: 'No AI slop found.' },
+                files_reviewed: 3,
+                nothing_reviewed: false,
+                omitted_files: [],
+                cognitive_integrity_score: 97,
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.outcome).toBe('reviewed');
+        expect(pollResponse.result.aiGenerated).toBe(true);
+    });
+
+    it('ist false, wenn kein Modell gelesen hat (deterministic_only)', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: false, issues: [], summary: 'Deterministic checks only: no model reviewed it.' },
+                files_reviewed: 0,
+                deterministic_only: true,
+                prescan: { filesScanned: 2 },
+                cognitive_integrity_score: null,
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.aiGenerated).toBe(false);
+    });
+
+    it('ist false beim Short-Circuit des Pre-Scanners: Outcome reviewed, aber kein Modell lief', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: true, issues: [], summary: 'LLM review skipped: 3 critical structural violations found.' },
+                files_reviewed: 2,
+                nothing_reviewed: false,
+                prescan: { filesScanned: 2, llmSkipped: true },
+                cognitive_integrity_score: null,
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.outcome).toBe('reviewed');
+        expect(pollResponse.result.aiGenerated).toBe(false);
+    });
+
+    it('ist false, wenn nichts geprüft wurde', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: false, issues: [], summary: 'No reviewable code files in this diff.' },
+                files_reviewed: 0,
+                nothing_reviewed: true,
+                cognitive_integrity_score: null,
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.aiGenerated).toBe(false);
+    });
+
+    it('ist false für das Pre-Scan-Teilergebnis, obwohl dessen Outcome vorläufig reviewed heißt', async () => {
+        mockJobRow({
+            partial_result: {
+                phase: 'deterministic',
+                review: { has_slop: false, issues: [], summary: '0 deterministic findings; LLM analysis running.' },
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.partialResult.outcome).toBe('reviewed');
+        expect(pollResponse.partialResult.aiGenerated).toBe(false);
+    });
+});

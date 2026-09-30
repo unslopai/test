@@ -389,6 +389,8 @@ RLS enabled, no policies (service-role only), consistent with every other table 
 
 **Append-only is enforced at the database level**, not in application code — a `BEFORE UPDATE OR DELETE` trigger that raises. A ledger an application bug can rewrite is not a ledger, and the whole point of D8 is that the record survives the agent that wrote it.
 
+*(Amendment 2026-09-30, LEGAL_PAGES_SPEC §4a.2, migration 052 — built, applied on the day of incorporation: the ledger stays append-only against direct writes, but follows its parents. `repository_id` and `user_id` become `ON DELETE CASCADE`, `api_key_id` becomes `ON DELETE SET NULL`, and the trigger lets a row through only when the statement is a referential action of a parent deletion (`pg_trigger_depth() > 1`). Reason: retention decision E6 and Art. 17 GDPR — a dismissal must not outlive the repository or account it belongs to, and before this change a single dismissal blocked the deletion of both.)*
+
 The ledger has no read surface in v1. It is written now so the history exists when `ROADMAP.md` §10's CTO-facing "Longitudinal AI-Debt Ledger" is built; a ledger started later has no past.
 
 ### 4.5 Re-roll detection (D5)

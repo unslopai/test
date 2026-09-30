@@ -145,6 +145,33 @@ describe('unslop_scan — timing (MCP_SPEC §10)', () => {
         expect(safePayload.deepAnalysisPending).toBe(false);
     });
 
+    it('marks a finished model review as aiGenerated and a deterministic partial as not (AI Act Art. 50(2))', async () => {
+        const modelReviewDeps = buildDeps({
+            api: buildApi({
+                fetchScanStatus: vi.fn().mockResolvedValue({
+                    status: 'done',
+                    phase: 'complete',
+                    result: { ...PARTIAL_RESULT_FIXTURE, aiGenerated: true },
+                } satisfies ScanPollResponse),
+            }),
+        });
+        const partialDeps = buildDeps({
+            api: buildApi({
+                fetchScanStatus: vi.fn().mockResolvedValue({
+                    status: 'processing',
+                    phase: 'deterministic',
+                    partialResult: { ...PARTIAL_RESULT_FIXTURE, aiGenerated: false },
+                } satisfies ScanPollResponse),
+            }),
+        });
+
+        const modelReviewPayload = parseSafeSection((await runScanTool(modelReviewDeps, {})).content[0].text);
+        const partialPayload = parseSafeSection((await runScanTool(partialDeps, {})).content[0].text);
+
+        expect(modelReviewPayload.aiGenerated).toBe(true);
+        expect(partialPayload.aiGenerated).toBe(false);
+    });
+
     it('names the outcome of a finished scan: deterministic-only with zero findings is not a clean review', async () => {
         const deps = buildDeps({
             api: buildApi({
@@ -169,6 +196,7 @@ describe('unslop_scan — timing (MCP_SPEC §10)', () => {
 
         const safePayload = parseSafeSection(toolResult.content[0].text);
         expect(safePayload.outcome).toBe('deterministic_only');
+        expect(safePayload.aiGenerated).toBe(false);
         expect(safePayload.filesReviewed).toBe(0);
         expect(safePayload.nextStep).toContain('no model reviewed it');
         expect(safePayload.nextStep).toContain('NOT a clean verdict');

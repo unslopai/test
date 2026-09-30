@@ -78,7 +78,7 @@ The Processor processes the data exclusively to provide the service to the Contr
 
 (1) If a data subject contacts the Processor about the processed data, the Processor forwards the request to the Controller without undue delay and does not answer it itself unless the Controller instructs it to.
 
-(2) The Processor assists the Controller with appropriate technical and organizational measures in responding to requests for access, rectification, erasure, restriction and data portability, in particular by exporting and deleting the data of a repository or account on instruction. [VORBEDINGUNG V4: Löschpfad für Konten und Repositories trotz finding_suppressions umgesetzt]
+(2) The Processor assists the Controller with appropriate technical and organizational measures in responding to requests for access, rectification, erasure, restriction and data portability, in particular by exporting and deleting the data of a repository or account on instruction. [VORBEDINGUNG V4: Migration 052 angewendet]
 
 ## § 10 Assistance under Art. 32 to 36 GDPR
 
@@ -161,10 +161,10 @@ Liability towards data subjects is governed by Art. 82 GDPR. Between the parties
 
 | Data | Period |
 |---|---|
-| Review requests, diffs, results, log data | [SPEICHERFRIST-REVIEWDATEN] |
+| Review requests, diffs, results, log data | 90 days from receipt of the request; diff text uploaded by the CLI, the VS Code extension or the MCP server 30 days; earlier if the repository or account is deleted [VORBEDINGUNG V3: Migration 052 angewendet] |
 | Structural data and search vectors of a repository | while the repository is connected; after disconnection or removal from the GitHub App, deletion within 30 days [VORBEDINGUNG V4] |
 | Runtime logs at the hosting provider (repository and file names, for each review an excerpt of up to 100 characters of the search query built from the diff, in case of errors short excerpts of the model response) | visible to the Processor for 1 day; internal retention determined by Vercel [VORBEDINGUNG V1] |
-| Findings marked as resolved, with reasoning | [SPEICHERFRIST-DISMISSALS] |
+| Findings marked as resolved, with reasoning | until the repository or account is deleted [VORBEDINGUNG V4: Migration 052 angewendet] |
 | Caching at Google (see Annex 4) | up to 24 hours in memory; up to 90 days if abuse is suspected |
 
 Outside this processing: GitHub keeps webhook delivery logs for 3 days (see Annex 4).

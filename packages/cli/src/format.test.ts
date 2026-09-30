@@ -384,3 +384,66 @@ describe('printHumanResult — aggregierte Findings (ROADMAP §7)', () => {
         expect(terminalOutput).toContain('src/lib/example.ts:12');
     });
 });
+
+describe('printHumanResult — KI-Kennzeichnung (LEGAL_PAGES_SPEC §4a.3)', () => {
+    const AI_LABEL_LINE = 'AI-generated review. Check it before you rely on it.';
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function capturedOutput(scanResult: ScanResult): string {
+        const loggedLines: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((printedLine: string) => {
+            loggedLines.push(printedLine);
+        });
+        printHumanResult(scanResult);
+        return loggedLines.join('\n');
+    }
+
+    const CLEAN_MODEL_REVIEW: ScanResult = {
+        hasSlop: false,
+        issues: [],
+        summary: 'No AI slop found.',
+        filesReviewed: 3,
+        outcome: 'reviewed',
+        aiGenerated: true,
+        omittedFiles: [],
+        cognitiveIntegrityScore: 97,
+    };
+
+    it('druckt das Label unter einem Modell-Review, mit und ohne Findings', () => {
+        const cleanOutput = capturedOutput(CLEAN_MODEL_REVIEW);
+        const findingsOutput = capturedOutput({ ...buildInfectedScanResult(), aiGenerated: true });
+
+        expect(cleanOutput).toContain(AI_LABEL_LINE);
+        expect(findingsOutput).toContain(AI_LABEL_LINE);
+    });
+
+    it('kennzeichnet im Zweifel: ein Modell-Review von einem Server ohne das Feld bekommt das Label', () => {
+        const legacyServerOutput = capturedOutput({ ...CLEAN_MODEL_REVIEW, aiGenerated: undefined });
+
+        expect(legacyServerOutput).toContain(AI_LABEL_LINE);
+    });
+
+    it('druckt kein Label, wenn kein Modell beteiligt war', () => {
+        const deterministicOnlyOutput = capturedOutput({
+            ...CLEAN_MODEL_REVIEW,
+            summary: 'Deterministic checks only: no model reviewed it.',
+            filesReviewed: 0,
+            outcome: 'deterministic_only',
+            aiGenerated: false,
+            cognitiveIntegrityScore: null,
+        });
+        const nothingReviewedOutput = capturedOutput({
+            ...CLEAN_MODEL_REVIEW,
+            filesReviewed: 0,
+            outcome: 'nothing_reviewed',
+            aiGenerated: false,
+            cognitiveIntegrityScore: null,
+        });
+
+        expect(deterministicOnlyOutput).not.toContain('AI-generated');
+        expect(nothingReviewedOutput).not.toContain('AI-generated');
+    });
+});

@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { generateEmbeddings } from '@/lib/embeddings';
 import { fetchRepoTree, fetchFileContent, type GitHubTreeEntry } from '@/lib/github';
 import { detectRepoEcosystems } from '@/lib/pipeline/ecosystem-detection';
+import { resolveChunkExpiryThreshold } from '@/lib/chunk-retention';
 
 // =============================================================================
 // Interfaces
@@ -345,10 +346,10 @@ export async function ingestRepository(
 ): Promise<number> {
     console.log(`[Skeleton] Starte Delta-Ingestion für ${repoFullName} (Branch: ${defaultBranch})...`);
 
-    // 1. Zuerst abgelaufene deaktivierte Chunks bereinigen (TTL Cleanup)
-    // Zu Testzwecken auf 10 Sekunden gestellt (normalerweise 30 Tage: 30 * 24 * 60 * 60 * 1000)
-    const ttlThreshold = new Date(Date.now() - 10 * 1000).toISOString();
-    
+    // 1. Zuerst abgelaufene deaktivierte Chunks bereinigen (TTL Cleanup, 30 Tage).
+    // Jüngere deaktivierte Chunks bleiben als Cache für die Delta-Erkennung stehen.
+    const ttlThreshold = resolveChunkExpiryThreshold(Date.now());
+
     const { error: cleanupError } = await supabase
         .from('code_chunks')
         .delete()
@@ -396,6 +397,7 @@ export async function ingestRepository(
 
     if (codeFiles.length === 0) {
         console.log('[Skeleton] Keine Code-Dateien zum Verarbeiten.');
+        await purgeUnmatchedCachedChunks(repositoryId);
         return 0;
     }
 
@@ -423,8 +425,32 @@ export async function ingestRepository(
         totalChunks += batchChunks;
     }
 
+    await purgeUnmatchedCachedChunks(repositoryId);
+
     console.log(`[Skeleton] Delta-Ingestion abgeschlossen: ${totalChunks} Skeleton-Chunks verarbeitet.`);
     return totalChunks;
+}
+
+/**
+ * Nach einer vollständigen Ingestion sind alle Cache-Treffer reaktiviert. Was
+ * jetzt noch deaktiviert ist, gehört zu geänderten oder gelöschten Dateien und
+ * wird entfernt: `match_code_chunks` filtert `deactivated_at` nicht, ein
+ * veraltetes Skelett landete sonst neben dem neuen im Reviewer-Prompt. Auf
+ * einem wieder aktiven Repo räumt es auch kein Cron mehr weg.
+ *
+ * Wirft bei einem Fehler: die Ingestion endet dann in 'error' und wird beim
+ * nächsten Aktivieren wiederholt, statt veraltete Skelette stehen zu lassen.
+ */
+async function purgeUnmatchedCachedChunks(repositoryId: string): Promise<void> {
+    const { error: purgeError } = await supabase
+        .from('code_chunks')
+        .delete()
+        .eq('repository_id', repositoryId)
+        .not('deactivated_at', 'is', null);
+
+    if (purgeError) {
+        throw new Error(`Veraltete Skeleton-Chunks konnten nicht gelöscht werden: ${purgeError.message}`);
+    }
 }
 
 /**

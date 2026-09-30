@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveApiKey } from '@/lib/api-keys';
+import { isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { classifyJobFailure } from '@/lib/job-failure';
 import { scheduleLazyReap } from '@/lib/lazy-reaper';
 import { normalizeBareRuleId } from '@/lib/pipeline/helpers';
@@ -116,7 +117,7 @@ interface PersistedResultBlob {
     files_reviewed?: number;
     nothing_reviewed?: boolean;
     deterministic_only?: boolean;
-    prescan?: { filesScanned?: unknown } | null;
+    prescan?: { filesScanned?: unknown; llmSkipped?: unknown } | null;
     omitted_files?: unknown;
     cognitive_integrity_score?: number | null;
     degradations?: unknown;
@@ -140,6 +141,7 @@ function toScanResult(persistedResult: unknown, options: { terminal: boolean }):
 
     const filesReviewed = resultBlob.files_reviewed ?? 0;
     const filesScanned = resultBlob.prescan?.filesScanned;
+    const reviewOutcome = resolvePersistedOutcome(resultBlob, options.terminal);
 
     return {
         hasSlop: resultBlob.review?.has_slop ?? false,
@@ -147,7 +149,12 @@ function toScanResult(persistedResult: unknown, options: { terminal: boolean }):
         summary: resultBlob.review?.summary ?? '',
         filesReviewed,
         ...(typeof filesScanned === 'number' ? { filesScanned } : {}),
-        outcome: resolvePersistedOutcome(resultBlob, options.terminal),
+        outcome: reviewOutcome,
+        // KI-Kennzeichnung (LEGAL_PAGES_SPEC §4a.3): ein Partial trägt nur
+        // Pre-Scan-Findings, auch wenn sein Outcome vorläufig 'reviewed' heißt;
+        // beim Short-Circuit des Pre-Scanners lief ebenfalls kein Modell.
+        aiGenerated: options.terminal
+            && isAiGeneratedRun(reviewOutcome, resultBlob.prescan?.llmSkipped === true),
         omittedFiles: parseStringList(resultBlob.omitted_files),
         cognitiveIntegrityScore: resultBlob.cognitive_integrity_score ?? null,
         degradations: parseStringList(resultBlob.degradations),

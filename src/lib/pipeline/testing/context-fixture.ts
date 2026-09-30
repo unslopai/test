@@ -7,6 +7,7 @@
  */
 import { DEFAULT_CASCADE_CONFIG, INITIAL_CASCADE_STATE } from '@/lib/pipeline/defaults';
 import { DEFAULT_PRESCAN_CONFIG } from '@unslop/prescan';
+import type { PrescanStats } from '@unslop/prescan';
 import type { PullRequestFile } from '@/lib/github';
 import type {
     CascadeState,
@@ -37,6 +38,25 @@ export function buildClaimVerdict(overrides: Partial<ClaimVerdict> = {}): ClaimV
         verdict: 'CONFIRMED',
         confidence: 90,
         phase: 'flash-verify',
+        ...overrides,
+    };
+}
+
+/** Statistik eines gelaufenen Pre-Scans, der mindestens eine Datei geprüft hat. */
+export function buildPrescanStats(overrides: Partial<PrescanStats> = {}): PrescanStats {
+    return {
+        degraded: false,
+        degradedReason: null,
+        findingsCount: 0,
+        criticalCount: 0,
+        rulesEvaluated: 42,
+        rulesDisabled: [],
+        filesScanned: 1,
+        filesSkipped: [],
+        skippedChecks: [],
+        llmSkipped: false,
+        durationMs: 120,
+        engineVersions: null,
         ...overrides,
     };
 }

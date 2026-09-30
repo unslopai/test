@@ -69,15 +69,15 @@ Stufe **A** = Eintragungstag (Impressum + Datenschutz + Waitlist live). Stufe **
 |---|---|---|---|---|
 | V1 | Vercel Pro (DPA, kommerzielle Nutzung). Model-Training-Opt-out ist laut Luca 2026-09-28 bereits gesetzt (E20 erledigt); Plan aktuell Hobby | A | Luca (Geld, *blocked: incorporation*) | Vercel-Team-Plan im Dashboard/MCP |
 | V2 | Platzhalter mit Firmendaten gefüllt (§6) | A | Luca liefert, Claude trägt ein | Guard-Test grün mit Flag an |
-| V3 | Speicherfristen entschieden (E6) **und** umgesetzt (pg_cron-Löschjob für `review_jobs` inkl. Diff-Leerung, Waitlist-Aufräumjob) | A | Claude baut, Luca führt Migration im SQL-Editor aus | `scripts/db-query.ts review_jobs --count` vor/nach, Cron-Eintrag |
-| V4 | Löschpfad für Konten und Repositories trotz `finding_suppressions` (C2) — heute blockiert schon **ein** Dismissal auf einem abgelaufenen Repo den gesamten 30-Tage-Cron, weil `028_fix_ttl_cleanup_interval.sql:27` alle Repos mit einem einzigen `DELETE` löscht (Gegenprüfung P2-06); Code-Skelette auch beim Entfernen aus der GitHub App deaktivieren (`src/lib/app-installation.ts:512-537`, P1-13); 10-s-Testwert in `src/lib/skeleton.ts:349` durch 30 Tage ersetzen | A | Claude baut (Spec-Amendment nötig) | Tests + manuelle Löschung eines Test-Kontos |
+| V3 | Speicherfristen entschieden (E6) **und** umgesetzt (pg_cron-Löschjob für `review_jobs` inkl. Diff-Leerung, Waitlist-Aufräumjob). **Gebaut 2026-09-30 (§4a.1), Migration 052 noch nicht angewendet**: das passiert am Eintragungstag nach dem Beleg-Export (§4a.4) | A | Claude hat gebaut; am Eintragungstag Export, dann `apply_migration` | Rollback-Test §4a.5; am Eintragungstag `cron.job` und `review_jobs --count` vor/nach |
+| V4 | Löschpfad für Konten und Repositories trotz `finding_suppressions` (C2) — heute blockiert schon **ein** Dismissal auf einem abgelaufenen Repo den gesamten 30-Tage-Cron, weil `028_fix_ttl_cleanup_interval.sql:27` alle Repos mit einem einzigen `DELETE` löscht (Gegenprüfung P2-06); Code-Skelette auch beim Entfernen aus der GitHub App deaktivieren (`src/lib/app-installation.ts:512-537`, P1-13); 10-s-Testwert in `src/lib/skeleton.ts:349` durch 30 Tage ersetzen. **Gebaut 2026-09-30 (§4a.2)**: der Code-Teil gilt mit dem Merge, der Datenbank-Teil mit Migration 052 | A | Claude hat gebaut; Migration am Eintragungstag | Tests + Rollback-Test §4a.5; offen: Löschung eines echten Test-Kontos nach der Migration |
 | V5 | Google Fonts aus CLI-Login entfernt (E15) | A | Claude, Phase 3 | Test/grep |
 | V6 | Brevo-Tracking aus (E14) | A | Luca im Brevo-Konto | Screenshot der Einstellung |
 | ~~V7~~ | Supabase-Region: **Frankfurt (eu-central-1)**, Angabe Luca 2026-09-28 (Dashboard; Management-API *blocked: tooling*) | erledigt | — | eingetragen |
 | V8 | Landing-FAQ korrigiert (E16) | A | Claude, Phase 3, Copy-Freigabe Luca | Diff in `messages/*.json` |
 | V9 | Kündigungsbutton „Verträge hier kündigen“ (§ 312k) ohne Login, Bestätigungsseite ohne Halteangebote, Kündigung über Paddle-API; **zusätzlich** (a) Kündigung zum Periodenende, wenn der Nutzungsvertrag endet oder das Konto gelöscht wird (Terms 12.1), (b) sofortige Kündigung plus anteilige Erstattung über Paddle (MSA 10.1, Kosten nach 10.4 bei unslop) in den Fällen der Terms 11.4. Heute kann der Code nur zum Periodenende kündigen (`src/app/api/billing/subscription/cancel/route.ts:31-33`) | B | eigenes Arbeitspaket | E2E gegen Paddle-Sandbox für Button, (a) und (b) |
 | V10 | Link „Vertrag widerrufen“ (§ 356a) auf unslop.codes, ständig sichtbar, führt zu Paddles Widerrufsfunktion (E22a: keine eigene Widerrufsfunktion für den Nutzungsvertrag) | B | eigenes Arbeitspaket | Sichtprüfung |
-| V11 | KI-Kennzeichnung der Ausgaben (E17) | vor der ersten Nutzung durch Dritte (Beta) | eigenes Arbeitspaket | Screenshot eines PR-Kommentars |
+| V11 | KI-Kennzeichnung der Ausgaben (E17). **Gebaut 2026-09-30 (§4a.3)**, gilt mit dem Deploy | vor der ersten Nutzung durch Dritte (Beta) | Claude hat gebaut | Tests je Outcome; offen: Screenshot eines PR-Kommentars nach dem Deploy |
 | V12 | Zustimmung beim Login protokolliert (E13) | B/C | eigenes Arbeitspaket + Migration | DB-Zeile mit Version |
 | V13 | Paddle.js-Cookies auf der Billing-Seite im Browser erhoben | B | Claude (Browser-Receipt gegen Sandbox) | DevTools-Liste, Text in Datenschutz §4 |
 | V14 | Vertex-Entscheidungen E8/E9 umgesetzt (Pfad entfernt, Ausnahme beantragt) | A (E8) / C (E9) | Claude (Code) / Luca (Antrag) | Code-Diff / Google-Bestätigung |
@@ -88,6 +88,97 @@ Stufe **A** = Eintragungstag (Impressum + Datenschutz + Waitlist live). Stufe **
 | V20 | E10 umgesetzt: keine auftragsübergreifende Auswertung von Kundendaten (SPEC §12.4 G2 auf eigene Repos/OSS/Opt-in umgestellt, Verdict-Audit auf Fehleranalyse einzelner Aufträge beschränkt). Trägt E22 und die Zusagen in Terms 7.3/18.2 und Datenschutz §2 | A | Luca entscheidet E10, Claude ändert SPEC §12.4 | SPEC-Diff |
 | V21 | E23a umgesetzt, **über alle Wege**: `scripts/db-query.ts` verweigert für `review_jobs`, `review_job_llm_calls`, `code_chunks`, `finding_*` alles außer Kennungen, Status, Zeitstempeln und Zählern; Betriebsregel in CLAUDE.md, dass Supabase-MCP `execute_sql` auf diesen Tabellen nur solche Spalten liest und Vercel-Laufzeitprotokolle (die Diff-Auszüge und Modellantworten enthalten) nicht in KI-Sitzungen gelesen werden, solange fremde Kunden aktiv sind; alternativ E23b (Offenlegung) (Gegenprüfung R4-01) | A (vor dem ersten fremden Kunden) | Claude | Test des Skripts |
 | V19 | GitHub-`provider_token` nach dem Speichern aus der Supabase-Session entfernen und/oder Auth-Cookies `httpOnly` (P1-08: heute liegt das Token mit `repo`-Scope kurz nach der Anmeldung im JS-lesbaren Cookie). Der Text legt das offen; Fix ist Hygiene, kein Blocker | nach A | Claude | Test + Cookie-Inhalt im Browser |
+
+## §4a Amendment 2026-09-30: Umsetzung von V3, V4 und V11
+
+Geschrieben vor dem Code, der Code hält sich daran. Gebaut wird jetzt, geschaltet am Eintragungstag (§4a.4). Berührt zwei andere Specs: `MCP_SPEC.md` §4.4 (Ledger) und `GITHUB_APP_SPEC.md` D8 (Deinstallation); beide tragen einen Nachtrag mit Verweis hierher.
+
+### 4a.1 V3 Speicherfristen (Migration `052_retention_and_deletion_path.sql`)
+
+Drei pg_cron-Jobs, täglich nachts, jeder ruft genau eine Funktion. Die Funktionen sind für `anon`, `authenticated` und `service_role` nicht ausführbar; nur der Cron (Rolle `postgres`) ruft sie.
+
+| Job | Zeit (UTC) | Funktion | Regel |
+|---|---|---|---|
+| `cleanup-deactivated-repos` (ersetzt den Job aus 028) | 03:00 | `purge_expired_repositories()` | Repos mit `status = 'deactivated'` und `updated_at` älter als 30 Tage, **je Repo einzeln** (§4a.2) |
+| `purge-expired-review-data` | 03:15 | `purge_expired_review_data()` | `review_jobs` älter als 90 Tage (`created_at`) löschen, alle Quellen und Status; `review_job_llm_calls` und `finding_comments` gehen per Kaskade mit. Danach bei `source in ('cli','mcp')` und älter als 30 Tage den Schlüssel `diff` aus `payload` entfernen und `diff_purged_at` setzen |
+| `purge-waitlist-after-launch` | 03:30 | `purge_waitlist_after_launch()` | `waitlist_signups` vollständig löschen, sobald `retention_settings.launched_on` gesetzt ist und sechs Monate zurückliegt |
+
+- **Eine Frist für alle Quellen.** Auch `manual`-Jobs (Benchmark-Läufe, eigene Fixtures) fallen unter die 90 Tage. Eine Ausnahme für „eigene“ Jobs bräuchte ein Merkmal, das die Tabelle nicht hat, und der Rechtstext kennt keine Ausnahme. Belege gehören seit 2026-09-17 ohnehin in Spec, Benchmark-Log oder Commit.
+- **Diff-Leerung:** Nur CLI- und MCP-Jobs tragen den Diff im `payload` (live geprüft 2026-09-30: Schlüssel `diff` bei 54 CLI- und 15 MCP-Jobs, bei keinem Webhook-Job). Die übrigen Payload-Felder (SHAs, Repo-Name, `reroll_limit`) bleiben bis Tag 90, weil `findings/resolve` den Commit daraus liest.
+- **Launch-Datum:** Tabelle `retention_settings` mit genau einer Zeile und der Spalte `launched_on` (anfangs `NULL`, RLS an, kein Client-Grant). Solange sie leer ist, löscht der Waitlist-Job nichts. Am Launch-Tag setzt Luca das Datum mit einem `UPDATE`.
+- **Nicht in der Datenbank lösbar, deshalb offen (ROADMAP §2):** *(a)* Der Einwilligungsnachweis der Warteliste liegt laut WAITLIST_SPEC §3 und Datenschutz §9 bei Brevo (Double-Opt-In-Protokoll). Die Frist „3 Jahre ab Jahresende“ ist deshalb eine Löschung im Brevo-Konto und gehört in den Fristenkalender, sobald das Launch-Datum feststeht. *(b)* Ein Widerruf über den Abmeldelink landet nur bei Brevo; die Zeile in `waitlist_signups` bleibt bis zum Waitlist-Job stehen, bis der Brevo-Webhook (WAITLIST_SPEC Phase 2) gebaut ist. *(c)* Die Frist für unbestätigte Einträge ist in E6 nicht entschieden; die Tabelle kennt in Phase 1 nur `pending`. Die drei Waitlist-Platzhalter in Datenschutz §12 bleiben deshalb offen und halten die Seite über den Guard zurück.
+
+### 4a.2 V4 Löschpfad
+
+**Entscheidung: Das Ledger bleibt append-only gegen direkte Eingriffe, folgt aber der Löschung seiner Eltern.** E6 sagt „Dismissals mit dem Repository bzw. Konto löschen“; Art. 17 DSGVO geht der Audit-Idee aus MCP_SPEC D8 vor.
+
+- Die drei Fremdschlüssel von `finding_suppressions` ändern sich: `repository_id` und `user_id` auf `ON DELETE CASCADE`, `api_key_id` auf `ON DELETE SET NULL`.
+- Der Trigger `finding_suppressions_append_only` lässt genau zwei Dinge durch, und nur als Folge einer referenziellen Aktion (`pg_trigger_depth() > 1`, also aus dem Fremdschlüssel-Trigger der Elterntabelle heraus): ein `DELETE`, und ein `UPDATE`, das ausschließlich `api_key_id` auf `NULL` setzt. Jedes direkte `UPDATE` oder `DELETE`, auch über die Service-Role, scheitert wie bisher. Grenze der Prüfung: ein künftiger eigener Trigger, der in `finding_suppressions` schreibt, käme ebenfalls durch. Heute gibt es keinen (live geprüft 2026-09-30).
+- `review_jobs.repository_id` wird von `ON DELETE SET NULL` auf `ON DELETE CASCADE` umgestellt. Sonst blieben nach der Löschung eines Repos oder Kontos dessen Aufträge mit Code-Zitaten bis zu 90 Tage verwaist liegen.
+- **Repository-Löschung:** `purge_expired_repositories()` löscht jedes abgelaufene Repo in einem eigenen Unterblock. Scheitert eines, bleibt es stehen, wird mit Repo-ID und Fehlertext als `WARNING` protokolliert und in der Rückgabe gezählt; die übrigen werden gelöscht, und der nächste Lauf versucht es erneut. Der Fall aus P2-06 (ein Repo blockiert alle) ist damit doppelt zu: die Ursache per Kaskade, die Struktur per Einzellöschung.
+- **Konto-Löschung:** Löschen des Nutzers in Supabase Auth (Dashboard oder `auth.admin.deleteUser`). Die Kaskade nimmt Repositories, Code-Skelette, Aufträge samt Modellprotokollen, Comment-Map, Dismissals, Token, API-Schlüssel, Installationen und das Billing-Konto mit. Ein Dashboard-Button ist nicht Teil dieses Pakets (Terms 12.1 behält den Marker `[ODER, NACH UMSETZUNG: …]`). Zwei Grenzen: *(a)* Aufträge ohne Repository-Bezug tragen keine Nutzer-ID und laufen über die 90-Tage-Frist aus. Das sind Benchmark-Läufe (`manual`) und der Altbestand aus Repo-Löschungen vor Migration 052 (damals `SET NULL`); CLI- und MCP-Scans hängen immer an einem verbundenen Repository. *(b)* Ein laufendes Paddle-Abo kündigt die Löschung nicht; das ist V9.
+- **Entfernen aus der GitHub App** (`installation.deleted`, `installation_repositories.removed`): zusätzlich zum Status `deactivated` werden die `code_chunks` des Repos auf `deactivated_at = now()` gesetzt, wie es `/api/repos/disconnect` schon tut. Beide Pfade nutzen dieselbe Funktion. D8 bleibt im Kern bestehen: eine Re-Installation binnen 30 Tagen reaktiviert die Chunks über den Hash.
+- **Chunk-TTL bei Re-Ingestion:** 30 Tage statt des 10-Sekunden-Testwerts (`skeleton.ts`), als benannte Konstante, identisch zum Cron. Weil deaktivierte Chunks jetzt nicht mehr bei jeder Ingestion verschwinden, löscht die Ingestion am Ende alle noch deaktivierten Chunks des Repos: sie gehören zu geänderten oder gelöschten Dateien, und `match_code_chunks` filtert `deactivated_at` nicht (Review-Befund 1).
+- **Fristanker `repositories.updated_at`:** Die 30 Tage zählen ab dem Trennen. Deshalb setzt weder der Repo-Sync der Installation (`adoptKnownRepositories`) noch ein zweites Trennen im Dashboard noch das Lösen eines schon getrennten Repos von der Installation `updated_at` neu (Review-Befund 2). Offen bleibt: jedes andere Update der Zeile verschiebt die Frist ebenfalls; eine eigene Spalte `deactivated_at` auf `repositories` wäre der saubere Anker (ROADMAP §2).
+- **Schutz gegen Wettläufe:** Das `DELETE` in `purge_expired_repositories()` wiederholt Status- und Fristbedingung; ein zwischen Auswahl und Löschung reaktiviertes Repo bleibt stehen. `TRUNCATE` auf dem Ledger ist `anon`, `authenticated` und `service_role` entzogen, weil der Row-Trigger es nicht sieht.
+
+### 4a.3 V11 KI-Kennzeichnung (E17 a)
+
+**Herleitung.** Art. 50 Abs. 2 KI-VO verpflichtet den Anbieter eines KI-Systems, das synthetische Texte erzeugt, die Ausgaben in einem maschinenlesbaren Format zu kennzeichnen und als künstlich erzeugt erkennbar zu machen. Anknüpfungspunkt ist die Erzeugung durch das KI-System. Ein Finding des Pre-Scanners entsteht aus AST-, Regex- und Config-Regeln mit von Menschen geschriebenen Textbausteinen; kein Modell ist beteiligt. Es als KI-generiert zu kennzeichnen wäre falsch und entwertet das Label. E17 (a) legt die Form fest: sichtbares Label, HTML-Kommentar-Marker, Feld in den Tool-Ausgaben.
+
+**Regel.** Eine Ausgabe trägt die Kennzeichnung genau dann, wenn ein Modell an ihrem Inhalt beteiligt war.
+
+| Ausgabe | Kennzeichnung |
+|---|---|
+| Review mit Findings (Body) | ja, wenn ein Modell lief: Outcome `reviewed` **und** nicht `llmSkipped` (die Zusammenfassung und mindestens ein Teil des Urteils stammen vom Modell) |
+| Inline-Kommentar zu einem Finding | ja, wenn das Finding vom Modell stammt (`verification` ungleich `deterministic`); Pre-Scan-Findings auch im selben Review **ohne** Label |
+| Kommentar „No AI slop found“ | ja (Outcome `reviewed`): der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt |
+| Check Run, abgeschlossen nach einem Review | ja, wenn Outcome `reviewed` |
+| Kommentar und Check Run bei `deterministic_only` | nein |
+| Short-Circuit des Pre-Scanners (`prescanConfig.shortCircuit`, Default aus): Outcome `reviewed`, aber `llmSkipped` | nein: kein Modell lief, die Summary ist ein Baustein („LLM review skipped …“) |
+| `nothing_reviewed`, „Reviewing…“, blockierender Check (Quota, Abo), „Review failed“ | nein, feste Texte ohne Modellbeteiligung |
+| CLI `--json`, Polling-API, MCP-Payload | Feld `aiGenerated` (boolean): `true` genau dann, wenn das Ergebnis terminal ist, Outcome `reviewed` hat und der Lauf nicht `llmSkipped` war. Fehlt das Feld (Server vor diesem Stand), kennzeichnen CLI und MCP ein fertiges `reviewed`-Ergebnis im Zweifel. Ein Teilergebnis der Phase `deterministic` enthält nur Pre-Scan-Findings und trägt `false`. Je Finding unterscheidet das bestehende Feld `verification: "deterministic"` |
+| CLI-Textausgabe | eine Zeile „AI-generated review“ unter dem Ergebnis, wenn `aiGenerated` |
+
+**Form.** Sichtbar: eine kursive Zeile am Ende, „AI-generated“ mit einem kurzen Hinweis, das Ergebnis zu prüfen. Maschinenlesbar: `<!-- unslop:ai-generated -->` direkt dahinter. Beides kommt aus einer Stelle, `src/lib/ai-disclosure.ts`. Das Label steht am Ende, damit die Kopfzeile des Reviews (Wiedererkennung in `review-posting.ts`) und der Finding-Marker unverändert bleiben.
+
+**Nicht gebaut:** Die VS-Code-Erweiterung zeigt Findings als Diagnostics ohne Label, und die Scan-Historie im Dashboard (`/api/repos/[id]/scans`, `RepoDetailClient`) zeigt Kritik und Zusammenfassung ohne Label. Terms 5.1 behält deshalb einen Marker, der genau diese beiden Lücken nennt (ROADMAP §2/§3).
+
+### 4a.4 Eintragungstag: Reihenfolge
+
+Die Migration wird vorher **nicht** angewendet: der 90-Tage-Job löscht Aufträge, deren IDs in `docs/ROADMAP_ARCHIVE.md`, in Specs und im Benchmark-Log als Belege stehen.
+
+1. **Belege sichern:** `npx tsx scripts/export-receipt-jobs.ts --before <Eintragungsdatum>` schreibt `docs/receipts/review-jobs-pre-launch.json`: je Auftrag Kennungen, Status, Zeitstempel, Modell, Token- und Score-Zahlen sowie die Modellaufrufe ohne `verdicts`. Kein Diff, kein Finding-Text, kein Code. Datei committen. Das ist ein einmaliger Export der Aufträge vor dem ersten fremden Kunden (nur eigene Repos und Fixtures); für Kundendaten ist er nicht gedacht, weil Repo-Namen sonst länger als 90 Tage im Git lägen.
+2. **Migration 052 anwenden** (`apply_migration`). Die Jobs laufen in der folgenden Nacht zum ersten Mal.
+3. **Prüfen:** `cron.job` zeigt drei Jobs; am Folgetag `cron.job_run_details` ohne Fehler und `review_jobs --count` gegenüber dem Stand vor der Migration. Ein gescheitertes Repo erscheint dort **nicht** als Fehler (nur als `WARNING` im Postgres-Log); deshalb zusätzlich: `select count(*) from public.repositories where status = 'deactivated' and updated_at < now() - interval '31 days'` muss 0 sein.
+4. **Test-Konto löschen** (V4-Receipt): ein Wegwerf-Konto mit Repo und einem Dismissal anlegen, in Supabase Auth löschen, per Zählung prüfen, dass keine Zeile übrig ist.
+5. Marker `[VORBEDINGUNG V3: …]` und `[VORBEDINGUNG V4: …]` aus Datenschutz und AVV entfernen, danach wie geplant `NEXT_PUBLIC_LEGAL_PAGES_LIVE=impressum,privacy`.
+6. **Am Launch-Tag** (nicht am Eintragungstag): `update public.retention_settings set launched_on = '<Datum>';`
+
+### 4a.5 Rollback-Test der Migration (2026-09-30, Live-DB, Transaktion mit `rollback`)
+
+Die ganze Migration plus Prüfschritte lief über `execute_sql` in einer Transaktion `begin; … rollback;`. Danach geprüft: `cron.job` wieder ein Job, 322 Aufträge, 69 Diffs, keine Tabelle `retention_settings`, Fremdschlüssel wieder `SET NULL`.
+
+| Prüfung | Ergebnis |
+|---|---|
+| Bestand vorher | 322 Aufträge, 468 Modellaufrufe, 143 Comment-Map-Zeilen, 8 Dismissals, 5 Repos, 69 Aufträge mit Diff |
+| `purge_expired_review_data()` auf dem echten Bestand | **17 Aufträge gelöscht** (älter als 90 Tage: 4 `manual`, 13 `webhook`), **50 Diffs geleert** (35 CLI, 15 MCP); Modellaufrufe und Comment-Map unverändert, weil die 17 Aufträge älter sind als beide Tabellen |
+| Danach | 305 Aufträge, 19 mit Diff, kein CLI-/MCP-Auftrag älter als 30 Tage trägt noch einen Diff, alle 50 geleerten behalten `head_sha` |
+| Zweiter Lauf | 0 gelöscht, 0 geleert (idempotent) |
+| Direktes `DELETE`, `UPDATE` und `api_key_id = NULL` auf dem Ledger | alle drei scheitern mit „append-only“ |
+| API-Schlüssel löschen | Dismissal bleibt, `api_key_id` wird `NULL` |
+| `purge_expired_repositories()` mit zwei Test-Repos (40 Tage deaktiviert, je ein Dismissal) | 2 gelöscht, 0 gescheitert; Dismissals, Auftrag, Chunk und Comment-Map der Repos weg; ein 29 Tage deaktiviertes Repo bleibt; die 5 echten Repos und 8 echten Dismissals unberührt. Vom echten Bestand war zum Testzeitpunkt kein Repo abgelaufen; zwei am 2026-08-31 getrennte Repos (eines mit einem Auftrag) laufen am Abend des Testtags ab und fallen noch dem alten Cron zu, ein am 2026-09-26 getrenntes Repo mit 8 Aufträgen ist am 2026-10-26 fällig, nach Migration 052 samt seinen Aufträgen |
+| Test-Nutzer in `auth.users` löschen (aktives Repo mit Dismissal und Auftrag) | 0 Repos, 0 Dismissals, 0 Aufträge, 0 API-Schlüssel übrig |
+| Waitlist-Job ohne Launch-Datum, 5 Monate und 6 Monate nach Launch (2 Test-Einträge) | 0, 0, 2 gelöscht |
+| Ausführungsrecht der drei Funktionen für `anon`, `authenticated`, `service_role` | jeweils nein |
+| `cron.job` nach der Migration | `cleanup-deactivated-repos` 03:00, `purge-expired-review-data` 03:15, `purge-waitlist-after-launch` 03:30 |
+| Zweiter Rollback-Lauf nach dem Selbst-Review (wiederholte Bedingung im `DELETE`, `lock_timeout`, `TRUNCATE`-Entzug) | abgelaufenes Test-Repo gelöscht, ein seit 40 Tagen unverändertes **aktives** Test-Repo bleibt, 5 echte Repos unberührt; `TRUNCATE` für `service_role` und `authenticated` nein |
+
+Die Zahlen gelten für den 2026-09-30; bis zum Eintragungstag wachsen beide (jeden Tag fallen weitere Aufträge über die 90- bzw. 30-Tage-Grenze).
+
+### 4a.6 E10
+
+Nicht berührt. Die Änderungen verkürzen nur, wie lange `review_job_llm_calls.verdicts` liegen (90 Tage mit dem Auftrag); die auftragsübergreifende Auswertung bleibt die offene Entscheidung V20.
 
 ## §5 Umsetzung (Phase 3, erst nach Freigabe)
 
@@ -126,7 +217,9 @@ Stufe **A** = Eintragungstag (Impressum + Datenschutz + Waitlist live). Stufe **
 | `[AVV-VERSION]` | `1.0` bei Erstveröffentlichung | Stufe C |
 | ~~`[SUPABASE-REGION]`~~ | **erledigt 2026-09-28**: Frankfurt (eu-central-1), Angabe Luca aus dem Dashboard | — |
 | `[SUPABASE-LOGFRIST]` | Supabase-Tarif: Free 1 Tag, Pro 7 Tage (supabase.com/pricing, Gegenprüfung P1-07) | Stufe A |
-| `[SPEICHERFRIST-REVIEWDATEN]`, `[SPEICHERFRIST-DISMISSALS]`, `[SPEICHERFRIST-WAITLIST]`, `[SPEICHERFRIST-WAITLIST-UNBESTÄTIGT]`, `[NACHWEISFRIST-WAITLIST]`, `[LÖSCHFRIST-NACH-KONTOLÖSCHUNG]`, `[LÖSCHFRIST-NACH-VERTRAGSENDE]` | E6, erst eintragen, wenn V3/V4 gebaut sind | Stufe A (Stufe C für AVV) |
+| ~~`[SPEICHERFRIST-REVIEWDATEN]`, `[SPEICHERFRIST-DISMISSALS]`, `[LÖSCHFRIST-NACH-KONTOLÖSCHUNG]`~~ | **eingetragen 2026-09-30** nach E6 (90 Tage, Diff 30 Tage; Dismissals bis zur Löschung von Repo oder Konto; 30 Tage). An ihrer Stelle stehen `[VORBEDINGUNG V3: Migration 052 angewendet]` bzw. `[VORBEDINGUNG V4: Migration 052 angewendet]`, bis die Migration läuft (§4a.4 Schritt 5) | Eintragungstag: Marker entfernen |
+| `[SPEICHERFRIST-WAITLIST]`, `[SPEICHERFRIST-WAITLIST-UNBESTÄTIGT]`, `[NACHWEISFRIST-WAITLIST]` | E6 und §4a.1: der Job ist gebaut, offen sind die Frist für unbestätigte Einträge, die Löschung bei Widerruf über Brevo und der Nachweis bei Brevo | Stufe A, Entscheidung Luca |
+| `[LÖSCHFRIST-NACH-VERTRAGSENDE]` | E6 (30 Tage nach dem 30-Tage-Exportfenster) | Stufe C |
 | ~~`[HAFTUNGSHÖCHSTBETRAG]`~~ | **erledigt 2026-09-29**: 10.000 € je Schadensfall (E5, ohne Anwalt gesetzt) | — |
 | `[URL DER UNTERAUFTRAGSVERARBEITER-LISTE]` | E11 (`https://unslop.codes/de/dpa`, Anker siehe §5.3) | Stufe C |
 | `[PADDLE-COOKIES: …]` | V13 | Stufe B |
@@ -136,7 +229,7 @@ Stufe **A** = Eintragungstag (Impressum + Datenschutz + Waitlist live). Stufe **
 | `[VORBEDINGUNG …]` | §4 | je Stufe |
 | `[BESTÄTIGEN …]` | V17 (AVV Anlage 3); Brevo-DPA-Partei (Datenschutz §9); Übermittlungsgrundlage für Paddle.com (Canada) Ltd. (Datenschutz §11) | Stufe A (Datenschutz) / C (AVV) |
 | `[ODER, NACH UMSETZUNG: …]` (Konto im Dashboard löschen) | V4 | wenn gebaut |
-| `[VORBEDINGUNG V1/V4/V5/V6/V9/V10/V12/V18/V20/V21]` | §4 | je Stufe |
+| `[VORBEDINGUNG V1/V3/V4/V5/V6/V9/V10/V11/V12/V18/V20/V21]` | §4; V3 und V4 heißen seit 2026-09-30 „Migration 052 angewendet“, V11 „Kennzeichnung auch in der VS-Code-Erweiterung und in der Scan-Historie des Dashboards sichtbar“ (§4a.3) | je Stufe |
 | `[ENTFÄLLT NACH V19]` (Token im Cookie, Datenschutz §4) | V19: mit dem Fix den Halbsatz streichen | nach Stufe A |
 
 ## §7 Tests (Phase 3; THE LAW gilt auch hier)

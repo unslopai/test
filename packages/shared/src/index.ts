@@ -97,6 +97,16 @@ export interface ScanResult {
      */
     readonly filesScanned?: number;
     readonly outcome: ScanOutcome;
+    /**
+     * KI-Kennzeichnung (Art. 50 Abs. 2 KI-VO, LEGAL_PAGES_SPEC §4a.3): true
+     * genau dann, wenn ein Modell am Inhalt dieses Ergebnisses beteiligt war,
+     * also bei einem terminalen Ergebnis mit outcome 'reviewed'. false bei
+     * 'deterministic_only', 'nothing_reviewed' und bei Teilergebnissen der
+     * Phase 'deterministic'. In einem gemischten Ergebnis erkennt man die
+     * nicht KI-generierten Findings an `verification: 'deterministic'`.
+     * Additiv: fehlt bei Antworten eines Servers vor 2026-09-30.
+     */
+    readonly aiGenerated?: boolean;
     /** Wegen des Review-Size-Caps ausgelassene Dateipfade (auch bei outcome 'reviewed' befüllt). */
     readonly omittedFiles: readonly string[];
     /**

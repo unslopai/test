@@ -76,7 +76,7 @@ Der Auftragsverarbeiter verarbeitet die Daten ausschließlich, um den Dienst fü
 
 (1) Wendet sich eine betroffene Person mit einem Anliegen zu den Auftragsdaten an den Auftragsverarbeiter, leitet er es unverzüglich an den Verantwortlichen weiter und beantwortet es nicht selbst, es sei denn, der Verantwortliche weist ihn dazu an.
 
-(2) Der Auftragsverarbeiter unterstützt den Verantwortlichen mit geeigneten technischen und organisatorischen Maßnahmen dabei, Anträge auf Auskunft, Berichtigung, Löschung, Einschränkung und Datenübertragbarkeit zu beantworten, insbesondere durch Export und Löschung der Daten eines Repositorys oder Kontos auf Weisung. [VORBEDINGUNG V4: Löschpfad für Konten und Repositories trotz finding_suppressions umgesetzt]
+(2) Der Auftragsverarbeiter unterstützt den Verantwortlichen mit geeigneten technischen und organisatorischen Maßnahmen dabei, Anträge auf Auskunft, Berichtigung, Löschung, Einschränkung und Datenübertragbarkeit zu beantworten, insbesondere durch Export und Löschung der Daten eines Repositorys oder Kontos auf Weisung. [VORBEDINGUNG V4: Migration 052 angewendet]
 
 ## § 10 Unterstützung nach Art. 32 bis 36 DSGVO
 
@@ -159,10 +159,10 @@ Für die Haftung gegenüber betroffenen Personen gilt Art. 82 DSGVO. Im Verhält
 
 | Daten | Frist |
 |---|---|
-| Review-Aufträge, Diffs, Ergebnisse, Protokolldaten | [SPEICHERFRIST-REVIEWDATEN] |
+| Review-Aufträge, Diffs, Ergebnisse, Protokolldaten | 90 Tage ab Eingang des Auftrags; hochgeladener Diff-Text aus CLI, VS-Code-Erweiterung und MCP-Server 30 Tage; mit der Löschung des Repositorys oder Kontos früher [VORBEDINGUNG V3: Migration 052 angewendet] |
 | Strukturdaten und Suchvektoren eines Repositorys | solange das Repository verbunden ist; nach Trennung oder Entfernen aus der GitHub App Löschung binnen 30 Tagen [VORBEDINGUNG V4] |
 | Laufzeitprotokolle beim Hosting-Anbieter (Repository- und Dateinamen, bei jeder Prüfung ein Auszug von bis zu 100 Zeichen aus der aus dem Diff gebildeten Suchanfrage, im Fehlerfall kurze Ausschnitte der Modellantwort) | für den Auftragsverarbeiter 1 Tag einsehbar; interne Aufbewahrung durch Vercel [VORBEDINGUNG V1] |
-| Als erledigt markierte Hinweise mit Begründung | [SPEICHERFRIST-DISMISSALS] |
+| Als erledigt markierte Hinweise mit Begründung | bis zur Löschung des Repositorys oder Kontos [VORBEDINGUNG V4: Migration 052 angewendet] |
 | Zwischenspeicher bei Google (siehe Anlage 4) | bis 24 Stunden im Arbeitsspeicher; bei Missbrauchsverdacht bis 90 Tage |
 
 Außerhalb dieser Verarbeitung: GitHub hält Webhook-Zustellprotokolle 3 Tage vor (siehe Anlage 4).

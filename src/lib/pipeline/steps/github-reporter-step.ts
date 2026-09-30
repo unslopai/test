@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
+import { appendAiDisclosure, isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
@@ -86,7 +87,7 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
         resolvePublishedSummary(context, reportableIssues),
         unanchoredIssues,
         context.omittedFiles,
-    ) + buildScoreBlockFor(context, reportableIssues);
+    ) + buildModelReviewFooter(context, reportableIssues);
 
     const postedReviewId = await createGatekeeperReview(context, reviewBody, inlineComments);
 
@@ -276,12 +277,16 @@ async function postDeterministicOnlyComment(context: PipelineContext): Promise<v
 /**
  * Der Integrity Score misst, wie LLM-Claims die Verifikation überstehen. Ohne
  * Modell-Review gibt es keine Claims: der Block entfiele sonst auf „Confidence
- * verification was unavailable“, was nach einem Ausfall klingt.
+ * verification was unavailable“, was nach einem Ausfall klingt. Die
+ * KI-Kennzeichnung folgt ihrer eigenen Regel: nur wenn ein Modell lief, also
+ * auch nicht beim Short-Circuit des Pre-Scanners (LEGAL_PAGES_SPEC §4a.3).
  */
-function buildScoreBlockFor(context: PipelineContext, reportableIssues: readonly PipelineIssue[]): string {
-    return resolveReviewOutcome(context) === 'deterministic_only'
+function buildModelReviewFooter(context: PipelineContext, reportableIssues: readonly PipelineIssue[]): string {
+    const reviewOutcome = resolveReviewOutcome(context);
+    const scoreBlock = reviewOutcome === 'deterministic_only'
         ? ''
         : buildIntegrityScoreBlock(context.cascade, reportableIssues);
+    return isAiGeneratedRun(reviewOutcome, context.llmSkipped) ? appendAiDisclosure(scoreBlock) : scoreBlock;
 }
 
 async function postApprovalComment(context: PipelineContext): Promise<void> {
@@ -293,7 +298,8 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
         context,
         '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.'
             + omittedNote
-            + buildIntegrityScoreBlock(context.cascade, []),
+            // Der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt.
+            + appendAiDisclosure(buildIntegrityScoreBlock(context.cascade, [])),
         [],
         'COMMENT',
     );

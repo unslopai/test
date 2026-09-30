@@ -93,7 +93,7 @@ In our database at Supabase we store for each review:
 - the result with the findings, including the quoted code and suggested fixes;
 - technical logs of the model calls: model, duration and usage, and the intermediate results of the review steps, which can refer to the reviewed code. If a review fails, the error message can contain a short excerpt of the model response and therefore of the reviewed code.
 
-We store the structural data of your repositories (section 6.1) together with the search vectors while the repository is connected. If you disconnect a repository or remove it from the GitHub App, we stop using them and delete them at the latest 30 days afterwards, together with the repository connection. [VORBEDINGUNG V4: Deaktivierung auch beim Entfernen aus der GitHub App und Löschung trotz markierter Hinweise umgesetzt]
+We store the structural data of your repositories (section 6.1) together with the search vectors while the repository is connected. If you disconnect a repository or remove it from the GitHub App, we stop using them and delete them at the latest 30 days afterwards, together with the repository connection. [VORBEDINGUNG V4: Migration 052 angewendet]
 
 If you deliberately mark a finding as resolved or not applicable, we store that decision with your reasoning, the time, the commit ID and the user account as a record.
 
@@ -159,10 +159,10 @@ We keep personal data as long as we need it for the respective purpose and delet
 |---|---|
 | Vercel runtime logs | visible to us for 1 day; internal retention determined by Vercel [VORBEDINGUNG V1] |
 | Supabase logs | [SUPABASE-LOGFRIST] |
-| Account, sign-in data, GitHub access token, API keys | until your account is deleted; then deletion within [LÖSCHFRIST-NACH-KONTOLÖSCHUNG] |
-| Review requests, diffs, results and model call logs | [SPEICHERFRIST-REVIEWDATEN] |
+| Account, sign-in data, GitHub access token, API keys | until your account is deleted; then deletion within 30 days [VORBEDINGUNG V4: Migration 052 angewendet] |
+| Review requests, diffs, results and model call logs | 90 days from receipt of the request; the diff text uploaded by the CLI, the VS Code extension or the MCP server is deleted after 30 days; earlier if the repository or your account is deleted [VORBEDINGUNG V3: Migration 052 angewendet] |
 | Structural data and search vectors of a repository | while the repository is connected; then deletion at the latest 30 days after disconnection [VORBEDINGUNG V4] |
-| Findings marked as resolved or not applicable | [SPEICHERFRIST-DISMISSALS] |
+| Findings marked as resolved or not applicable | until the repository or your account is deleted [VORBEDINGUNG V4: Migration 052 angewendet] |
 | Waitlist | [SPEICHERFRIST-WAITLIST]; unconfirmed entries [SPEICHERFRIST-WAITLIST-UNBESTÄTIGT]; the proof of consent beyond that until [NACHWEISFRIST-WAITLIST] |
 | Email correspondence | until the request is resolved; business correspondence 6 years (§ 257 HGB) |
 | Billing records | 8 years (accounting vouchers) or 10 years (books and financial statements) under § 257 HGB and § 147 AO |

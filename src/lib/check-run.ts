@@ -12,6 +12,7 @@
  * jeden Stilhinweis zum Merge-Blocker macht, wird abgeschaltet.
  */
 import { createCheckRun, updateCheckRun } from '@/lib/github';
+import { appendAiDisclosure } from '@/lib/ai-disclosure';
 import { extractErrorMessage } from '@/lib/errors';
 import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
 import type { CheckRunConclusion } from '@/lib/github';
@@ -194,6 +195,16 @@ export function deriveReviewConclusion(
         title: 'No AI slop found',
         summary: 'This code meets the quality standards of the Anti-Slop Gatekeeper.',
     };
+}
+
+/**
+ * KI-Kennzeichnung der Check-Summary (Art. 50 Abs. 2 KI-VO, LEGAL_PAGES_SPEC
+ * §4a.3). Der Aufrufer wendet sie nur auf das Urteil eines Laufs mit
+ * Modell-Review an; „Deterministic checks only“, „Nothing to review“, der
+ * laufende, der blockierende und der gescheiterte Check bleiben ohne Label.
+ */
+export function markCheckRunAiGenerated(checkRunResult: CheckRunResult): CheckRunResult {
+    return { ...checkRunResult, summary: appendAiDisclosure(checkRunResult.summary) };
 }
 
 /**

@@ -6,7 +6,8 @@
  * Merge-Blocker macht, wird vom Team abgeschaltet, und dann schützt er nichts mehr.
  */
 import { describe, expect, it } from 'vitest';
-import { deriveDeterministicOnlyConclusion, deriveReviewConclusion } from '@/lib/check-run';
+import { deriveDeterministicOnlyConclusion, deriveReviewConclusion, markCheckRunAiGenerated } from '@/lib/check-run';
+import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
 import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
 import { buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
 
@@ -145,5 +146,39 @@ describe('deriveDeterministicOnlyConclusion (LANGUAGE_COVERAGE_SPEC §6.2, E2)',
         expect(criticalResult.conclusion).toBe('failure');
         expect(criticalResult.title).toBe('1 critical slop finding');
         expect(criticalResult.summary).toContain('no model reviewed it');
+    });
+});
+
+describe('KI-Kennzeichnung der Check-Summary (LEGAL_PAGES_SPEC §4a.3)', () => {
+    const AI_MARKER = '<!-- unslop:ai-generated -->';
+
+    it('markCheckRunAiGenerated hängt Label und Marker an die Summary, Urteil und Titel bleiben', () => {
+        const reviewResult = deriveReviewConclusion([buildReviewIssue({ severity: 'CRITICAL' })]);
+
+        const labelledResult = markCheckRunAiGenerated(reviewResult);
+
+        expect(labelledResult.conclusion).toBe(reviewResult.conclusion);
+        expect(labelledResult.title).toBe(reviewResult.title);
+        expect(labelledResult.summary.startsWith(reviewResult.summary)).toBe(true);
+        expect(labelledResult.summary).toContain('_AI-generated. Check it before you rely on it._');
+        expect(labelledResult.summary.endsWith(AI_MARKER)).toBe(true);
+    });
+
+    it('die Urteile selbst tragen kein Label: der Worker setzt es nur für Läufe mit Modell-Review', () => {
+        const deterministicOnlyResult = deriveDeterministicOnlyConclusion(
+            [buildReviewIssue({ severity: 'CRITICAL', source: 'pre-scanner', verification: 'deterministic' })],
+            'Deterministic checks only: no model reviewed it.',
+        );
+
+        expect(deriveReviewConclusion([]).summary).not.toContain('AI-generated');
+        expect(deterministicOnlyResult.summary).not.toContain('AI-generated');
+        expect(deterministicOnlyResult.summary).not.toContain(AI_MARKER);
+    });
+
+    it('die festen Texte eines gescheiterten Checks sind nicht gekennzeichnet', () => {
+        for (const failedCheckCopy of Object.values(FAILED_CHECK_RUN_COPY)) {
+            expect(failedCheckCopy.summary).not.toContain('AI-generated');
+            expect(failedCheckCopy.summary).not.toContain(AI_MARKER);
+        }
     });
 });
