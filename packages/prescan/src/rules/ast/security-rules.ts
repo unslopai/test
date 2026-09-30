@@ -3,7 +3,7 @@
  * SEC-009 (Command Injection), SEC-016 (RSA-Modulus), SEC-022 (Cookie-Flags),
  * SEC-026 (XSS-Sinks). Node-Spezifikationen aus pre_scanner_design.md §2.
  */
-import { addAstFinding, nodesOfType } from './ast-shared';
+import { addAstFinding, hasDescendantOfType, nodesOfType } from './ast-shared';
 import type { Node as TsNode } from 'web-tree-sitter';
 import type { AstRuleContext } from './ast-shared';
 
@@ -75,6 +75,7 @@ function isPythonInterpolatedString(argument: TsNode): boolean {
 }
 
 function collectJsSqlInjection(context: AstRuleContext): void {
+    let moduleTextConstants: ReadonlySet<string> | null = null;
     for (const call of nodesOfType(context, 'call_expression')) {
         const callee = call.childForFieldName('function');
         if (!callee || callee.type !== 'member_expression') continue;
@@ -82,22 +83,133 @@ function collectJsSqlInjection(context: AstRuleContext): void {
         if (!JS_SQL_SINKS.has(methodName)) continue;
 
         const firstArgument = call.childForFieldName('arguments')?.namedChildren[0] ?? null;
-        if (firstArgument && isJsInterpolatedSql(firstArgument)) {
+        if (!firstArgument) continue;
+        moduleTextConstants ??= collectModuleTextConstantNames(call.tree.rootNode);
+        if (isJsInterpolatedSql(firstArgument, moduleTextConstants)) {
             addAstFinding(context, 'SEC-004', call);
         }
     }
 }
 
-function isJsInterpolatedSql(argument: TsNode): boolean {
+/**
+ * Nur Text, der das Modul nie verlassen hat, darf in eine SQL-Zeichenkette
+ * einfließen, ohne sie zu einer Injection zu machen: Literale, Templates ohne
+ * Substitution und modulweite `const`-Bindungen auf solchen Werten (samt
+ * `+`-Ketten daraus). Eine Spaltenliste `const PRODUCT_COLUMNS = 'id, sku'`
+ * in einer parametrisierten Query ist deshalb kein Treffer (r24-Fehlalarm,
+ * 5×, ROADMAP §1 Nebenbefund a); eine Nutzereingabe, eine `let`-Bindung oder
+ * ein Wert aus `process.env` bleiben einer.
+ */
+function isJsInterpolatedSql(argument: TsNode, moduleTextConstants: ReadonlySet<string>): boolean {
+    if (!SQL_KEYWORD_PATTERN.test(argument.text)) return false;
     if (argument.type === 'template_string') {
-        return argument.descendantsOfType('template_substitution').some((child) => child !== null)
-            && SQL_KEYWORD_PATTERN.test(argument.text);
+        return hasDescendantOfType(argument, 'template_substitution')
+            && !isModuleOwnedText(argument, moduleTextConstants);
     }
     if (argument.type === 'binary_expression') {
-        return SQL_KEYWORD_PATTERN.test(argument.text)
-            && argument.descendantsOfType('string').some((child) => child !== null);
+        return hasDescendantOfType(argument, 'string')
+            && !isModuleOwnedText(argument, moduleTextConstants);
     }
     return false;
+}
+
+/**
+ * Namen der modulweiten `const`-Bindungen, deren Initialisierer reiner
+ * Modul-Text ist — in Deklarationsreihenfolge, damit eine Konstante auf einer
+ * früheren aufbauen darf (`const ORDER = COLUMNS + ', updated_at'`).
+ */
+function collectModuleTextConstantNames(rootNode: TsNode): ReadonlySet<string> {
+    const constantNames = new Set<string>();
+    for (const topLevelStatement of rootNode.namedChildren) {
+        const declaration = topLevelStatement?.type === 'export_statement'
+            ? topLevelStatement.childForFieldName('declaration')
+            : topLevelStatement;
+        if (!declaration || declaration.type !== 'lexical_declaration' || declaration.child(0)?.text !== 'const') continue;
+
+        for (const declarator of declaration.namedChildren) {
+            const bindingName = declarator?.childForFieldName('name') ?? null;
+            const initializer = declarator?.childForFieldName('value') ?? null;
+            if (bindingName?.type === 'identifier' && initializer && isModuleOwnedText(initializer, constantNames)) {
+                constantNames.add(bindingName.text);
+            }
+        }
+    }
+    return constantNames;
+}
+
+/**
+ * Reiner Modul-Text: Literal, Template mit ausschließlich konstanten
+ * Substitutionen, Modul-Konstante (sofern im Scope nicht neu gebunden),
+ * `+`-Kette daraus oder eine Klammer-/`as const`-Hülle darum.
+ */
+function isModuleOwnedText(expression: TsNode, moduleTextConstants: ReadonlySet<string>): boolean {
+    switch (expression.type) {
+        case 'string':
+            return true;
+        case 'template_string':
+            return expression.descendantsOfType('template_substitution').every(
+                (substitution) => substitution !== null && isModuleOwnedSubstitution(substitution, moduleTextConstants),
+            );
+        case 'identifier':
+            return moduleTextConstants.has(expression.text) && !isReboundInScope(expression);
+        case 'binary_expression':
+            return isModuleOwnedConcatenation(expression, moduleTextConstants);
+        case 'parenthesized_expression':
+        case 'as_expression': {
+            const innerExpression = expression.namedChildren[0] ?? null;
+            return innerExpression !== null && isModuleOwnedText(innerExpression, moduleTextConstants);
+        }
+        default:
+            return false;
+    }
+}
+
+function isModuleOwnedSubstitution(substitution: TsNode, moduleTextConstants: ReadonlySet<string>): boolean {
+    const substitutedExpression = substitution.namedChildren[0] ?? null;
+    return substitutedExpression !== null && isModuleOwnedText(substitutedExpression, moduleTextConstants);
+}
+
+function isModuleOwnedConcatenation(concatenation: TsNode, moduleTextConstants: ReadonlySet<string>): boolean {
+    const leftOperand = concatenation.childForFieldName('left');
+    const rightOperand = concatenation.childForFieldName('right');
+    return concatenation.childForFieldName('operator')?.text === '+'
+        && leftOperand !== null && rightOperand !== null
+        && isModuleOwnedText(leftOperand, moduleTextConstants)
+        && isModuleOwnedText(rightOperand, moduleTextConstants);
+}
+
+const BINDING_PATTERN_NODE_TYPES: readonly string[] = ['identifier', 'shorthand_property_identifier_pattern'];
+
+/**
+ * Zwischen Fundstelle und Modul-Ebene darf der Name nicht neu gebunden sein:
+ * ein Parameter `columns`, der die gleichnamige Modul-Konstante verdeckt, ist
+ * wieder Fremdeingabe. Geprüft werden Funktions- und catch-Parameter sowie
+ * die lokalen Deklarationen der umschließenden Blöcke (über-approximiert,
+ * also im Zweifel ein Treffer).
+ */
+function isReboundInScope(reference: TsNode): boolean {
+    const bindingName = reference.text;
+    let ancestor = reference.parent;
+    while (ancestor && ancestor.type !== 'program') {
+        if (scopeBindsName(ancestor, bindingName)) return true;
+        ancestor = ancestor.parent;
+    }
+    return false;
+}
+
+function scopeBindsName(scopeNode: TsNode, bindingName: string): boolean {
+    const parameterList = scopeNode.childForFieldName('parameters') ?? scopeNode.childForFieldName('parameter');
+    if (parameterList && patternBindsName(parameterList, bindingName)) return true;
+    if (scopeNode.type !== 'statement_block') return false;
+    return scopeNode.descendantsOfType('variable_declarator').some((declarator) => {
+        const declaredPattern = declarator?.childForFieldName('name') ?? null;
+        return declaredPattern !== null && patternBindsName(declaredPattern, bindingName);
+    });
+}
+
+function patternBindsName(patternNode: TsNode, bindingName: string): boolean {
+    if (patternNode.type === 'identifier') return patternNode.text === bindingName;
+    return patternNode.descendantsOfType([...BINDING_PATTERN_NODE_TYPES]).some((binding) => binding?.text === bindingName);
 }
 
 function collectJavaSqlInjection(context: AstRuleContext): void {

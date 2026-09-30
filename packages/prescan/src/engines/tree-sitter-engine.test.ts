@@ -200,6 +200,132 @@ describe('SEC-004 — SQL interpolation', () => {
     });
 });
 
+/**
+ * r24-Fehlalarm (ROADMAP §1 Nebenbefund a): fünf parametrisierte Queries der
+ * Filler-Dateien `product-repository.ts` und `stock-ledger.ts` wurden CRITICAL
+ * gemeldet, weil eine modulweite Spaltenlisten-Konstante interpoliert bzw.
+ * zwei Literale konkateniert wurden. Die Snippets spiegeln die fünf Fundstellen.
+ */
+describe('SEC-004 — module-owned text is not an injection (r24 false positive)', () => {
+    const productColumnsConstant = "const PRODUCT_COLUMNS = 'product_id, workspace_id, sku, title, status, weight_grams, updated_at';";
+
+    it('accepts a module const column list inside a parameterized template (product-repository.ts:83)', async () => {
+        const constantColumnsQuery = [
+            productColumnsConstant,
+            'export class ProductRepository {',
+            '    constructor(private readonly pool: Pool) {}',
+            '    async findBySku(workspaceId: string, sku: string) {',
+            '        return this.pool.query(`SELECT ${PRODUCT_COLUMNS} FROM products WHERE workspace_id = $1 AND sku = $2`, [workspaceId, sku]);',
+            '    }',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', constantColumnsQuery))).not.toContain('SEC-004');
+    });
+
+    it('accepts the constant template concatenated with literal clauses (product-repository.ts:95 and :100)', async () => {
+        const keysetPageQueries = [
+            productColumnsConstant,
+            'async function listPage(pool: Pool, workspaceId: string, cursorPosition: Cursor | null, pageSize: number) {',
+            '    return cursorPosition === null',
+            '        ? await pool.query(',
+            '            `SELECT ${PRODUCT_COLUMNS} FROM products WHERE workspace_id = $1 ` +',
+            "            'ORDER BY updated_at DESC, product_id DESC LIMIT $2',",
+            '            [workspaceId, pageSize + 1],',
+            '        )',
+            '        : await pool.query(',
+            '            `SELECT ${PRODUCT_COLUMNS} FROM products WHERE workspace_id = $1 ` +',
+            "            'AND (updated_at, product_id) < ($2, $3) ORDER BY updated_at DESC, product_id DESC LIMIT $4',",
+            '            [workspaceId, cursorPosition.updatedAt, cursorPosition.productId, pageSize + 1],',
+            '        );',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', keysetPageQueries))).not.toContain('SEC-004');
+    });
+
+    it('accepts literal-only concatenations (product-repository.ts:149, stock-ledger.ts:71)', async () => {
+        const upsertQuery = [
+            'const draftUpsert = await transactionClient.query(',
+            "    'INSERT INTO products (product_id, workspace_id, sku, title, status, weight_grams, updated_at) ' +",
+            '    "VALUES (gen_random_uuid(), $1, $2, $3, \'draft\', $4, now()) " +',
+            "    'ON CONFLICT (workspace_id, sku) DO UPDATE SET title = EXCLUDED.title, ' +",
+            "    'weight_grams = EXCLUDED.weight_grams, updated_at = now()',",
+            '    [workspaceId, productDraft.sku, productDraft.title, productDraft.weightGrams],',
+            ');',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', upsertQuery))).not.toContain('SEC-004');
+
+        const ledgerInsert = [
+            'await transactionClient.query(',
+            "    'INSERT INTO stock_ledger (entry_id, workspace_id, sku, kind, quantity_delta, reference, recorded_at) ' +",
+            "    'VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, now())',",
+            '    [entryDraft.workspaceId, entryDraft.sku, entryDraft.kind, entryDraft.quantityDelta, entryDraft.reference],',
+            ');',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', ledgerInsert))).not.toContain('SEC-004');
+    });
+
+    it('accepts exported, as-const and derived module constants', async () => {
+        const derivedConstants = [
+            "export const BASE_COLUMNS = 'id, status';",
+            "const AUDIT_COLUMNS = 'created_at, updated_at' as const;",
+            "const ALL_COLUMNS = BASE_COLUMNS + ', ' + AUDIT_COLUMNS;",
+            'export function load(pool: Pool, workspaceId: string) {',
+            '    return pool.query(`SELECT ${ALL_COLUMNS} FROM products WHERE workspace_id = $1`, [workspaceId]);',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', derivedConstants))).not.toContain('SEC-004');
+    });
+
+    it('still flags user input next to a constant column list', async () => {
+        const mixedQuery = [
+            productColumnsConstant,
+            'export function load(pool: Pool, productId: string) {',
+            '    return pool.query(`SELECT ${PRODUCT_COLUMNS} FROM products WHERE product_id = ${productId}`);',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', mixedQuery))).toContain('SEC-004');
+    });
+
+    it('still flags a let binding and a module const fed from the environment or a call', async () => {
+        const mutableBinding = [
+            "let tableName = 'products';",
+            'export function load(pool: Pool) { return pool.query(`SELECT * FROM ${tableName}`); }',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', mutableBinding))).toContain('SEC-004');
+
+        const environmentConstant = [
+            'const tableName = process.env.PRODUCT_TABLE;',
+            'export function load(pool: Pool) { return pool.query(`SELECT * FROM ${tableName}`); }',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', environmentConstant))).toContain('SEC-004');
+
+        const computedConstant = [
+            'const orderClause = resolveOrderClause();',
+            "export function load(pool: Pool) { return pool.query('SELECT * FROM products ' + orderClause); }",
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', computedConstant))).toContain('SEC-004');
+    });
+
+    it('still flags a parameter or a local declaration that shadows the module constant', async () => {
+        const shadowingParameter = [
+            productColumnsConstant,
+            'export function load(pool: Pool, PRODUCT_COLUMNS: string) {',
+            '    return pool.query(`SELECT ${PRODUCT_COLUMNS} FROM products`);',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', shadowingParameter))).toContain('SEC-004');
+
+        const shadowingDeclaration = [
+            productColumnsConstant,
+            'export function load(pool: Pool, request: Request) {',
+            '    const { PRODUCT_COLUMNS } = request.query;',
+            '    return pool.query(`SELECT ${PRODUCT_COLUMNS} FROM products`);',
+            '}',
+        ].join('\n');
+        expect(ruleIdsOf(await scanSource('typescript', shadowingDeclaration))).toContain('SEC-004');
+    });
+});
+
 describe('SEC-006 — unsafe deserialization', () => {
     it('flags pickle.load, unsafe yaml.load and torch.load without weights_only', async () => {
         const pythonSinks = [

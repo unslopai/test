@@ -115,46 +115,61 @@ function applyVerdictsToIssues(
     let downgradedCount = 0;
 
     issues.forEach((draftIssue, issueIndex) => {
-        const claimId = claimIdForIssueIndex(issueIndex);
-        const claimVerdict = verdictByClaimId.get(claimId);
-
+        const claimVerdict = verdictByClaimId.get(claimIdForIssueIndex(issueIndex));
         if (!claimVerdict) {
             survivingIssues.push(labelIssueWithoutVerdict(draftIssue));
             return;
         }
-        const arbitrationSkipped = escalationSkipped && escalationIdSet.has(claimId);
-        if (isGatekeeperRule(draftIssue.rule) && claimVerdict.verdict !== 'CONFIRMED') {
-            const gatekeeperOutcome = resolveGatekeeperClaim(draftIssue, claimVerdict, arbitrationSkipped, cascade);
-            if (gatekeeperOutcome === null) refutedCount += 1;
-            else survivingIssues.push(gatekeeperOutcome);
-            return;
-        }
-        if (claimVerdict.verdict === 'REFUTED') {
-            // Ein Flash-REFUTED auf einem eskalations-markierten Claim, den Pro
-            // nie geprüft hat, darf NICHT still sterben (False-Refutation-Risiko,
-            // PR-#13-Vorfall) — er überlebt sichtbar als downgraded WARNING.
-            if (!arbitrationSkipped) {
-                refutedCount += 1;
-                return;
-            }
-            downgradedCount += 1;
-            survivingIssues.push(decorateIssue(draftIssue, claimVerdict, 'escalation_skipped'));
-            return;
-        }
-
-        const downgradeReason = resolveDowngradeReason(claimVerdict, arbitrationSkipped);
-        if (downgradeReason) downgradedCount += 1;
-
-        survivingIssues.push(decorateIssue(draftIssue, claimVerdict, downgradeReason));
+        const arbitrationSkipped = escalationSkipped && escalationIdSet.has(claimVerdict.claimId);
+        const resolution = resolveVerdictedIssue(draftIssue, claimVerdict, arbitrationSkipped, cascade);
+        if (resolution.outcome === 'refuted') refutedCount += 1;
+        if (resolution.outcome === 'downgraded') downgradedCount += 1;
+        if (resolution.issue) survivingIssues.push(resolution.issue);
     });
 
     return { survivingIssues, refutedCount, downgradedCount };
 }
 
+type VerdictOutcome = 'kept' | 'downgraded' | 'refuted';
+
+interface VerdictedIssueResolution {
+    /** null = verworfen, erscheint nirgends mehr (D8). */
+    readonly issue: PipelineIssue | null;
+    readonly outcome: VerdictOutcome;
+}
+
+/** Ein Draft-Issue mit Verdict: GATE-001 folgt seinen eigenen Regeln, alles andere §6/§8. */
+function resolveVerdictedIssue(
+    draftIssue: PipelineIssue,
+    claimVerdict: ClaimVerdict,
+    arbitrationSkipped: boolean,
+    cascade: CascadeState,
+): VerdictedIssueResolution {
+    if (isGatekeeperRule(draftIssue.rule)) {
+        const gatekeeperIssue = resolveGatekeeperClaim(draftIssue, claimVerdict, arbitrationSkipped, cascade);
+        return { issue: gatekeeperIssue, outcome: gatekeeperIssue === null ? 'refuted' : 'kept' };
+    }
+    if (claimVerdict.verdict === 'REFUTED') {
+        // Ein Flash-REFUTED auf einem eskalations-markierten Claim, den Pro
+        // nie geprüft hat, darf NICHT still sterben (False-Refutation-Risiko,
+        // PR-#13-Vorfall) — er überlebt sichtbar als downgraded WARNING.
+        if (!arbitrationSkipped) return { issue: null, outcome: 'refuted' };
+        return { issue: decorateIssue(draftIssue, claimVerdict, 'escalation_skipped'), outcome: 'downgraded' };
+    }
+    const downgradeReason = resolveDowngradeReason(claimVerdict, arbitrationSkipped);
+    return {
+        issue: decorateIssue(draftIssue, claimVerdict, downgradeReason),
+        outcome: downgradeReason ? 'downgraded' : 'kept',
+    };
+}
+
 /**
- * A12c (SPEC.md §12.4): ein GATE-001-Claim ohne CONFIRMED. Nur ein
- * Arbiter-REFUTED auf die feste Frage verwirft ihn (null); ohne Arbiter oder
- * bei UNCERTAIN bleibt er CRITICAL — nie WARNING, nie `contested`.
+ * A12c (SPEC.md §12.4, Regeln 2–6): ein GATE-001-Claim ist nie WARNING und
+ * nie `contested`. CONFIRMED bleibt CRITICAL mit der Verifier-Konfidenz —
+ * auch unter der Konfidenzschwelle ohne Arbiter (Regel 6; vorher lief dieser
+ * Pfad in den generischen `escalation_skipped`-Downgrade, Nachreview
+ * 2026-09-28). Nur ein Arbiter-REFUTED auf die feste Frage verwirft (null);
+ * ohne Arbiter oder bei UNCERTAIN bleibt der Claim annotiert CRITICAL.
  */
 function resolveGatekeeperClaim(
     draftIssue: PipelineIssue,
@@ -162,6 +177,9 @@ function resolveGatekeeperClaim(
     arbitrationSkipped: boolean,
     cascade: CascadeState,
 ): PipelineIssue | null {
+    if (claimVerdict.verdict === 'CONFIRMED') {
+        return { ...decorateIssue(draftIssue, claimVerdict, null), severity: 'CRITICAL' };
+    }
     if (arbitrationSkipped) {
         return keepUnresolvedGatekeeperIssue(draftIssue, 'arbitration_skipped', describeSkippedArbitration(cascade));
     }

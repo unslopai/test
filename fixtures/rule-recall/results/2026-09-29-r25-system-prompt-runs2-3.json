@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-09-29T19:25:21.071Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 2,
+  "results": [
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "45eaeaa5-88e7-4d08-816b-265e7a72f308",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 110,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "0291beb8-de95-40c5-bee1-3282df64b4d2",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 6,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 2
+    }
+  ]
+}
