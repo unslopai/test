@@ -1,0 +1,396 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>unslop · silent failure</title>
+<style>
+/* Brand fonts: Geist + Silkscreen are the repo's own files (src/app/(marketing)/assets), Geist 500/600 + Geist Mono from fontsource (OFL). */
+@font-face{font-family:Geist;src:url(assets/fonts/geist-regular.ttf) format('truetype');font-weight:400}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-500.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-600.woff2) format('woff2');font-weight:600}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-500.woff2) format('woff2');font-weight:500}
+/* Design tokens = src/app/globals.css (@theme inline) */
+:root{--surface:#0a0a0b;--raised:#18181b;--overlay:#27272a;--edge:#27272a;--ink:#f4f4f5;--muted:#a1a1aa;--accent:#bef264;--warn:#fcd34d;--danger:#f87171}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--surface);font-family:Geist,sans-serif;color:var(--ink);letter-spacing:-.025em}
+.a{position:absolute;left:0;top:0}
+.m{position:absolute;left:0;width:1080px;overflow:hidden;text-align:center}
+.m>span{display:inline-block;white-space:nowrap}
+.w{display:inline-block;will-change:transform}
+.px{font-family:Silkscreen;font-weight:700;color:var(--accent);letter-spacing:0;font-size:.86em}
+.rd{color:var(--danger)}
+.card{position:absolute;background:#0c0c0e;border:2px solid rgba(255,255,255,.10);border-radius:24px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.9)}
+.hd{position:absolute;left:0;right:0;top:0;height:84px;border-bottom:2px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 34px;font:500 28px Geist;color:#a1a1aa;letter-spacing:-.01em}
+.ex{margin-left:auto;font:500 24px Geist;color:#71717a;border:2px solid rgba(255,255,255,.10);border-radius:8px;padding:4px 12px;letter-spacing:0}
+.code{font-family:GeistMono;font-size:33px;letter-spacing:0;white-space:pre}
+.ln{position:absolute;left:0;height:56px;display:flex;align-items:center;width:100%}
+.ln .no{width:78px;box-sizing:border-box;text-align:right;padding-right:26px;color:#3f3f46;flex:none}
+.k{color:#a1a1aa}.c{color:#71717a}.s{color:#e4e4e7}
+.row{position:absolute;display:flex;align-items:center}
+.btn{position:absolute;border-radius:8px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+</style></head><body>
+<div id="stage">
+  <div id="dots" class="a" style="width:1080px;height:1920px;background-image:radial-gradient(rgba(255,255,255,.075) 2px,transparent 2.2px);background-size:36px 36px;-webkit-mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent);mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent)"></div>
+  <div id="wash" class="a" style="width:1600px;height:900px;left:-60px;top:-520px;background:radial-gradient(closest-side,rgba(190,242,100,.06),transparent)"></div>
+  <div id="world" class="a" style="width:1080px;height:1920px;transform-origin:540px 960px">
+    <div id="cam" class="a" style="width:1080px;height:1920px;transform-origin:0 0"></div>
+    <div id="hud" class="a" style="width:1080px;height:1920px;z-index:40"></div>
+  </div>
+  <div id="beta" class="a" style="z-index:95;left:0;top:168px;width:1080px;text-align:center;visibility:hidden"><span style="display:inline-flex;align-items:center;gap:14px;font:600 34px Geist;letter-spacing:.04em;text-transform:uppercase;color:#fcd34d;border:3px solid rgba(252,211,77,.55);border-radius:10px;padding:10px 22px"><i style="width:14px;height:14px;border-radius:50%;background:#fcd34d;display:block"></i><span id="betaTxt"></span></span></div>
+  <svg id="cur" class="a" viewBox="0 0 44 44" style="z-index:90;width:58px;height:58px"><path d="M5 3 L5 34 L12.5 27 L17.5 39 L22.5 37 L17.6 25.4 L27.5 25.4 Z" fill="#fafafa" stroke="#0a0a0b" stroke-width="2.4" stroke-linejoin="round"/></svg>
+</div>
+<script>
+// ---------------------------------------------------------------- copy (i18n)
+// EN = the product's default locale (src/i18n/config.ts). DE phrasing follows messages/de.json where the landing already has it.
+const STR = {
+  en: {
+    h1a: 'Your AI reviewer', h1b: 'approved <b class="px">this.</b>',
+    h2a: 'The charge failed.', h2b: 'The API says <b class="rd">ok: true.</b>',
+    approvedBy: 'AI reviewer', approvedTxt: 'approved these changes', lgtm: 'LGTM',
+    example: 'Example', stat1: 'A cloud LLM reviewer passed what', stat2: 'a deterministic scan flagged.',
+    scanLbl: 'Deterministic scan', judgeLbl: 'LLM evaluator', src: 'AIRA · arXiv 2604.17587 · exploratory comparison, one model',
+    h4a: 'Unslop checks every PR against', h4b: '<b style="color:#bef264">119</b> research-backed rules.',
+    checks: 'Checks', checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', failed: '1 critical slop finding', passed: 'No AI slop found', details: 'Details',
+    caught: 'Caught.',
+    h6a: 'It names the <b style="color:#bef264">rule.</b>', h6b: 'And the <b style="color:#bef264">fix.</b>',
+    justNow: 'just now', expl: 'An error is silently swallowed and the handler returns a success response anyway, so failures look identical to successes.',
+    fixLbl: 'Suggested fix', fixTail: '(1-click commit):', sugg: 'Suggested change', commit: 'Commit suggestion', committed: 'Suggestion committed',
+    h7: 'Fixed before <b class="px">merge.</b>',
+    h8a: 'One engine.', h8b: 'Every <b style="color:#bef264">surface.</b>',
+    ghApp: 'GitHub App', cli: 'CLI', vsc: 'VS Code', cliOut: '✔ No AI slop found.', cliDim: ' (1 file(s) reviewed)', vsScan: 'Scanning…', vsDone: 'No slop ✓',
+    tag: 'A review gate for AI-written code.', sub1: '119 research-backed rules.', sub2: 'Every finding names its rule.', url: 'unslop.codes', beta: 'Private beta',
+  },
+  de: {
+    h1a: 'Dein KI-Reviewer', h1b: 'hat <b class="px">das</b> freigegeben.',
+    h2a: 'Die Zahlung schlug fehl.', h2b: 'Die API sagt <b class="rd">ok: true.</b>',
+    approvedBy: 'AI reviewer', approvedTxt: 'approved these changes', lgtm: 'LGTM',
+    example: 'Beispiel', stat1: 'Ein Cloud-LLM-Reviewer ließ durch,', stat2: 'was ein deterministischer Scan fand.',
+    scanLbl: 'Deterministischer Scan', judgeLbl: 'LLM-Evaluator', src: 'AIRA · arXiv 2604.17587 · explorativer Vergleich, ein Modell',
+    h4a: 'Unslop prüft jeden PR gegen', h4b: '<b style="color:#bef264">119</b> forschungsbasierte Regeln.',
+    checks: 'Checks', checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', failed: '1 critical slop finding', passed: 'No AI slop found', details: 'Details',
+    caught: 'Erwischt.',
+    h6a: 'Es nennt die <b style="color:#bef264">Regel.</b>', h6b: 'Und den <b style="color:#bef264">Fix.</b>',
+    justNow: 'just now', expl: 'An error is silently swallowed and the handler returns a success response anyway, so failures look identical to successes.',
+    fixLbl: 'Suggested fix', fixTail: '(1-click commit):', sugg: 'Suggested change', commit: 'Commit suggestion', committed: 'Suggestion committed',
+    h7: 'Gefixt vor dem <b class="px">Merge.</b>',
+    h8a: 'Eine Engine.', h8b: 'Jede <b style="color:#bef264">Oberfläche.</b>',
+    ghApp: 'GitHub App', cli: 'CLI', vsc: 'VS Code', cliOut: '✔ No AI slop found.', cliDim: ' (1 file(s) reviewed)', vsScan: 'Scanning…', vsDone: 'No slop ✓',
+    tag: 'Ein Review-Gate für KI-Code.', sub1: '119 forschungsbasierte Regeln.', sub2: 'Jedes Finding nennt seine Regel.', url: 'unslop.codes', beta: 'Private Beta',
+  },
+};
+const LANG = new URLSearchParams(location.search).get('lang') === 'de' ? 'de' : 'en';
+const T = STR[LANG];
+// ?beta=1: "Private beta" stamp for the whole film (distribution/channels: phase A, product not publicly usable yet).
+const BETA = new URLSearchParams(location.search).get('beta') === '1';
+
+// ---------------------------------------------------------------- engine
+const W = 1080, H = 1920, LIME = '#bef264', RED = '#f87171', AMBER = '#fcd34d';
+const BEAT = 60 / 128, BAR = 4 * BEAT, DROP = 4 * BAR;           // 128 BPM, drop on bar 5 = 7.5 s
+const DUR = 11 * BAR;                                              // scene timeline length (20.625 s)
+// Film time -> scene time (timeline.json): reading holds stretch the 20.6 s scene timeline to a 30 s film.
+let TL = null;
+function warp(T) {
+  const a = TL.anchors; if (T <= a[0][1]) return a[0][0];
+  for (let k = 1; k < a.length; k++) if (T <= a[k][1]) { const [s0, f0] = a[k - 1], [s1, f1] = a[k]; return s0 + (s1 - s0) * (T - f0) / (f1 - f0); }
+  return a[a.length - 1][0];
+}
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x, lerp = (a, b, u) => a + (b - a) * u;
+const E = { io: u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2, out: u => 1 - Math.pow(1 - u, 3), in: u => u * u * u, o5: u => 1 - Math.pow(1 - u, 5) };
+const P = (t, t0, d, e = E.io) => e(clamp((t - t0) / d));
+function step(tau, f = 2.6, z = .7) { if (tau <= 0) return 0; const w = 2 * Math.PI * f, wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + z * w / wd * Math.sin(wd * tau)); }
+const sp = (t, t0, f = 2.4, z = .75) => step(t - t0, f, z);
+const pop = (t, t0, f = 3, z = .55) => clamp(sp(t, t0, f, z), 0, 1.25);
+const $ = id => document.getElementById(id), px = v => v + 'px';
+const cam = $('cam'), hud = $('hud');
+function mk(parent, html, z = 5) { parent.insertAdjacentHTML('beforeend', html); const e = parent.lastElementChild; e.style.zIndex = z; return e; }
+function box(el, x, y, w, h) { const s = el.style; s.left = px(x); s.top = px(y); if (w != null) s.width = px(w); if (h != null) s.height = px(h); }
+const vis = (el, on) => { el.style.visibility = on ? 'visible' : 'hidden'; };
+
+// Split a line's text nodes into word spans (keeps the <b class="px|rd"> accent wrappers).
+function wordify(root) {
+  const walk = (node) => { [...node.childNodes].forEach((c) => {
+    if (c.nodeType === 3) { const frag = document.createDocumentFragment(); c.textContent.split(/(\s+)/).forEach((w) => {
+      if (!w) return; if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+      const s = document.createElement('span'); s.className = 'w'; s.textContent = w; frag.appendChild(s); }); c.replaceWith(frag); }
+    else if (c.nodeType === 1) walk(c); }); };
+  walk(root); return root;
+}
+// A masked headline line. Font shrinks at init if the line would leave the 70 px side margins.
+function line(html, y, size, weight = 700, color = '#fafafa', parent = hud) {
+  const el = mk(parent, `<div class="m" style="top:${y}px;height:${Math.round(size * 1.34)}px;line-height:${Math.round(size * 1.3)}px"><span style="font:${weight} ${size}px Geist;color:${color}">${html}</span></div>`, 20);
+  wordify(el.firstElementChild); el.dataset.size = size; return el;
+}
+function fitLine(el, maxW = 940) { const sp0 = el.firstElementChild, w = sp0.getBoundingClientRect().width; if (w > maxW) sp0.style.fontSize = px(parseFloat(el.dataset.size) * maxW / w); }
+// Word-by-word rise inside the mask; exit = the words continue upward.
+function rise(el, t, tin, tout, f = 2.3) {
+  const ws = el.querySelectorAll('.w'), o = tout == null ? 0 : P(t, tout, .28, E.in);
+  ws.forEach((w, i) => { const u = clamp(step(t - tin - i * .055, f, .74), 0, 1.06);
+    w.style.transform = `translateY(${(1 - u) * 112 - o * 118}%) rotate(${(1 - clamp(u)) * 5}deg)`; });
+  vis(el, t >= tin && (tout == null || t < tout + .3));
+}
+
+// ---------------------------------------------------------------- scene 1-2: the example code + the approval
+const CODE = [
+  [7, '<span class="k">export async function</span> POST(req) {'],
+  [8, '  <span class="k">const</span> event = <span class="k">await</span> req.json();'],
+  [9, '  <span class="k">try</span> {'],
+  [10, '    <span class="k">await</span> chargeCustomer(event);'],
+  [11, '  } <span class="k">catch</span> (err) {'],
+  [12, '    <span class="c">// retry later</span>'],
+  [13, '  }'],
+  [14, '  <span class="k">return</span> Response.json({ ok: <span class="k">true</span> });'],
+  [15, '}'],
+];
+const CX = 70, CY = 600, CW = 940, LH = 56, CT = 84 + 22, CH = 33 * .6;   // CH = Geist Mono advance at 33 px   // card origin, line height, first line offset
+const codeCard = mk(cam, `<div class="card" style="width:${CW}px;height:${CT + CODE.length * LH + 26}px"><div class="hd">app/api/checkout/webhook/route.ts<span class="ex">${T.example}</span></div></div>`, 10);
+const hl = [mk(codeCard, `<div class="a" style="left:0;width:${CW}px;background:rgba(239,68,68,.12);border-left:6px solid ${RED}"></div>`, 1),
+            mk(codeCard, `<div class="a" style="left:0;width:${CW}px;background:rgba(239,68,68,.12);border-left:6px solid ${RED}"></div>`, 1)];
+const codeLines = CODE.map(([n, src], i) => mk(codeCard, `<div class="ln code" style="top:${CT + i * LH}px"><span class="no">${n}</span><span>${src}</span></div>`, 2));
+// squiggles under the swallowed catch and the lying return (drawn on at the zoom)
+const squig = mk(codeCard, `<svg class="a" width="${CW}" height="${CT + CODE.length * LH + 26}" style="overflow:visible"><path id="sq1" fill="none" stroke="${RED}" stroke-width="3.5" stroke-linecap="round"/><path id="sq2" fill="none" stroke="${RED}" stroke-width="3.5" stroke-linecap="round"/></svg>`, 3);
+// v2 hook: the AI reviewer "scans" every line on 16th notes and ticks it, the broken ones included
+const SCAN0 = BEAT, SCAN_STEP = BEAT / 4;                          // ticks at 0.47 s ... 1.41 s (scene time)
+const scanBand = mk(codeCard, `<div class="a" style="left:0;width:${CW}px;height:${LH}px;background:rgba(255,255,255,.06)"></div>`, 1);
+const ticks = CODE.map((_, i) => mk(codeCard, `<div class="a" style="left:${CW - 74}px;top:${CT + i * LH + 10}px;width:36px;height:36px">
+  <svg class="a tk" width="36" height="36" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="#d4d4d8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <svg class="a tx" width="36" height="36" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="${RED}" stroke-width="3" stroke-linecap="round"/></svg></div>`, 4));
+const BUGLINE = [2.34, 2.34, 2.34, 2.81];                           // scene times the ticks on lines 11-14 flip to red
+function shake(t) { let x = 0, y = 0; [[1.64, 12], [2.34, 9], [2.81, 9]].forEach(([c, a], i) => { if (t >= c) { const d = Math.exp(-(t - c) * 13); x += d * a * Math.sin((t - c) * 70 + i); y += d * a * .6 * Math.cos((t - c) * 60 + i); } }); return [x, y]; }
+const approval = mk(cam, `<div class="card" style="border-radius:16px;width:${CW}px;height:118px;background:#111113"><div class="row" style="left:30px;top:0;height:118px;gap:22px;font:400 32px Geist;color:#d4d4d8;letter-spacing:-.01em">
+  <span style="width:58px;height:58px;border-radius:10px;background:#27272a;display:flex;align-items:center;justify-content:center;font:600 24px Geist;color:#a1a1aa;letter-spacing:0">AI</span>
+  <span><b style="font-weight:600;color:#fafafa">${T.approvedBy}</b> ${T.approvedTxt}</span></div>
+  <div id="apok" class="a" style="left:${CW - 170}px;top:30px;height:58px;padding:0 18px;border-radius:8px;border:2px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:10px;font:600 28px Geist;color:#e4e4e7;letter-spacing:0">
+  <svg width="26" height="26" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#e4e4e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>${T.lgtm}</div></div>`, 11);
+
+// the same file after "Commit suggestion" (lines 9-17), added lines tinted lime like the landing's PreviewDiffPane
+const FIXED = [
+  [9, '  <span class="k">try</span> {', 0],
+  [10, '    <span class="k">await</span> chargeCustomer(event);', 0],
+  [11, '  } <span class="k">catch</span> (err) {', 0],
+  [12, '    console.error(err);', 1],
+  [13, '    <span class="k">return</span> Response.json(', 1],
+  [14, '      { ok: <span class="k">false</span> }, { status: 500 });', 1],
+  [15, '  }', 0],
+  [16, '  <span class="k">return</span> Response.json({ ok: <span class="k">true</span> });', 0],
+  [17, '}', 0],
+];
+const FY = 520;
+const codeFix = mk(cam, `<div class="card" style="width:${CW}px;height:${CT + FIXED.length * LH + 26}px"><div class="hd">app/api/checkout/webhook/route.ts<span class="ex">${T.example}</span></div>
+  ${FIXED.map(([n, src, add], i) => `<div class="ln code fx" style="top:${CT + i * LH}px;${add ? `background:rgba(163,230,53,.10);border-left:6px solid ${LIME};box-sizing:border-box` : ''}"><span class="no" ${add ? 'style="width:72px"' : ''}>${n}</span><span ${add ? `style="color:#d9f99d"` : ''}>${src}</span></div>`).join('')}</div>`, 11);
+
+const TT = {
+  h1a: line(T.h1a, 300, 88), h1b: line(T.h1b, 408, 88),
+  h2a: line(T.h2a, 300, 84), h2b: line(T.h2b, 408, 84),
+  h4a: line(T.h4a, 330, 60, 600, '#d4d4d8'), h4b: line(T.h4b, 416, 76),
+  caught: line(`<b class="px" style="font-size:1em">${T.caught}</b>`, 330, 150),
+  h6a: line(T.h6a, 300, 84), h6b: line(T.h6b, 408, 84),
+  h7: line(T.h7, 350, 88),
+  h8a: line(T.h8a, 300, 88), h8b: line(T.h8b, 408, 88),
+};
+
+// ---------------------------------------------------------------- scene 3: 44 : 1
+const statNum = line(`<span style="letter-spacing:-.04em">44<span style="color:#52525b;padding:0 .08em"> : </span>1</span>`, 420, 270);
+const stat1 = line(T.stat1, 1130, 56, 600), stat2 = line(T.stat2, 1206, 56, 600);
+const srcLn = line(`<span style="color:#71717a">${T.src}</span>`, 1316, 28, 500);
+const BS = 38, BG = 10;                                    // block size / gap
+const scanBlocks = Array.from({ length: 44 }, () => mk(hud, `<div class="a" style="width:${BS}px;height:${BS}px;background:${LIME}"></div>`, 15));
+const judgeBlock = mk(hud, `<div class="a" style="width:${BS}px;height:${BS}px;background:#71717a"></div>`, 15);
+const scanLbl = mk(hud, `<div class="a" style="font:500 30px Geist;color:#a1a1aa;letter-spacing:-.01em;white-space:nowrap">${T.scanLbl}</div>`, 15);
+const judgeLbl = mk(hud, `<div class="a" style="font:500 30px Geist;color:#a1a1aa;letter-spacing:-.01em;white-space:nowrap">${T.judgeLbl}</div>`, 15);
+
+// ---------------------------------------------------------------- scene 4-8: the check run (one element, three states, later the first "surface" card)
+const ICON = {
+  spin: `<svg width="64" height="64" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="rgba(252,211,77,.22)" stroke-width="5"/><circle class="arc" cx="28" cy="28" r="22" fill="none" stroke="${AMBER}" stroke-width="5" stroke-linecap="round" stroke-dasharray="40 200" transform="rotate(0 28 28)"/></svg>`,
+  fail: `<svg width="64" height="64" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="rgba(248,113,113,.14)" stroke="${RED}" stroke-width="4"/><path d="M20 20l16 16M36 20L20 36" stroke="${RED}" stroke-width="5" stroke-linecap="round"/></svg>`,
+  ok: `<svg width="64" height="64" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="rgba(190,242,100,.14)" stroke="${LIME}" stroke-width="4"/><path d="M18 29l7 7 13-15" fill="none" stroke="${LIME}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const chk = mk(cam, `<div class="card" style="width:${CW}px;height:270px"><div class="hd"><span class="lbA">${T.checks}</span><span class="lbB a" style="left:34px;top:0;line-height:84px">${T.ghApp}</span><span class="ex">${T.example}</span></div>
+  <div class="tint a" style="left:0;top:84px;width:${CW}px;height:186px;background:rgba(239,68,68,.08)"></div>
+  <div class="a ic" style="left:34px;top:143px;width:64px;height:64px;transform-origin:32px 32px"><div class="a i0">${ICON.spin}</div><div class="a i1">${ICON.fail}</div><div class="a i2">${ICON.ok}</div></div>
+  <div class="a" style="left:128px;top:116px;font:600 44px Geist;color:#fafafa;white-space:nowrap">${T.checkName}</div>
+  <div class="a" style="left:128px;top:174px;height:50px;width:640px;overflow:hidden"><div class="a s0" style="font:400 36px Geist;color:#a1a1aa;white-space:nowrap">${T.running}</div><div class="a s1" style="font:500 36px Geist;color:#fca5a5;white-space:nowrap">${T.failed}</div><div class="a s2" style="font:500 36px Geist;color:${LIME};white-space:nowrap">${T.passed}</div></div>
+  <div class="a" style="left:${CW - 150}px;top:156px;font:500 28px Geist;color:#71717a">${T.details}</div></div>`, 12);
+
+// ---------------------------------------------------------------- scene 6-7: the unslop[bot] review comment (format = src/lib/pipeline/helpers.ts mapIssueToPrComment)
+const SUG = [
+  ['-', '    <span class="c">// retry later</span>'],
+  ['+', '    console.error(err);'],
+  ['+', '    <span class="k">return</span> Response.json('],
+  ['+', '      { ok: <span class="k">false</span> }, { status: 500 });'],
+];
+const cmt = mk(cam, `<div class="card" style="width:${CW}px;height:480px">
+  <div class="hd" style="height:100px;gap:18px;color:#71717a">
+    <span style="width:60px;height:60px;border-radius:10px;background:#0a0a0b;border:2px solid rgba(190,242,100,.35);display:flex;align-items:center;justify-content:center"><img src="assets/img/shield-mark.svg" style="width:52px;height:52px;image-rendering:pixelated"></span>
+    <b style="font:600 32px Geist;color:#fafafa">unslop</b><span style="font:500 22px Geist;color:#a1a1aa;border:2px solid rgba(255,255,255,.14);border-radius:6px;padding:2px 8px;letter-spacing:0">bot</span><span>${T.justNow}</span><span class="ex">${T.example}</span></div>
+  <div class="a" style="left:40px;top:128px;font:500 26px Geist;color:#71717a;letter-spacing:-.01em">app/api/checkout/webhook/route.ts · line 11</div>
+  <div class="a cb" style="left:40px;top:178px;font:600 42px Geist;color:#fafafa;white-space:nowrap">🚨 SEC-031 <span style="font-weight:500;font-size:34px;color:#fca5a5">(CRITICAL)</span></div>
+  <div class="a cb" style="left:40px;top:250px;width:860px;font:400 33px/1.4 Geist;color:#d4d4d8;letter-spacing:-.012em">${T.expl}</div>
+  <div class="a cb" style="left:40px;top:418px;font:400 31px Geist;color:#d4d4d8;white-space:nowrap">💡 <b style="font-weight:600;color:#fafafa">${T.fixLbl}</b> ${T.fixTail}</div>
+  <div class="a cb sg" style="left:40px;top:478px;width:860px;height:246px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:rgba(0,0,0,.45);overflow:hidden">
+    <div class="a" style="left:24px;top:14px;font:500 24px Geist;color:#71717a;letter-spacing:0">${T.sugg}</div>
+    ${SUG.map(([m, s], i) => `<div class="ln code" style="top:${56 + i * 46}px;height:46px;font-size:28px;background:${m === '-' ? 'rgba(239,68,68,.10)' : 'rgba(163,230,53,.10)'};color:${m === '-' ? '#fca5a5' : LIME}"><span style="width:48px;text-align:center;flex:none;color:${m === '-' ? RED : LIME}">${m}</span><span>${s}</span></div>`).join('')}
+  </div>
+  <div class="btn cb" id="cbtn" style="left:40px;top:756px;height:70px;padding:0 32px;background:${LIME};color:#0a0a0b;font:600 31px Geist;letter-spacing:-.01em"><span id="cbl">${T.commit}</span></div>
+</div>`, 13);
+
+// ---------------------------------------------------------------- scene 9: the other two surfaces (CLI + VS Code, strings from packages/cli/src/format.ts + vscode stateMachine.ts)
+const cliCard = mk(cam, `<div class="card" style="width:${CW}px;height:210px"><div class="hd">${T.cli}</div>
+  <div class="a code" style="left:34px;top:104px;font-size:30px;color:#d4d4d8"><span style="color:#71717a">$</span> unslop scan</div>
+  <div class="a code" style="left:34px;top:152px;font-size:30px"><span id="cliok" style="color:${LIME}">${T.cliOut}</span><span id="clidim" style="color:#71717a">${T.cliDim}</span></div></div>`, 12);
+const vsCard = mk(cam, `<div class="card" style="width:${CW}px;height:210px"><div class="hd">${T.vsc}</div>
+  <div class="a code" style="left:0;top:84px;width:${CW}px;height:70px;background:#1f1f1f;font-size:28px;display:flex;align-items:center;color:#d4d4d8"><span style="width:78px;text-align:right;padding-right:26px;box-sizing:border-box;color:#52525b">12</span>    console.error(err);</div>
+  <div class="a" style="left:0;top:154px;width:${CW}px;height:56px;background:#181818;border-top:2px solid #2b2b2b;display:flex;align-items:center;padding:0 26px;box-sizing:border-box;font:400 26px Geist;color:#cccccc;letter-spacing:0;gap:28px">
+    <span>⎇ main</span><span style="margin-left:auto;display:flex;align-items:center;gap:10px">
+    <svg width="26" height="26" viewBox="0 0 16 16"><path d="M8 1.2l5.6 2v4.3c0 3.3-2.3 5.9-5.6 7.3-3.3-1.4-5.6-4-5.6-7.3V3.2z" fill="none" stroke="#cccccc" stroke-width="1.3" stroke-linejoin="round"/></svg>
+    <span id="vst" style="position:relative;display:inline-block;width:170px;height:34px;overflow:hidden"><span class="a v0" style="white-space:nowrap">${T.vsScan}</span><span class="a v1" style="white-space:nowrap">${T.vsDone}</span></span></span></div></div>`, 12);
+const surfEx = mk(hud, `<div class="a" style="font:500 24px Geist;color:#71717a;letter-spacing:0;white-space:nowrap">${T.example}</div>`, 15);
+
+// ---------------------------------------------------------------- scene 10: end card (pixel shield = packages/vscode-extension/icon.png, 16 x 16 grid)
+const SHIELD = ['...##########...', '...##########...', '...#######..#...', '...######..##...', '...#..##..###...', '...##....####...', '...###..#####...', '....########....', '.....######.....', '......####......', '.......##.......'];
+const CELL = 26, SX = 540 - 8 * CELL, SY = 420;
+const cells = [];
+SHIELD.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === '#') cells.push([x, y, mk(hud, `<div class="a" style="width:${CELL + .6}px;height:${CELL + .6}px;background:${LIME}"></div>`, 30)]); }));
+const word = mk(hud, `<div class="a" style="font:700 132px Silkscreen;color:#fafafa;letter-spacing:0;white-space:nowrap;line-height:1">unslop</div>`, 30);
+const caret = mk(hud, `<div class="a" style="width:52px;height:100px;background:${LIME}"></div>`, 30);
+const tag = line(T.tag, 1010, 66, 700), sub1 = line(`<span style="color:#a1a1aa">${T.sub1}</span>`, 1118, 42, 400), sub2 = line(`<span style="color:#a1a1aa">${T.sub2}</span>`, 1176, 42, 400);
+const url = line(`<span style="font-family:Silkscreen;font-weight:400;letter-spacing:0;color:#d4d4d8">${T.url}</span>`, 1330, 46, 400);
+
+// ---------------------------------------------------------------- camera keys [t, zoom, focusX, focusY, screenX, screenY]
+const CAM = [[0, 1, 540, 960, 540, 960], [1.95, 1, 540, 960, 540, 960], [2.75, 1.15, 470, CY + CT + 5.5 * LH, 478, 1040], [3.749, 1.17, 470, CY + CT + 5.5 * LH, 478, 1040],
+             [3.75, 1, 540, 960, 540, 960], [99, 1, 540, 960, 540, 960]];
+function camAt(t) {
+  let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++;
+  const a = CAM[k], b = CAM[k + 1], u = b[0] - a[0] < .01 ? 1 : E.io(clamp((t - a[0]) / (b[0] - a[0])));
+  const z = Math.exp(lerp(Math.log(a[1]), Math.log(b[1]), u));
+  return [z, lerp(a[2], b[2], u), lerp(a[3], b[3], u), lerp(a[4], b[4], u), lerp(a[5], b[5], u)];
+}
+function beatPunch(t) {                                           // film time: punches ride the music
+  let p = 0; const FD = TL.filmDrop;
+  const MB = 60 / TL.bpm;                                           // music beat (film time)
+  for (let k = 0; FD + k * MB < TL.punchUntil; k++) { const bt = FD + k * MB; if (t >= bt) p += (k % 4 === 0 ? .022 : .008) * Math.exp(-(t - bt) * 8) * Math.sin(Math.min(Math.PI, (t - bt) * 24)); }
+  return p;
+}
+function squiggle(x0, x1, y) { let d = `M${x0} ${y}`; for (let x = x0, i = 0; x < x1; x += 9, i++) d += ` L${Math.min(x + 9, x1)} ${y + (i % 2 ? -5 : 5)}`; return d; }
+function drawOn(path, u) { const L = path.getTotalLength(); path.setAttribute('stroke-dasharray', L); path.setAttribute('stroke-dashoffset', L * (1 - u)); }
+
+// ---------------------------------------------------------------- seek
+window.seek = async (filmT) => {
+  const t = warp(filmT), ft = filmT;                                        // t = scene time, ft = film time (ambient motion)
+  // camera + punch
+  const [z, fx, fy, sx, sy] = camAt(t);
+  cam.style.transform = `translate(${sx - fx * z}px,${sy - fy * z}px) scale(${z})`;
+  const [shx, shy] = shake(t);
+  $('world').style.transform = `translate(${shx}px,${shy}px) scale(${1 + beatPunch(ft) + .035 * P(ft, TL.duration - 3.1, 3.0, E.io)})`;
+  $('wash').style.transform = `translateX(${Math.sin(ft * .3) * 50}px)`;
+
+  // ---- S1 hook + S2 bug (0 - 3.75)
+  const cIn = clamp(sp(t, -0.4, 2.2, .8), 0, 1.02);
+  box(codeCard, CX, CY + (1 - cIn) * 90); codeCard.style.transform = `scale(${lerp(.95, 1, clamp(cIn))})`; codeCard.style.opacity = clamp(cIn * 1.6); vis(codeCard, t < 3.75);
+  codeLines.forEach((l, i) => { l.style.opacity = clamp((t + .45 - i * .03) / .2); });
+  rise(TT.h1a, t, -0.16, 1.8); rise(TT.h1b, t, 0.08, 1.8);
+  rise(TT.h2a, t, 1.95, 3.44); rise(TT.h2b, t, 2.8, 3.44);
+  ticks.forEach((tk, i) => { const t0 = SCAN0 + i * SCAN_STEP, bug = i >= 4 && i <= 7 ? BUGLINE[i - 4] : 99, flipped = t >= bug, gl = flipped && t < bug + .16;
+    tk.style.visibility = t >= t0 ? 'inherit' : 'hidden';
+    tk.style.transform = `scale(${flipped ? pop(t, bug, 3.8, .45) : pop(t, t0, 3.8, .5)}) translateX(${gl ? Math.sin(t * 900 + i) * 8 : 0}px)`;
+    tk.querySelector('.tk').style.visibility = flipped && !gl ? 'hidden' : 'inherit'; tk.querySelector('.tx').style.visibility = flipped ? 'inherit' : 'hidden'; });
+  const sp0 = (t - SCAN0) / SCAN_STEP; box(scanBand, 0, CT + clamp(sp0, 0, 8) * LH); scanBand.style.visibility = t >= SCAN0 - .05 && t < SCAN0 + 9 * SCAN_STEP ? 'inherit' : 'hidden';
+  const aIn = pop(t, 1.5, 3.2, .6);
+  box(approval, CX, CY + CT + CODE.length * LH + 26 + 24); approval.style.transform = `translateY(${(1 - clamp(aIn)) * 40}px) scale(${lerp(.9, 1, clamp(aIn))})`; approval.style.opacity = clamp(aIn * 2); vis(approval, t >= 1.5 && t < 3.75);
+  $('apok').style.transform = `scale(${pop(t, 1.64, 4.2, .42)})`;
+  // highlights: catch block (lines 11-13) at 2.34, return (line 14) at 2.81
+  const h1 = P(t, 2.34, .25, E.out), h2 = P(t, 2.81, .25, E.out);
+  box(hl[0], 0, CT + 4 * LH, null, 3 * LH); hl[0].style.opacity = h1; hl[0].style.transform = `scaleX(${lerp(.6, 1, h1)})`; hl[0].style.transformOrigin = '0 0';
+  box(hl[1], 0, CT + 7 * LH, null, LH); hl[1].style.opacity = h2; hl[1].style.transform = `scaleX(${lerp(.6, 1, h2)})`; hl[1].style.transformOrigin = '0 0';
+  const sq1 = $('sq1'), sq2 = $('sq2');
+  sq1.setAttribute('d', squiggle(78 + 4 * CH, 78 + 18 * CH, CT + 5 * LH + 48)); drawOn(sq1, P(t, 2.42, .4, E.out));
+  sq2.setAttribute('d', squiggle(78 + 23 * CH, 78 + 35 * CH, CT + 7 * LH + 48)); drawOn(sq2, P(t, 2.9, .4, E.out));
+
+  // ---- S3 stat (3.75 - 5.625): hard cut on the break
+  const sOut = P(t, 5.62, .3, E.in);
+  rise(statNum, t, 3.7, 5.62, 2.6);
+  rise(stat1, t, 4.12, 5.62); rise(stat2, t, 4.22, 5.62); rise(srcLn, t, 4.38, 5.62);
+  const gx = 150, gy = 800;
+  scanBlocks.forEach((b, i) => { const c = i % 11, r = (i / 11) | 0, u = pop(t, 3.95 + (c + r) * .025, 3.4, .6);
+    box(b, gx + c * (BS + BG), gy + r * (BS + BG) - sOut * 60); b.style.transform = `scale(${u * (1 - sOut)})`; vis(b, t >= 3.95 && t < 5.95); });
+  const ju = pop(t, 4.5, 3.4, .6);
+  box(judgeBlock, 870, gy + 3 * (BS + BG) - sOut * 60); judgeBlock.style.transform = `scale(${ju * (1 - sOut)})`; vis(judgeBlock, t >= 4.5 && t < 5.95);
+  box(scanLbl, gx, gy + 4 * (BS + BG) + 14 - sOut * 60); scanLbl.style.opacity = P(t, 4.1, .3) * (1 - sOut); vis(scanLbl, t >= 4.1 && t < 5.95);
+  const jw = judgeLbl.offsetWidth; box(judgeLbl, 870 + BS / 2 - jw / 2, gy + 4 * (BS + BG) + 14 - sOut * 60); judgeLbl.style.opacity = P(t, 4.55, .3) * (1 - sOut); vis(judgeLbl, t >= 4.55 && t < 5.95);
+
+  // ---- S4 gate (5.625 - 7.5) / S5 drop (7.5 - 9.375) / S7 rerun / S8 surfaces
+  rise(TT.h4a, t, 5.86, 7.2); rise(TT.h4b, t, 5.98, 7.2);
+  rise(TT.caught, t, DROP + .02, 9.1, 3.0);
+  const kIn = clamp(sp(t, 5.95, 2.3, .8), 0, 1.02);
+  const kOut = P(t, 9.12, .3, E.in), kBack = clamp(sp(t, 13.96, 2.4, .8), 0, 1.02);
+  const kSurf = P(t, 15.08, .55, E.io), kEnd = P(t, 16.72, .3, E.in);
+  let ky, ks = 1, kv = false;
+  const KY7 = FY + CT + FIXED.length * LH + 26 + 26;              // under the fixed code card
+  if (t < 13.96) { ky = lerp(900, 700, kIn) - kOut * 60; ks = lerp(.94, 1, clamp(kIn)) * (1 - kOut * .06); kv = t >= 5.95 && t < 9.42; }
+  else { ky = lerp(1700, KY7, kBack); ks = lerp(.94, 1, clamp(kBack)); kv = true; }
+  if (t >= 15.0) ky = lerp(KY7, 600, kSurf);
+  box(chk, CX, ky, null, lerp(270, 230, t >= 15 ? kSurf : 0)); chk.style.transform = `scale(${ks * (1 - kEnd * .1)})`; chk.style.opacity = (1 - kEnd) * (t < 13.96 ? 1 - kOut : 1); vis(chk, kv && t < 17.05);
+  const st = t < DROP ? 0 : t < 13.85 ? 1 : t < 14.53 ? 0 : 2;       // spin / fail / ok
+  const flip = st === 1 ? pop(t, DROP, 3.6, .45) : st === 2 ? pop(t, 14.53, 3.6, .5) : 1;
+  chk.querySelector('.i0').style.visibility = st === 0 ? 'inherit' : 'hidden';
+  chk.querySelector('.i1').style.visibility = st === 1 ? 'inherit' : 'hidden';
+  chk.querySelector('.i2').style.visibility = st === 2 ? 'inherit' : 'hidden';
+  chk.querySelector('.ic').style.transform = `scale(${flip})`;
+  chk.querySelector('.arc').setAttribute('transform', `rotate(${(ft * 400) % 360} 28 28)`);
+  ['s0', 's1', 's2'].forEach((c, i) => { const el = chk.querySelector('.' + c), since = i === 1 ? t - DROP : i === 2 ? t - 14.53 : (t < DROP ? t - 5.95 : t - 13.85);
+    el.style.transform = `translateY(${(1 - clamp(step(since, 3, .8), 0, 1.03)) * 100}%)`; el.style.visibility = i === st ? 'inherit' : 'hidden'; });
+  chk.querySelector('.tint').style.opacity = st === 1 ? P(t, DROP, .2, E.out) : 0;
+  chk.style.borderColor = st === 1 ? `rgba(248,113,113,${.1 + .45 * P(t, DROP, .2, E.out)})` : st === 2 && t < 15 ? `rgba(190,242,100,${.1 + .35 * P(t, 14.53, .2, E.out)})` : 'rgba(255,255,255,.10)';
+  chk.querySelector('.lbA').style.opacity = 1 - P(t, 15.0, .12); chk.querySelector('.lbB').style.opacity = P(t, 15.14, .14);
+
+  // ---- S6 comment (9.375 - 13.8)
+  rise(TT.h6a, t, 9.42, 13.45); rise(TT.h6b, t, 11.28, 13.45);
+  const mIn = clamp(sp(t, 9.42, 2.1, .8), 0, 1.02), mOut = P(t, 13.74, .16, E.in);
+  box(cmt, CX, lerp(1500, 580, mIn) - mOut * 50); cmt.style.opacity = 1 - mOut; cmt.style.transform = `scale(${lerp(.95, 1, clamp(mIn)) * (1 - mOut * .05)})`; vis(cmt, t >= 9.4 && t < 13.92);
+  cmt.style.height = px(lerp(480, 860, clamp(sp(t, 11.2, 2.2, .85), 0, 1.01)));
+  cmt.querySelectorAll('.cb').forEach((el, i) => { const tin = i < 3 ? 9.6 + i * .12 : 11.28 + (i - 3) * .14, u = P(t, tin, .45, E.o5);
+    el.style.opacity = u; el.style.transform = `translateY(${(1 - u) * 30}px)`; });
+  const pressed = t >= 13.59 && t < 13.72, done = t >= 13.72;
+  $('cbtn').style.transform = `scale(${pressed ? .94 : 1})`;
+  $('cbl').textContent = done ? T.committed : T.commit;
+  rise(TT.h7, t, 13.78, 14.78);
+  const fIn = clamp(sp(t, 13.9, 2.3, .8), 0, 1.02), fOut = P(t, 14.97, .2, E.in);
+  box(codeFix, CX, lerp(1300, FY, fIn)); codeFix.style.opacity = clamp(fIn * 1.5) * (1 - fOut); codeFix.style.transform = `scale(${lerp(.95, 1, clamp(fIn)) * (1 - fOut * .06)})`; vis(codeFix, t >= 13.9 && t < 15.2);
+  codeFix.querySelectorAll('.fx').forEach((l, i) => { const u = FIXED[i][2] ? P(t, 14.1 + (i - 3) * .07, .35, E.o5) : 1; l.style.opacity = u; l.style.transform = `translateX(${(1 - u) * -24}px)`; });
+
+  // ---- S8 surfaces (15.0 - 16.875)
+  rise(TT.h8a, t, 15.1, 16.62); rise(TT.h8b, t, 15.24, 16.62);
+  const c2 = clamp(sp(t, 15.25, 2.4, .8), 0, 1.02), c3 = clamp(sp(t, 15.45, 2.4, .8), 0, 1.02);
+  box(cliCard, CX, lerp(1100, 850, c2)); cliCard.style.opacity = clamp(c2 * 1.5) * (1 - kEnd); cliCard.style.transform = `scale(${lerp(.94, 1, clamp(c2)) * (1 - kEnd * .1)})`; vis(cliCard, t >= 15.25 && t < 17.05);
+  box(vsCard, CX, lerp(1330, 1086, c3)); vsCard.style.opacity = clamp(c3 * 1.5) * (1 - kEnd); vsCard.style.transform = `scale(${lerp(.94, 1, clamp(c3)) * (1 - kEnd * .1)})`; vis(vsCard, t >= 15.45 && t < 17.05);
+  const cliU = P(t, 15.65, .3, E.out); $('cliok').style.opacity = cliU; $('clidim').style.opacity = cliU;
+  const vsDone = t >= 16.05;
+  vsCard.querySelector('.v0').style.visibility = vsDone ? 'hidden' : 'inherit'; vsCard.querySelector('.v1').style.visibility = vsDone ? 'inherit' : 'hidden';
+  vsCard.querySelector('.v1').style.transform = `translateY(${(1 - clamp(step(t - 16.05, 3, .8), 0, 1.03)) * 100}%)`;
+  box(surfEx, 1010 - surfEx.offsetWidth, 1312); surfEx.style.opacity = P(t, 15.6, .3) * (1 - kEnd); vis(surfEx, t >= 15.6 && t < 17.05);
+
+  // ---- S10 end card (16.875 - 20.625)
+  cells.forEach(([x, y, el]) => { const u = pop(t, 16.9 + y * .035 + Math.abs(x - 7.5) * .012, 3.6, .6);
+    box(el, SX + x * CELL, SY + y * CELL); el.style.transform = `scale(${u})`; vis(el, t >= 16.9); });
+  const wu = clamp(sp(t, 17.34, 2.4, .8), 0, 1.02), ww = word.offsetWidth, wx = 540 - (ww + 24 + 52) / 2;
+  box(word, wx, 772 + (1 - wu) * 60); word.style.opacity = clamp(wu * 1.4); vis(word, t >= 17.34);
+  box(caret, wx + ww + 24, 776 + (1 - wu) * 60); vis(caret, t >= 17.45 && (Math.floor(ft / .55) % 2 === 0));
+  rise(tag, t, 17.7); rise(sub1, t, 18.05); rise(sub2, t, 18.16); rise(url, t, 18.5);
+
+  // ---- cursor: to "Commit suggestion", click on the beat at 13.59
+  const cur = $('cur'); let on = false, x = 0, y = 0, dip = 0;
+  if (t >= 12.75 && t < 13.74) { const u = P(t, 12.75, .8, E.io); x = lerp(1120, CX + 40 + 250, u); y = lerp(1720, 560 + 756 + 46, u); on = true; if (pressed) dip = .14; }
+  vis(cur, on); cur.style.transform = `translate(${x - 5}px,${y - 4}px) scale(${1 - dip})`;
+  return true;
+};
+
+(async () => {
+  await Promise.all(['400 40px Geist', '500 40px Geist', '600 40px Geist', '700 40px Geist', '700 40px Silkscreen', '400 40px Silkscreen', '400 30px GeistMono'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  TL = await (await fetch('timeline.json')).json();
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  hud.querySelectorAll('.m').forEach(el => fitLine(el));
+  if (BETA) { $('betaTxt').textContent = T.beta; $('beta').style.visibility = 'visible'; }
+  await window.seek(0); window.ready = true;
+})();
+</script></body></html>

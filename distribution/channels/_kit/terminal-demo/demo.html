@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>unslop · terminal demo</title>
+<link rel="stylesheet" href="../kit.css">
+<style>
+/* Deterministic terminal demo: window.seek(t) builds the frame from time alone (motion-design SKILL §2).
+   Every line after a prompt is REAL output of packages/cli (scan.ts header + format.ts), captured in ../cli/*.ansi.
+   Real behaviour kept: the CLI prints "Scanning …" and then nothing until the result arrives, and then the whole
+   result at once. Only the waits are shortened, and the caption says so. ?beta=1 adds the "Private beta" stamp. */
+html,body{background:#0a0a0b}
+#stage{position:relative;width:1600px;height:900px;overflow:hidden;background:var(--surface)}
+.top{position:absolute;left:80px;top:48px;display:flex;align-items:center;gap:20px}
+.top .wm{font-size:30px}
+.stamp{font-size:19px;padding:6px 13px}
+#term{position:absolute;left:80px;right:80px;top:118px;bottom:92px}
+#term .hd{height:56px;padding:0 24px;font-size:19px}
+#term .chip{font-size:16px;padding:3px 10px}
+#wait{margin-left:14px;font:500 16px Geist;color:var(--warn);letter-spacing:0;visibility:hidden}
+#screen{position:absolute;left:0;right:0;top:56px;bottom:0;overflow:hidden;padding:18px 28px 22px}
+#pre{font-family:GeistMono;font-size:19.5px;line-height:1.45;letter-spacing:0;white-space:pre-wrap;color:#d4d4d8;margin:0;position:absolute;left:28px;right:28px;top:18px}
+.caret{display:inline-block;width:.6em;height:1.15em;background:var(--accent);vertical-align:text-bottom}
+.cap{position:absolute;left:80px;right:80px;bottom:34px;font:500 19px Geist;color:var(--faint);letter-spacing:0}
+</style></head><body>
+<div id="stage">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="top"><div class="wm">unslop<i></i></div><span id="beta" class="stamp soon" style="display:none">Private beta</span></div>
+  <div id="term" class="card">
+    <div class="hd"><span class="dotsrow"><b></b><b></b><b></b></span><span style="margin-left:12px">zsh — acme/shop</span><span id="wait">waiting for the review · wait shortened</span><span class="chip">Example data</span></div>
+    <div id="screen"><pre id="pre"></pre></div>
+  </div>
+  <div class="cap">Real output of the unslop CLI (packages/cli). Repo, code and finding are example data. Waits are shortened.</div>
+</div>
+<script src="../kit.js"></script>
+<script>
+const HEADER = "<span style='color:#a1a1aa'>Scanning acme/shop </span><span style='color:#71717a'>(diff vs 3f9c2a17de)</span><span style='color:#a1a1aa'>…</span>";
+const PROMPT = "<span style='color:#bef264'>$</span> ";
+// [command, typeStart, headerAt, resultAt, ansiFile]
+const STEPS = [
+  ['unslop scan',       0.5, 1.7,  3.5, '../cli/sample-output.ansi'],
+  ['unslop scan --fix', 10.0, 11.6, 13.0, '../cli/sample-fix.ansi'],
+  ['unslop scan',       18.0, 19.0, 20.2, '../cli/sample-clean.ansi'],
+];
+const TYPE_CPS = 14, DURATION = 25.0;
+const OUT = {};
+window.DURATION = DURATION;
+
+function caret(t) { return Math.floor(t / 0.5) % 2 === 0 ? "<span class='caret'></span>" : "<span class='caret' style='opacity:0'></span>"; }
+
+window.seek = async (t) => {
+  let html = '', waiting = false, lastActive = true;
+  for (const [cmd, typeAt, headerAt, resultAt, file] of STEPS) {
+    if (t < typeAt - 0.4) break;
+    const typed = cmd.slice(0, Math.max(0, Math.min(cmd.length, Math.floor((t - typeAt) * TYPE_CPS))));
+    const done = t >= headerAt;
+    html += PROMPT + typed + (done ? '\n' : caret(t));
+    lastActive = !done;
+    if (!done) break;
+    html += HEADER + '\n';
+    if (t < resultAt) { waiting = true; break; }
+    html += OUT[file];
+    if (!html.endsWith('\n')) html += '\n';
+    html += '\n';
+  }
+  const nextPrompt = STEPS.every(([, typeAt]) => t < typeAt - 0.4 || t >= typeAt) && !waiting && !lastActive;
+  if (nextPrompt || t < STEPS[0][1] - 0.4) html += PROMPT + caret(t);
+  const pre = document.getElementById('pre'), screen = document.getElementById('screen');
+  pre.innerHTML = html;
+  // like a real terminal: text starts at the top, and scrolls once it no longer fits
+  const overflow = pre.offsetHeight - (screen.clientHeight - 40);
+  pre.style.top = (18 - Math.max(0, overflow)) + 'px';
+  document.getElementById('wait').style.visibility = waiting ? 'visible' : 'hidden';
+  return true;
+};
+
+(async () => {
+  if (new URLSearchParams(location.search).get('beta') === '1') document.getElementById('beta').style.display = '';
+  for (const [, , , , file] of STEPS) OUT[file] = ansiToHtml(await (await fetch(file)).text());
+  await document.fonts.ready;
+  await window.seek(0);
+  window.demoReady = true;  // kit.js owns window.ready; the renderer waits for this flag
+})();
+</script>
+</body></html>

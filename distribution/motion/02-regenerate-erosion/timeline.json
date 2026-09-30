@@ -1,0 +1,17 @@
+{
+  "_comment": "film.html is written on a 128-BPM scene grid; the music (Mixkit #364) is 130 BPM, so film time = scene time x 128/130. filmBreak = cut to the research chart (music drops to the quiet intro), filmDrop = the failing check run = song drop 14.77 s. Used by film.html, render.py and audio.py.",
+  "bpm": 130,
+  "duration": 27.6923,
+  "filmDrop": 12.9231,
+  "filmBreak": 5.5385,
+  "anchors": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      28.125,
+      27.6923
+    ]
+  ]
+}

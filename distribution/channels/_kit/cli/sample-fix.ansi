@@ -1,0 +1,19 @@
+
+[1mapp/api/checkout/webhook/route.ts[0m
+  [31mCRITICAL[0m [1mSEC-031[0m [36mapp/api/checkout/webhook/route.ts:11[0m
+    An error is silently swallowed and the handler returns a success response anyway, so failures (including skipped authorization checks) look identical to successes. Propagate errors and return a proper failure status.
+[2m    Suggested fix:[0m
+[2m        } catch (err) {
+          console.error(err);
+          return Response.json({ ok: false }, { status: 500 });
+        }[0m
+
+[1mResult: [0m1 issue(s) — [31m1 critical[0m, [33m0 warning[0m
+[2mSummary: Found 1 critical issue: a payment error is swallowed and reported as success.[0m
+[1mCognitive Integrity Score: 98/100[0m[2m — every finding survived independent blind re-verification.[0m
+
+[2mHint: open this folder in VS Code (with the Gatekeeper extension) to see these issues inline, or re-run with [0m[1munslop scan --fix[0m[2m to apply the suggested fixes.[0m
+
+[1mAuto-fix results:[0m
+  [32m✔ fixed[0m [36mapp/api/checkout/webhook/route.ts:11[0m [2m(SEC-031)[0m
+[1m1 applied, 0 skipped, 0 failed.[0m

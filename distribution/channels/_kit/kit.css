@@ -1,0 +1,69 @@
+/* unslop channel kit: one stylesheet for every still (cards, gallery images, concept mockups).
+   Tokens = src/app/globals.css; fonts = src/app/(marketing)/assets + fontsource (same files as the films 01–03).
+   Rules (from the films' BRIEFs): one accent (lime), red only for a finding, amber only for "running" and
+   for "not live yet" stamps. No gradients with glow, no glass, no particles, no pill buttons, no scene numbers.
+   Mono only for real code/terminal text. */
+@font-face{font-family:Geist;src:url(assets/geist-regular.ttf) format('truetype');font-weight:400}
+@font-face{font-family:Geist;src:url(assets/geist-500.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Geist;src:url(assets/geist-600.woff2) format('woff2');font-weight:600}
+@font-face{font-family:Geist;src:url(assets/geist-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:Silkscreen;src:url(assets/silkscreen-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:Silkscreen;src:url(assets/silkscreen-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:GeistMono;src:url(assets/geist-mono-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:GeistMono;src:url(assets/geist-mono-500.woff2) format('woff2');font-weight:500}
+
+:root{--surface:#0a0a0b;--raised:#18181b;--overlay:#27272a;--edge:#27272a;--ink:#f4f4f5;--muted:#a1a1aa;--faint:#71717a;
+  --accent:#bef264;--warn:#fcd34d;--danger:#f87171;--card:#0c0c0e;--line:rgba(255,255,255,.10)}
+*{box-sizing:border-box}
+html,body{margin:0;background:#000}
+body{font-family:Geist,sans-serif;color:var(--ink);letter-spacing:-.02em;-webkit-font-smoothing:antialiased}
+
+/* A frame = one exported image. data-w/data-h set its exact pixel size, data-out its file name. */
+.frame{position:relative;overflow:hidden;background:var(--surface);margin:0 0 40px}
+.frame .dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.075) 2px,transparent 2.2px);
+  background-size:36px 36px;-webkit-mask-image:radial-gradient(75% 65% at 50% 45%,#000,transparent);mask-image:radial-gradient(75% 65% at 50% 45%,#000,transparent)}
+.frame .wash{position:absolute;left:-10%;top:-55%;width:120%;height:90%;background:radial-gradient(closest-side,rgba(190,242,100,.05),transparent)}
+.inner{position:absolute;inset:0;display:flex;flex-direction:column}
+
+/* Wordmark: Silkscreen + lime caret, as in MarketingNav.tsx / opengraph-image.tsx */
+.wm{display:flex;align-items:center;gap:.28em;font-family:Silkscreen;font-weight:700;color:#fafafa;letter-spacing:0}
+.wm i{display:inline-block;width:.42em;height:.8em;background:var(--accent)}
+.wm img{height:1em;margin-right:.18em}
+
+.h{font-weight:700;color:#fafafa;line-height:1.08;letter-spacing:-.035em;margin:0}
+.px{font-family:Silkscreen;font-weight:700;color:var(--accent);letter-spacing:0;font-size:.86em}
+.lime{color:var(--accent)} .red{color:var(--danger)} .amber{color:var(--warn)} .muted{color:var(--muted)} .faint{color:var(--faint)}
+.sub{color:var(--muted);font-weight:500;line-height:1.35}
+.src{color:var(--faint);font-weight:500;letter-spacing:0}
+
+/* Cards (film style) */
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.9)}
+.card .hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid rgba(255,255,255,.06);color:var(--muted);font-weight:500;letter-spacing:-.01em}
+.chip{margin-left:auto;color:var(--faint);border:2px solid var(--line);border-radius:7px;font-weight:500;letter-spacing:0;white-space:nowrap}
+.dotsrow{display:flex;gap:9px}.dotsrow b{width:13px;height:13px;border-radius:50%;background:#3f3f46;display:block}
+
+.code{font-family:GeistMono;letter-spacing:0;white-space:pre}
+.code .no{color:#3f3f46;display:inline-block;text-align:right}
+.k{color:#a1a1aa}.c{color:#71717a}.s{color:#e4e4e7}
+.term{font-family:GeistMono;letter-spacing:0;white-space:pre;color:#d4d4d8}
+
+/* Check-run row (src/lib/check-run.ts strings only) */
+.check{display:flex;align-items:center;gap:18px}
+.ic{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ic.fail{border:3px solid var(--danger);color:var(--danger)}
+.ic.ok{border:3px solid var(--accent);color:var(--accent)}
+.ic.run{border:3px solid var(--warn);border-right-color:transparent}
+
+/* Status stamps. Anything not live carries one of these, visible in the image. */
+.stamp{display:inline-flex;align-items:center;gap:.5em;font-weight:600;letter-spacing:.02em;text-transform:uppercase;border-radius:6px;white-space:nowrap}
+.stamp.live{color:var(--accent);border:2px solid rgba(190,242,100,.45)}
+.stamp.soon{color:var(--warn);border:2px solid rgba(252,211,77,.55)}
+.stamp.road{color:var(--warn);border:2px dashed rgba(252,211,77,.7)}
+.stamp::before{content:"";width:.55em;height:.55em;border-radius:50%;background:currentColor}
+.stamp.road::before{border-radius:1px;background:none;border:2px solid currentColor}
+
+/* Concept style: wireframe, dashed, no fills that could pass for a product screenshot. */
+.concept{border:2px dashed rgba(252,211,77,.45);border-radius:18px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.018) 0 12px,transparent 12px 24px)}
+.wire{border:2px dashed rgba(255,255,255,.18);border-radius:12px}
+.anno{font-family:Geist;color:var(--warn);font-weight:500;letter-spacing:-.01em}
+.bar{height:14px;border-radius:3px;background:rgba(255,255,255,.12)}

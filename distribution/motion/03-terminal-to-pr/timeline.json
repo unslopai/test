@@ -1,0 +1,17 @@
+{
+ "_comment": "Film 03 is written directly in film time on the 130-BPM grid of the track (identity map, kept for render.py/audio.py). filmBreak = scan starts (quiet part), filmDrop = the CRITICAL finding prints.",
+ "bpm": 130,
+ "duration": 27.6923,
+ "filmBreak": 3.6923,
+ "filmDrop": 7.3846,
+ "anchors": [
+  [
+   0,
+   0
+  ],
+  [
+   27.6923,
+   27.6923
+  ]
+ ]
+}

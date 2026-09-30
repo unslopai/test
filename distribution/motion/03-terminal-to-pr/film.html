@@ -1,0 +1,311 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>unslop · terminal to PR</title>
+<style>
+/* Brand fonts: Geist + Silkscreen are the repo's own files (src/app/(marketing)/assets), Geist 500/600 + Geist Mono from fontsource (OFL). */
+@font-face{font-family:Geist;src:url(assets/fonts/geist-regular.ttf) format('truetype');font-weight:400}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-500.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-600.woff2) format('woff2');font-weight:600}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-500.woff2) format('woff2');font-weight:500}
+/* Design tokens = src/app/globals.css (@theme inline) */
+:root{--surface:#0a0a0b;--raised:#18181b;--edge:#27272a;--ink:#f4f4f5;--muted:#a1a1aa;--accent:#bef264;--warn:#fcd34d;--danger:#f87171}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--surface);font-family:Geist,sans-serif;color:var(--ink);letter-spacing:-.025em}
+.a{position:absolute;left:0;top:0}
+.m{position:absolute;left:0;width:1080px;overflow:hidden;text-align:center}
+.m>span{display:inline-block;white-space:nowrap}
+.w{display:inline-block;will-change:transform}
+.px{font-family:Silkscreen;font-weight:700;color:var(--accent);letter-spacing:0;font-size:.86em}
+.rd{color:var(--danger)}
+.lm{color:var(--accent)}
+.card{position:absolute;background:#0c0c0e;border:2px solid rgba(255,255,255,.10);border-radius:24px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.9)}
+.chrome{position:absolute;left:0;right:0;top:0;height:76px;border-bottom:2px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 30px;gap:14px;font:500 26px Geist;color:#71717a;letter-spacing:-.01em;background:linear-gradient(rgba(255,255,255,.035),transparent)}
+.dot{width:16px;height:16px;border-radius:50%;background:#3f3f46;flex:none}
+.ex{margin-left:auto;font:500 24px Geist;color:#71717a;border:2px solid rgba(255,255,255,.10);border-radius:8px;padding:4px 12px;letter-spacing:0}
+.mono{font-family:GeistMono;letter-spacing:0;white-space:pre}
+.tl{position:absolute;left:34px;height:44px;line-height:44px;font-size:29px;color:#d4d4d8}
+.k{color:#a1a1aa}.dim{color:#71717a}.cy{color:#7dd3fc}.b{color:#fafafa;font-weight:500}.red{color:#f87171;font-weight:500}.grn{color:#bef264}
+.ln{position:absolute;left:0;height:50px;line-height:50px;width:100%;font-size:26px}
+.ln .no{display:inline-block;width:70px;box-sizing:border-box;text-align:right;padding-right:24px;color:#3f3f46}
+.btn{position:absolute;border-radius:8px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+</style></head><body>
+<div id="stage">
+  <div id="dots" class="a" style="width:1080px;height:1920px;background-image:radial-gradient(rgba(255,255,255,.075) 2px,transparent 2.2px);background-size:36px 36px;-webkit-mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent);mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent)"></div>
+  <div id="wash" class="a" style="width:1600px;height:900px;left:-60px;top:-520px;background:radial-gradient(closest-side,rgba(190,242,100,.06),transparent)"></div>
+  <div id="world" class="a" style="width:1080px;height:1920px;transform-origin:540px 960px">
+    <div id="cam" class="a" style="width:1080px;height:1920px;transform-origin:0 0"></div>
+    <div id="hud" class="a" style="width:1080px;height:1920px;z-index:40"></div>
+  </div>
+  <svg id="cur" class="a" viewBox="0 0 44 44" style="z-index:90;width:58px;height:58px"><path d="M5 3 L5 34 L12.5 27 L17.5 39 L22.5 37 L17.6 25.4 L27.5 25.4 Z" fill="#fafafa" stroke="#0a0a0b" stroke-width="2.4" stroke-linejoin="round"/></svg>
+</div>
+<script>
+// ---------------------------------------------------------------- copy (i18n) + CTA variant
+// EN = the product's default locale. Product strings (CLI output, VS Code, check run) are the app's own.
+// ?cta=npm (default) shows the real install command of packages/cli (@unslopcodes/cli) - valid only once it is published.
+const STR = {
+  en: {
+    hA: 'Don’t push it yet.', hB: 'Scan it <b class="lm">first.</b>', hC1: 'Checks your diff', hC2: 'before you push.',
+    hD: 'Caught in your <b class="px">terminal.</b>', hE: 'Fixed in your <b class="px">editor.</b>', hF: 'Clean on the <b class="px">PR.</b>',
+    hG1: 'Try it on your', hG2: '<b class="lm">next diff.</b>', example: 'Example',
+    expl: ['Untrusted data is injected into the DOM', '(e.g. via raw innerHTML) without', 'sanitization, allowing cross-site scripting.'],
+    hover: 'Untrusted data is injected into the DOM (e.g. via raw innerHTML) without sanitization, allowing cross-site scripting.',
+    fixAction: 'Apply Gatekeeper Fix', fixApplied: 'Gatekeeper fix applied.',
+    checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', passed: 'No AI slop found', checks: 'Checks', url: 'unslop.codes',
+  },
+  de: {
+    hA: 'Noch nicht pushen.', hB: 'Erst <b class="lm">scannen.</b>', hC1: 'Prüft deinen Diff,', hC2: 'bevor du pushst.',
+    hD: 'Erwischt im <b class="px">Terminal.</b>', hE: 'Gefixt im <b class="px">Editor.</b>', hF: 'Sauber im <b class="px">PR.</b>',
+    hG1: 'Probier es an', hG2: 'deinem <b class="lm">nächsten Diff.</b>', example: 'Beispiel',
+    expl: ['Untrusted data is injected into the DOM', '(e.g. via raw innerHTML) without', 'sanitization, allowing cross-site scripting.'],
+    hover: 'Untrusted data is injected into the DOM (e.g. via raw innerHTML) without sanitization, allowing cross-site scripting.',
+    fixAction: 'Apply Gatekeeper Fix', fixApplied: 'Gatekeeper fix applied.',
+    checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', passed: 'No AI slop found', checks: 'Checks', url: 'unslop.codes',
+  },
+};
+const Q = new URLSearchParams(location.search);
+const LANG = Q.get('lang') === 'de' ? 'de' : 'en';
+const T = STR[LANG];
+const CTA = Q.get('cta') === 'beta'
+  ? { head1: 'Get early access', head2: '<b class="lm">unslop.codes</b>', cmd1: 'open https://unslop.codes', cmd2: 'unslop login' }
+  : { head1: T.hG1, head2: T.hG2, cmd1: 'npm i -g @unslopcodes/cli', cmd2: 'unslop scan' };
+
+// ---------------------------------------------------------------- engine (same primitives as films 01/02)
+const LIME = '#bef264', RED = '#f87171', AMBER = '#fcd34d';
+const BEAT = 60 / 130, BAR = 4 * BEAT;
+const BRK = 2 * BAR, DROP = 4 * BAR, EDIT = 6 * BAR, PR = 9 * BAR, CTAT = 11 * BAR, DUR = 15 * BAR;
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x, lerp = (a, b, u) => a + (b - a) * u;
+const E = { io: u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2, out: u => 1 - Math.pow(1 - u, 3), in: u => u * u * u, o5: u => 1 - Math.pow(1 - u, 5) };
+const P = (t, t0, d, e = E.io) => e(clamp((t - t0) / d));
+function step(tau, f = 2.6, z = .7) { if (tau <= 0) return 0; const w = 2 * Math.PI * f, wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + z * w / wd * Math.sin(wd * tau)); }
+const sp = (t, t0, f = 2.4, z = .75) => step(t - t0, f, z);
+const pop = (t, t0, f = 3, z = .55) => clamp(sp(t, t0, f, z), 0, 1.25);
+const $ = id => document.getElementById(id), px = v => v + 'px';
+const cam = $('cam'), hud = $('hud');
+function mk(parent, html, z = 5) { parent.insertAdjacentHTML('beforeend', html); const e = parent.lastElementChild; e.style.zIndex = z; return e; }
+function box(el, x, y, w, h) { const s = el.style; s.left = px(x); s.top = px(y); if (w != null) s.width = px(w); if (h != null) s.height = px(h); }
+const vis = (el, on) => { el.style.visibility = on ? 'visible' : 'hidden'; };
+const ivis = (el, on) => { el.style.visibility = on ? 'inherit' : 'hidden'; };
+function wordify(root) {
+  const walk = (node) => { [...node.childNodes].forEach((c) => {
+    if (c.nodeType === 3) { const frag = document.createDocumentFragment(); c.textContent.split(/(\s+)/).forEach((w) => {
+      if (!w) return; if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+      const s = document.createElement('span'); s.className = 'w'; s.textContent = w; frag.appendChild(s); }); c.replaceWith(frag); }
+    else if (c.nodeType === 1) walk(c); }); };
+  walk(root); return root;
+}
+function line(html, y, size, weight = 700, color = '#fafafa', parent = hud) {
+  const el = mk(parent, `<div class="m" style="top:${y}px;height:${Math.round(size * 1.34)}px;line-height:${Math.round(size * 1.3)}px"><span style="font:${weight} ${size}px Geist;color:${color}">${html}</span></div>`, 20);
+  wordify(el.firstElementChild); el.dataset.size = size; return el;
+}
+function fitLine(el, maxW = 940) { const s0 = el.firstElementChild, w = s0.getBoundingClientRect().width; if (w > maxW) s0.style.fontSize = px(parseFloat(el.dataset.size) * maxW / w); }
+function rise(el, t, tin, tout, f = 2.1) {
+  const ws = el.querySelectorAll('.w'), o = tout == null ? 0 : P(t, tout, .3, E.in);
+  ws.forEach((w, i) => { const u = clamp(step(t - tin - i * .06, f, .76), 0, 1.06);
+    w.style.transform = `translateY(${(1 - u) * 112 - o * 118}%) rotate(${(1 - clamp(u)) * 5}deg)`; });
+  vis(el, t >= tin && (tout == null || t < tout + .32));
+}
+function squiggle(x0, x1, y) { let d = `M${x0} ${y}`; for (let x = x0, i = 0; x < x1; x += 9, i++) d += ` L${Math.min(x + 9, x1)} ${y + (i % 2 ? -5 : 5)}`; return d; }
+function drawOn(path, u) { const L = path.getTotalLength(); path.setAttribute('stroke-dasharray', L); path.setAttribute('stroke-dashoffset', L * (1 - u)); }
+// typed text: n characters of `s` visible after t0, one every `dt` seconds
+const typed = (s, t, t0, dt) => s.slice(0, clamp(Math.floor((t - t0) / dt) + 1, 0, s.length));
+function cardIn(el, t, tin, tout, y, dy = 80) {
+  const u = clamp(sp(t, tin, 2.3, .8), 0, 1.02), o = P(t, tout, .22, E.in);
+  box(el, 70, y + (1 - u) * dy); el.style.opacity = clamp(u * 1.5) * (1 - o); el.style.transform = `scale(${lerp(.95, 1, clamp(u)) * (1 - o * .05)})`;
+  vis(el, t >= tin && t < tout + .24);
+}
+const chromeBar = (title) => `<div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:10px">${title}</span><span class="ex">${T.example}</span></div>`;
+
+// ---------------------------------------------------------------- scene 1-3: the terminal (strings = packages/cli/src/format.ts, scan.ts)
+const TY = 560, TL0 = 100, TLH = 44;
+const term = mk(cam, `<div class="card" style="width:940px;height:${TL0 + 13 * TLH + 20}px">${chromeBar('zsh — acme/shop')}</div>`, 10);
+const tlines = Array.from({ length: 13 }, (_, i) => mk(term, `<div class="tl mono" style="top:${TL0 + i * TLH}px"></div>`, 2));
+const tcaret = mk(term, `<div class="a" style="width:16px;height:34px;background:#e4e4e7"></div>`, 3);
+const FINDING = [
+  '',
+  '<span class="b">app/components/Comment.tsx</span>',
+  '  <span class="red">CRITICAL</span> <span class="b">SEC-026</span> <span class="cy">app/components/Comment.tsx:3</span>',
+  ...T.expl.map(l => `    ${l}`),
+  '<span class="dim">    Suggested fix:</span>',
+  '<span class="dim">      &lt;div&gt;{body}&lt;/div&gt;</span>',
+  '',
+  '<span class="b">Result:</span> 1 issue(s) — <span class="red">1 critical</span>, <span style="color:#fcd34d">0 warning</span>',
+];
+
+// ---------------------------------------------------------------- scene 4: the editor (VS Code extension: diagnostics.ts, applyFix.ts, stateMachine.ts)
+const EY = 560, EL0 = 104, ELH = 50, CH = 26 * .6;
+const CODE = [
+  '<span class="k">export function</span> Comment({ body }: Props) {',
+  '  <span class="k">return</span> (',
+  '    &lt;div dangerouslySetInnerHTML={{ __html: body }} /&gt;',
+  '  );',
+  '}',
+];
+const FIXED3 = '    &lt;div&gt;{body}&lt;/div&gt;';
+const edH = EL0 + 5 * ELH + 250 + 60;
+const editor = mk(cam, `<div class="card" style="width:940px;height:${edH}px">${chromeBar('Comment.tsx — VS Code')}
+  <div class="a" id="fixflash" style="left:0;top:${EL0 + 2 * ELH}px;width:940px;height:${ELH}px;background:rgba(190,242,100,.14)"></div>
+  ${CODE.map((c, i) => `<div class="ln mono" style="top:${EL0 + i * ELH}px"><span class="no">${i + 1}</span><span class="src" style="color:#e4e4e7">${c}</span></div>`).join('')}
+  <svg class="a" id="esq" width="940" height="${edH}" style="overflow:visible"><path id="esqp" fill="none" stroke="${RED}" stroke-width="3" stroke-linecap="round"/></svg>
+  <svg class="a" id="bulb" style="left:38px;top:${EL0 + 2 * ELH + 10}px" width="30" height="30" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" fill="${AMBER}" stroke="#0a0a0b" stroke-width="1.2" stroke-linejoin="round"/></svg>
+  <div class="a" id="hover" style="left:70px;top:${EL0 + 3 * ELH + 8}px;width:800px;padding:18px 22px;box-sizing:border-box;background:#18181b;border:2px solid #3f3f46;border-radius:10px;font:400 25px/1.4 Geist;color:#d4d4d8;letter-spacing:-.01em;box-shadow:0 20px 40px -10px rgba(0,0,0,.8)">${T.hover}<div class="mono" style="margin-top:8px;font-size:22px;color:#71717a">unslop(SEC-026)</div></div>
+  <div class="a" id="menu" style="left:70px;top:${EL0 + 3 * ELH + 8}px;width:470px;padding:8px;box-sizing:border-box;background:#18181b;border:2px solid #3f3f46;border-radius:10px;box-shadow:0 20px 40px -10px rgba(0,0,0,.8)">
+    <div style="height:52px;border-radius:6px;background:#3f3f46;display:flex;align-items:center;gap:14px;padding:0 16px;font:500 27px Geist;color:#fafafa;letter-spacing:-.01em">
+    <svg width="26" height="26" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" fill="${AMBER}"/></svg>${T.fixAction}</div></div>
+  <div class="a" id="sbar" style="left:0;top:${edH - 58}px;width:940px;height:58px;background:#181818;border-top:2px solid #2b2b2b;display:flex;align-items:center;padding:0 22px;box-sizing:border-box;font:400 25px Geist;color:#cccccc;letter-spacing:0;gap:22px">
+    <span>⎇ main</span><span id="sbmsg" style="color:#a1a1aa"></span>
+    <span id="sbitem" style="margin-left:auto;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border-radius:4px">
+    <svg width="24" height="24" viewBox="0 0 16 16"><path d="M8 1.2l5.6 2v4.3c0 3.3-2.3 5.9-5.6 7.3-3.3-1.4-5.6-4-5.6-7.3V3.2z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span id="sbtxt"></span></span></div>
+</div>`, 11);
+
+// ---------------------------------------------------------------- scene 5: the PR (check run = src/lib/check-run.ts)
+const ICON = {
+  spin: `<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="rgba(252,211,77,.22)" stroke-width="5"/><circle class="arc" cx="28" cy="28" r="22" fill="none" stroke="${AMBER}" stroke-width="5" stroke-linecap="round" stroke-dasharray="40 200"/></svg>`,
+  ok: `<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="rgba(190,242,100,.14)" stroke="${LIME}" stroke-width="4"/><path d="M18 29l7 7 13-15" fill="none" stroke="${LIME}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const push = mk(cam, `<div class="card" style="width:940px;height:${TL0 + TLH + 30}px">${chromeBar('zsh — acme/shop')}<div class="tl mono" id="pushln" style="top:${TL0}px"></div></div>`, 10);
+const chk = mk(cam, `<div class="card" style="width:940px;height:270px"><div class="chrome" style="background:none"><span>${T.checks}</span><span class="ex">${T.example}</span></div>
+  <div class="a" style="left:34px;top:120px;width:56px;height:56px"><div class="a i0">${ICON.spin}</div><div class="a i2">${ICON.ok}</div></div>
+  <div class="a" style="left:118px;top:104px;font:600 44px Geist;color:#fafafa;white-space:nowrap">${T.checkName}</div>
+  <div class="a" style="left:118px;top:164px;height:50px;width:640px;overflow:hidden"><div class="a s0" style="font:400 36px Geist;color:#a1a1aa;white-space:nowrap">${T.running}</div><div class="a s2" style="font:500 36px Geist;color:${LIME};white-space:nowrap">${T.passed}</div></div></div>`, 11);
+
+// ---------------------------------------------------------------- scene 6: CTA
+const ctaTerm = mk(cam, `<div class="card" style="width:940px;height:340px;border-color:rgba(190,242,100,.35)">${chromeBar('zsh').replace(`<span class="ex">${T.example}</span>`, '')}
+  <div class="a mono" id="cta1" style="left:40px;top:112px;font-size:48px;line-height:70px;color:#fafafa"></div>
+  <div class="a mono" id="cta2" style="left:40px;top:208px;font-size:48px;line-height:70px;color:#fafafa"></div>
+  <div class="a" id="ccar" style="width:28px;height:56px;background:${LIME}"></div></div>`, 12);
+const SHIELD = ['...##########...', '...##########...', '...#######..#...', '...######..##...', '...#..##..###...', '...##....####...', '...###..#####...', '....########....', '.....######.....', '......####......', '.......##.......'];
+const CELL = 11, SX0 = 540 - 8 * CELL - 170, SY0 = 1100;
+const cells = [];
+SHIELD.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === '#') cells.push([x, y, mk(hud, `<div class="a" style="width:${CELL + .5}px;height:${CELL + .5}px;background:${LIME}"></div>`, 30)]); }));
+const word = mk(hud, `<div class="a" style="font:700 84px Silkscreen;color:#fafafa;letter-spacing:0;white-space:nowrap;line-height:1">unslop</div>`, 30);
+const url = line(`<span style="font-family:Silkscreen;font-weight:400;letter-spacing:0;color:#d4d4d8">${T.url}</span>`, 1270, 44, 400);
+
+const TT = {
+  hA: line(T.hA, 330, 96), hB: line(T.hB, 330, 104),
+  hC1: line(T.hC1, 290, 80), hC2: line(T.hC2, 392, 80),
+  hD: line(T.hD, 330, 84), hE: line(T.hE, 330, 88), hF: line(T.hF, 330, 92),
+  hG1: line(CTA.head1, 290, 84), hG2: line(CTA.head2, 396, 96),
+};
+
+// ---------------------------------------------------------------- camera + punches
+// keys [t, zoom, focusX, focusY, screenX, screenY]: hook zoomed onto the prompt, out for the scan, push onto the finding on the drop
+const PROMPT = [360, TY + TL0 + 22], FIND = [470, TY + TL0 + 4.5 * TLH];
+const CAM = [[0, 1.6, PROMPT[0], PROMPT[1], 540, 860], [2.85, 1.6, PROMPT[0], PROMPT[1], 540, 860], [3.6, 1, 540, 960, 540, 960],
+             [DROP - .01, 1, 540, 960, 540, 960], [DROP + .5, 1.14, FIND[0], FIND[1], 500, 900], [EDIT - .5, 1.16, FIND[0], FIND[1], 500, 900], [EDIT - .1, 1, 540, 960, 540, 960], [99, 1, 540, 960, 540, 960]];
+function camAt(t) {
+  let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++;
+  const a = CAM[k], b = CAM[k + 1], u = b[0] - a[0] < .01 ? 1 : E.io(clamp((t - a[0]) / (b[0] - a[0])));
+  const z = Math.exp(lerp(Math.log(a[1]), Math.log(b[1]), u));
+  return [z, lerp(a[2], b[2], u), lerp(a[3], b[3], u), lerp(a[4], b[4], u), lerp(a[5], b[5], u)];
+}
+function beatPunch(t) {
+  let p = 0;
+  for (let k = 0; DROP + k * BEAT < CTAT - .1; k++) { const bt = DROP + k * BEAT; if (t >= bt) p += (k % 4 === 0 ? .02 : .007) * Math.exp(-(t - bt) * 8) * Math.sin(Math.min(Math.PI, (t - bt) * 24)); }
+  return p;
+}
+const SHAKES = [[6 * BEAT, 8], [DROP, 14], [30 * BEAT, 8], [41 * BEAT, 8], [48 * BEAT, 8]];
+function shake(t) { let x = 0, y = 0; SHAKES.forEach(([c, a], i) => { if (t >= c) { const d = Math.exp(-(t - c) * 13); x += d * a * Math.sin((t - c) * 70 + i); y += d * a * .6 * Math.cos((t - c) * 60 + i); } }); return [x, y]; }
+
+// ---------------------------------------------------------------- scenes
+const T_ENTER = 6 * BEAT;                                         // 2.77 s: Enter on "unslop scan"
+function sceneTerminal(t, ft) {
+  cardIn(term, t, -0.4, EDIT - .25, TY, 90);
+  const rows = lerp(lerp(2, 3.2, clamp(sp(t, T_ENTER, 2.6, .85), 0, 1.01)), 13, clamp(sp(t, DROP, 1.6, .9), 0, 1.01));
+  term.style.height = px(TL0 + rows * TLH + 20);
+  // prompt line: "git push" typed, pulled back, "unslop scan" typed, Enter on the beat
+  const gp = 'git push', us = 'unslop scan';
+  let cmd = typed(gp, t, .12, .07);
+  if (t >= 3 * BEAT) cmd = gp.slice(0, gp.length - clamp(Math.floor((t - 3 * BEAT) / .045) + 1, 0, gp.length));
+  if (t >= 1.85) cmd = typed(us, t, 1.85, .06);
+  tlines[0].innerHTML = `<span class="dim">$</span> ${cmd}`;
+  tlines[1].innerHTML = t >= T_ENTER + .03 ? 'Scanning acme/shop <span class="dim">(diff vs 3f9c2a17de)</span>…' : '';
+  FINDING.forEach((f, i) => { tlines[2 + i].innerHTML = t >= DROP + i * .055 ? f : ''; });
+  // caret: on the prompt line while typing, below the output afterwards
+  const row = t < T_ENTER ? 0 : t < DROP ? 2 : 2 + FINDING.length;
+  const col = t < T_ENTER ? 2 + cmd.length : 0;
+  box(tcaret, 34 + col * 29 * .6, TL0 + row * TLH + 5); ivis(tcaret, Math.floor(ft / .5) % 2 === 0 || (t < T_ENTER && t > .1 && t < 2.6));
+  rise(TT.hA, t, -0.22, 1.72); rise(TT.hB, t, 1.85, 3.5, 2.4);
+  rise(TT.hC1, t, BRK + .06, DROP - .2); rise(TT.hC2, t, BRK + .2, DROP - .2);
+  rise(TT.hD, t, DROP + .06, EDIT - .3);
+}
+function sceneEditor(t, ft) {
+  cardIn(editor, t, EDIT, PR - .25, EY);
+  const fixT = 30 * BEAT, rescan = 32 * BEAT, clean = 34 * BEAT;   // 13.85 click, 14.77 re-scan, 15.69 clean
+  const fixed = t >= fixT + .05;
+  editor.querySelectorAll('.src')[2].innerHTML = fixed ? FIXED3 : CODE[2];
+  $('fixflash').style.opacity = fixed ? .9 * (1 - P(t, fixT + .3, .8)) : 0;
+  const sqp = $('esqp'); sqp.setAttribute('d', squiggle(70 + 9 * CH, 70 + 48 * CH, EL0 + 2 * ELH + 42)); drawOn(sqp, P(t, EDIT + .35, .45, E.out)); ivis($('esq'), !fixed);
+  const hov = t >= EDIT + .8 && t < 12.55, men = t >= 12.6 && t < fixT + .05;
+  ivis($('hover'), hov); $('hover').style.opacity = P(t, EDIT + .8, .2); $('hover').style.transform = `translateY(${(1 - P(t, EDIT + .8, .25, E.out)) * 12}px)`;
+  ivis($('bulb'), t >= 12.3 && !fixed); $('bulb').style.transform = `scale(${pop(t, 12.3, 3.6, .5)})`;
+  ivis($('menu'), men); $('menu').style.transform = `scale(${lerp(.92, 1, P(t, 12.6, .18, E.out))})`; $('menu').style.transformOrigin = '0 0';
+  // status bar: "1 critical" -> click to re-scan -> "Scanning..." -> "No slop ✓" (stateMachine.ts)
+  const st = t < rescan ? 'crit' : t < clean ? 'scan' : 'ok', item = $('sbitem');
+  $('sbtxt').textContent = st === 'crit' ? '1 critical' : st === 'scan' ? 'Scanning…' : 'No slop ✓';
+  item.style.background = st === 'crit' ? 'rgba(248,113,113,.28)' : 'transparent'; item.style.color = st === 'crit' ? '#fecaca' : '#cccccc';
+  item.style.transform = `scale(${(t >= rescan - .05 && t < rescan + .08) ? .94 : st === 'ok' ? pop(t, clean, 3.6, .5) : 1})`;
+  $('sbmsg').textContent = fixed && t < rescan + .6 ? T.fixApplied : '';
+  rise(TT.hE, t, EDIT + .06, PR - .3);
+  // cursor: to the lightbulb menu item, click on the beat, then to the status bar item
+  const cur = $('cur');
+  if (t >= 12.2 && t < clean + .3) {
+    let x, y; const menuX = 70 + 70 + 300, menuY = EY + EL0 + 3 * ELH + 8 + 34, sbX = 70 + 940 - 110, sbY = EY + edH - 30;
+    if (t < fixT + .15) { const u = P(t, 12.2, .7, E.io); x = lerp(1060, menuX, u); y = lerp(1560, menuY, u); }
+    else { const u = P(t, fixT + .25, .55, E.io); x = lerp(menuX, sbX, u); y = lerp(menuY, sbY, u); }
+    const dip = (t >= fixT && t < fixT + .12) || (t >= rescan - .05 && t < rescan + .08) ? .14 : 0;
+    vis(cur, true); cur.style.opacity = 1 - P(t, clean + .05, .2); cur.style.transform = `translate(${x - 5}px,${y - 4}px) scale(${1 - dip})`;
+  } else vis(cur, false);
+}
+function scenePR(t, ft) {
+  cardIn(push, t, PR, CTAT - .25, 580);
+  cardIn(chk, t, 17.6, CTAT - .25, 580 + TL0 + TLH + 30 + 26);
+  const enter = 38 * BEAT, ok = 41 * BEAT;                           // 17.54 push, 18.92 green
+  $('pushln').innerHTML = `<span class="dim">$</span> ${typed('git push', t, PR + .12, .07)}`;
+  const st = t < ok ? 0 : 2;
+  chk.querySelector('.i0').style.visibility = st === 0 ? 'inherit' : 'hidden'; chk.querySelector('.i2').style.visibility = st === 2 ? 'inherit' : 'hidden';
+  chk.querySelector('.i2').style.transform = `scale(${pop(t, ok, 3.6, .5)})`;
+  chk.querySelector('.arc').setAttribute('transform', `rotate(${(ft * 400) % 360} 28 28)`);
+  chk.querySelector('.s0').style.visibility = st === 0 ? 'inherit' : 'hidden'; chk.querySelector('.s2').style.visibility = st === 2 ? 'inherit' : 'hidden';
+  chk.querySelector('.s2').style.transform = `translateY(${(1 - clamp(step(t - ok, 3, .8), 0, 1.03)) * 100}%)`;
+  chk.style.borderColor = st === 2 ? `rgba(190,242,100,${.1 + .35 * P(t, ok, .25, E.out)})` : 'rgba(255,255,255,.10)';
+  rise(TT.hF, t, PR + .06, CTAT - .3);
+  void enter;
+}
+function sceneCTA(t, ft) {
+  cardIn(ctaTerm, t, CTAT + .05, 99, 600, 60);
+  const t1 = CTAT + .25, dt = .05, e1 = 48 * BEAT, t2 = e1 + .2;     // Enter on the beat at 22.15 s
+  const c1 = typed(CTA.cmd1, t, t1, dt), c2 = t >= t2 ? typed(CTA.cmd2, t, t2, .06) : '';
+  $('cta1').innerHTML = `<span style="color:${LIME}">$</span> ${c1}`;
+  $('cta2').innerHTML = t >= e1 + .05 ? `<span style="color:${LIME}">$</span> ${c2}` : '';
+  const onLine2 = t >= e1 + .05, cx = 40 + (2 + (onLine2 ? c2.length : c1.length)) * 48 * .6 + 4, cy = onLine2 ? 215 : 119;
+  box($('ccar'), cx, cy); ivis($('ccar'), t < t2 + CTA.cmd2.length * .06 + .1 || Math.floor(ft / .5) % 2 === 0);
+  rise(TT.hG1, t, CTAT + .1); rise(TT.hG2, t, CTAT + .26, null, 2.4);
+  const bt = 23.1;
+  cells.forEach(([x, y, el]) => { const u = pop(t, bt + y * .03 + Math.abs(x - 7.5) * .01, 3.6, .6);
+    box(el, SX0 + x * CELL, SY0 + y * CELL); el.style.transform = `scale(${u})`; vis(el, t >= bt); });
+  const wu = clamp(sp(t, bt + .3, 2.4, .8), 0, 1.02);
+  box(word, SX0 + 16 * CELL - 16, SY0 + 16 + (1 - wu) * 40); word.style.opacity = clamp(wu * 1.4); vis(word, t >= bt + .3);
+  rise(url, t, bt + .6);
+}
+
+window.seek = async (filmT) => {
+  const t = filmT, ft = filmT;
+  const [z, fx, fy, sx, sy] = camAt(t);
+  cam.style.transform = `translate(${sx - fx * z}px,${sy - fy * z}px) scale(${z})`;
+  const [shx, shy] = shake(t);
+  $('world').style.transform = `translate(${shx}px,${shy}px) scale(${1 + beatPunch(t) + .03 * P(t, CTAT + .5, DUR - CTAT - .5, E.io)})`;
+  $('wash').style.transform = `translateX(${Math.sin(ft * .3) * 50}px)`;
+  sceneTerminal(t, ft); sceneEditor(t, ft); scenePR(t, ft); sceneCTA(t, ft);
+  return true;
+};
+
+(async () => {
+  await Promise.all(['400 40px Geist', '500 40px Geist', '600 40px Geist', '700 40px Geist', '700 40px Silkscreen', '400 40px Silkscreen', '400 30px GeistMono', '500 30px GeistMono'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  hud.querySelectorAll('.m').forEach(el => fitLine(el));
+  await window.seek(0); window.ready = true;
+})();
+</script></body></html>

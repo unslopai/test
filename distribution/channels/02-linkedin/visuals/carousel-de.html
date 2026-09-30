@@ -1,0 +1,176 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>unslop · LinkedIn-Karussell (DE)</title>
+<link rel="stylesheet" href="../../_kit/kit.css">
+<style>
+/* LinkedIn document post: 1080×1350 (4:5) pages, exported as PNG and combined into one PDF (make_pdf.py).
+   Text sizes for a 4:5 page shown ~550 px wide in the feed: headline ≥ 64 px, body ≥ 32 px, source ≥ 22 px. */
+.pg{padding:84px 88px;display:flex;flex-direction:column;height:100%}
+.hdr{display:flex;align-items:center;gap:20px}
+.hdr .wm{font-size:30px}
+.hdr .lbl{margin-left:auto;font:500 24px Geist;color:var(--faint);letter-spacing:-.01em}
+.stamp{font-size:21px;padding:7px 14px}
+h1.h{font-size:76px}
+h2.h{font-size:64px}
+.body{font-size:34px;color:#d4d4d8;line-height:1.38;font-weight:500;letter-spacing:-.015em}
+.src{position:absolute;left:88px;right:88px;bottom:64px;font-size:22px;line-height:1.4;color:var(--faint);font-weight:500;letter-spacing:0}
+.li{display:flex;gap:24px;align-items:flex-start;padding:34px 0;border-top:2px solid rgba(255,255,255,.07);font-size:38px;line-height:1.28;font-weight:600;color:#fafafa;letter-spacing:-.02em}
+.li small{display:block;font-size:28px;line-height:1.38;color:var(--muted);font-weight:500;margin-top:10px;letter-spacing:-.01em}
+.mk{flex:none;width:34px;height:34px;border-radius:8px;margin-top:2px;display:flex;align-items:center;justify-content:center;font:700 20px Geist}
+.mk.no{border:2.5px solid rgba(248,113,113,.6);color:var(--danger)}
+.mk.no::after{content:'–'}
+.kv{display:grid;grid-template-columns:260px 1fr;row-gap:16px;font-family:GeistMono;font-size:25px;letter-spacing:0}
+.kv b{font-weight:400;color:var(--faint)}
+.kv span{color:#d4d4d8}
+.redact{display:inline-block;height:22px;width:300px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.14) 0 10px,transparent 10px 14px);vertical-align:middle}
+</style></head><body>
+
+<!-- cover -->
+<section class="frame" data-out="li-de-01-cover" style="width:1080px;height:1350px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp soon">Private Beta</span></div>
+    <div style="margin-top:auto;margin-bottom:auto">
+      <h1 class="h">Quality Gates für <span class="lime">KI-Code</span>.</h1>
+      <p class="body" style="margin:40px 0 0">Was ein Gate heute bei jedem Pull Request prüfen kann, wo es aufhört und was wir als Nächstes bauen.</p>
+      <p class="body" style="margin:28px 0 0;color:var(--muted);font-size:30px">Ein Build-Log des unslop-Teams. Die Forschungszahlen stammen aus Studien Dritter, mit Quelle auf jeder Seite.</p>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="hd" style="height:62px;padding:0 26px;font-size:22px">Checks<span class="chip" style="font-size:18px;padding:3px 10px">Beispiel</span></div>
+      <div class="check" style="padding:24px 26px"><div class="ic fail" style="width:44px;height:44px;font:700 24px Geist">✕</div><div><div style="font:600 30px Geist;color:#fafafa">Anti-Slop Gatekeeper</div><div style="font:500 25px Geist;color:#f87171">1 critical slop finding</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- evidence 1: AIRA -->
+<section class="frame" data-out="li-de-02-evidence" style="width:1080px;height:1350px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Die Belege</span></div>
+    <h2 class="h" style="margin-top:70px">KI-zugeordneter Code hatte mehr High-Severity-Befunde.</h2>
+    <div style="display:flex;align-items:flex-end;gap:70px;margin-top:70px">
+      <div class="h lime" style="font-size:170px;line-height:.9">1.80×</div>
+      <div style="display:flex;gap:40px;align-items:flex-end;height:360px">
+        <div class="bar-col" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font:700 44px Geist;color:var(--accent)">0.435</div><div style="width:120px;height:300px;background:var(--accent);border-radius:5px 5px 0 0"></div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font:700 44px Geist;color:#a1a1aa">0.242</div><div style="width:120px;height:167px;background:#3f3f46;border-radius:5px 5px 0 0"></div></div>
+      </div>
+    </div>
+    <p class="body" style="margin-top:44px">High-Severity-Befunde pro Datei: 955 KI-zugeordnete Dateien gegenüber 955 passenden menschlichen Kontrolldateien. Gleiche Richtung in JavaScript, Python und TypeScript.</p>
+  </div>
+  <div class="src">Parris, „AIRA — AI-Induced Risk Audit“, BDB Labs 2026, arXiv 2604.17587, Studie 3. Forschung Dritter, kein unslop-Benchmark.</div>
+</section>
+
+<!-- evidence 2: erosion -->
+<section class="frame" data-out="li-de-03-erosion" style="width:1080px;height:1350px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Die Belege</span></div>
+    <h2 class="h" style="margin-top:70px">Zehnmal „verbessern“ machte den Code unsicherer.</h2>
+    <div style="display:flex;gap:40px;align-items:flex-end;height:400px;margin-top:90px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font:700 56px Geist;color:#a1a1aa">2.1</div><div style="width:190px;height:98px;background:#52525b;border-radius:5px 5px 0 0"></div><div style="font:500 26px Geist;color:var(--muted);text-align:center">erste<br>Iterationen</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font:700 56px Geist;color:var(--warn)">4.7</div><div style="width:190px;height:219px;background:#a16207;border-radius:5px 5px 0 0"></div><div style="font:500 26px Geist;color:var(--muted);text-align:center">Iterationen<br>3–7</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font:700 56px Geist;color:var(--danger)">6.2</div><div style="width:190px;height:290px;background:var(--danger);border-radius:5px 5px 0 0"></div><div style="font:500 26px Geist;color:var(--muted);text-align:center">Iterationen<br>8–10</div></div>
+    </div>
+    <p class="body" style="margin-top:48px">Durchschnittliche Schwachstellen pro Sample, wenn GPT-4o denselben Code immer wieder verbessern sollte. Auch Prompts, die ausdrücklich Sicherheit verlangten, fügten neue hinzu, nur weniger.</p>
+  </div>
+  <div class="src">„Security Degradation in Iterative AI Code Generation“, IEEE-ISTAS 2025, arXiv 2506.11022. Signifikant zwischen frühen und späten Iterationen, nicht zwischen benachbarten.</div>
+</section>
+
+<!-- today: private beta -->
+<section class="frame" data-out="li-de-04-today" style="width:1080px;height:1350px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp soon">Private Beta</span></div>
+    <h2 class="h" style="margin-top:60px">Heute: ein Check an jedem Pull Request.</h2>
+    <p class="body" style="margin:28px 0 0">Ein kritischer Befund lässt den Check scheitern. Warnungen blockieren nie einen Merge. Jeder Befund nennt seine Regel und, wo möglich, einen Ein-Klick-Fix.</p>
+    <div class="card" style="margin-top:44px">
+      <div class="hd" style="height:62px;padding:0 26px;font-size:22px">Checks<span class="chip" style="font-size:18px;padding:3px 10px">Beispiel</span></div>
+      <div class="check" style="padding:24px 26px"><div class="ic fail" style="width:44px;height:44px;font:700 24px Geist">✕</div><div><div style="font:600 30px Geist;color:#fafafa">Anti-Slop Gatekeeper</div><div style="font:500 25px Geist;color:#f87171">1 critical slop finding</div></div></div>
+    </div>
+    <div class="card" style="margin-top:22px;padding:26px 28px;font-size:25px;line-height:1.45">
+      <div style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:22px"><b style="color:#fafafa;font-weight:600">unslop-gatekeeper</b><span style="font-size:16px;border:1.5px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--faint)">bot</span><span class="chip" style="font-size:18px;padding:3px 10px">Beispiel</span></div>
+      <div style="margin-top:14px;font-weight:600;color:#fafafa">🚨 SEC-031 <span style="color:#f87171;font-weight:500">(CRITICAL)</span></div>
+      <div style="margin-top:8px;color:#d4d4d8">An error is silently swallowed and the handler returns a success response anyway, so failures (including skipped authorization checks) look identical to successes.</div>
+      <div style="margin-top:14px;font-weight:600;color:#fafafa">💡 Suggested fix <span style="color:#a1a1aa;font-weight:500">(1-click commit)</span></div>
+    </div>
+  </div>
+  <div class="src">Check-Name, Titel und Kommentarformat sind die echten (englischen) Produkt-Strings. Befund und Code sind Beispieldaten.</div>
+</section>
+
+<!-- limits -->
+<section class="frame" data-out="li-de-05-limits" style="width:1080px;height:1350px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Wo es aufhört</span></div>
+    <h2 class="h" style="margin-top:60px">Was es nicht kann. Noch nicht, oder nie.</h2>
+    <div style="margin-top:44px">
+      <div class="li"><span class="mk no"></span><div>Es ist nicht vollständig deterministisch.<small>119 Regeln aus veröffentlichter Forschung. 55 haben einen deterministischen Detektor, den Rest prüft ein LLM-Reviewer. Jeder Befund zeigt, wie er verifiziert wurde.</small></div></div>
+      <div class="li"><span class="mk no"></span><div>Der LLM-Review liest vorerst nur JS/TS.<small>Andere Sprachen prüft der deterministische Pre-Scanner.</small></div></div>
+      <div class="li"><span class="mk no"></span><div>Es vergleicht noch keine Revisionen.<small>Jeder Push wird einzeln geprüft. Einen Check scheitern zu lassen, weil eine Revision schlechter wurde, steht auf der Roadmap.</small></div></div>
+      <div class="li" style="border-bottom:2px solid rgba(255,255,255,.07)"><span class="mk no"></span><div>Es findet nicht alles.<small>Nichts blockiert 100 % der KI-Schwachstellen. Wir dokumentieren die Lücken.</small></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- roadmap: integrity trend (concept) -->
+<section class="frame" data-out="li-de-06-roadmap-trend" style="width:1080px;height:1350px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp road">Roadmap · Konzept</span></div>
+    <h2 class="h" style="margin-top:60px">Als Nächstes: der Trend, nicht nur der PR.</h2>
+    <p class="body" style="margin:26px 0 0">Geplant: Befunde pro Repository über die Zeit. So sehen Sie, ob KI-gestützte Änderungen schneller Schulden aufbauen, als Ihr Team sie abbaut.</p>
+    <div class="concept" style="margin-top:44px;padding:34px 36px 30px;position:relative">
+      <div class="anno" style="font-size:22px">Konzeptskizze · Beispieldaten · nicht gebaut</div>
+      <svg viewBox="0 0 800 420" style="width:100%;margin-top:18px">
+        <g stroke="rgba(255,255,255,.14)" stroke-width="2" stroke-dasharray="6 8">
+          <line x1="60" y1="30" x2="60" y2="360"/><line x1="60" y1="360" x2="780" y2="360"/>
+          <line x1="60" y1="250" x2="780" y2="250"/><line x1="60" y1="140" x2="780" y2="140"/>
+        </g>
+        <polyline fill="none" stroke="#fcd34d" stroke-width="5" stroke-dasharray="14 10" stroke-linejoin="round" stroke-linecap="round"
+          points="60,300 125,292 190,270 255,276 320,240 385,226 450,232 515,196 580,188 645,160 710,150 775,132"/>
+        <g fill="#fcd34d"><circle cx="775" cy="132" r="9"/></g>
+        <text x="70" y="400" fill="#71717a" font-family="Geist" font-size="22">Woche 1</text>
+        <text x="690" y="400" fill="#71717a" font-family="Geist" font-size="22">Woche 12</text>
+        <text x="80" y="60" fill="#a1a1aa" font-family="Geist" font-size="22">kritische + Warn-Befunde pro gemergtem PR</text>
+      </svg>
+    </div>
+    <p class="body" style="margin:30px 0 0;font-size:28px;color:var(--muted)">Welche Kennzahl in dieses Diagramm gehört, ist offen. Sagen Sie uns, was Sie messen würden.</p>
+  </div>
+</section>
+
+<!-- roadmap: check record per commit (concept) -->
+<section class="frame" data-out="li-de-07-roadmap-record" style="width:1080px;height:1350px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp road">Roadmap · Konzept</span></div>
+    <h2 class="h" style="margin-top:60px">Später: ein signierter Nachweis, was geprüft wurde.</h2>
+    <p class="body" style="margin:26px 0 0">Geplant: ein Nachweis pro Commit-SHA. Er listet, welche Regeln liefen und was bestanden hat. So können Sie einem Auditor oder Käufer einen Beleg geben statt einer Folie.</p>
+    <div class="concept" style="margin-top:40px;padding:34px 38px">
+      <div class="anno" style="font-size:22px;margin-bottom:24px">Konzeptskizze · Beispieldaten · nicht gebaut</div>
+      <div class="kv">
+        <b>Repository</b><span>acme/shop</span>
+        <b>Commit</b><span>3f9c2a17de…</span>
+        <b>Regeln geprüft</b><span>119 (55 deterministisch)</span>
+        <b>kritisch</b><span>0</span>
+        <b>Warnungen</b><span>3, davon 1 von einem Menschen geprüft</span>
+        <b>nicht geprüft</b><span>0 Dateien</span>
+        <b>Signatur</b><span class="redact"></span>
+      </div>
+    </div>
+    <p class="body" style="margin:30px 0 0;font-size:28px;color:var(--muted)">Was er nie behaupten würde: „Dieser Code ist fehlerfrei.“</p>
+  </div>
+</section>
+
+<!-- close -->
+<section class="frame" data-out="li-de-08-question" style="width:1080px;height:1350px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp soon">Private Beta</span></div>
+    <div style="margin-top:auto;margin-bottom:auto">
+      <h2 class="h" style="font-size:70px">Wenn Sie eine Engineering-Organisation leiten: Was müsste dieser Nachweis zeigen, damit Sie ihm vertrauen?</h2>
+      <p class="body" style="margin:44px 0 0">Wir lesen jeden Kommentar. Die Antworten fließen in die Spezifikation.</p>
+      <p class="body" style="margin:26px 0 0;color:var(--muted);font-size:30px">Private Beta, Inferenz in der EU (Vertex AI, EU-Endpunkt). Warteliste: <span style="color:#fafafa">unslop.codes</span></p>
+    </div>
+  </div>
+</section>
+
+</body></html>

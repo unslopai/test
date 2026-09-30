@@ -1,0 +1,155 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>unslop · X stills</title>
+<link rel="stylesheet" href="../../_kit/kit.css">
+<script src="../../_kit/kit.js"></script>
+<style>
+/* X timeline: 16:9 single images render uncropped (RESEARCH.md §2). 1600×900, safe margin 80 px. */
+.pad{padding:72px 88px}
+.top{display:flex;align-items:center;gap:22px}
+.top .wm{font-size:34px}
+.stamp{font-size:20px;padding:7px 14px}
+.cap{position:absolute;left:88px;right:88px;bottom:44px;font-size:21px;color:var(--faint);font-weight:500;letter-spacing:0}
+.term-card .hd{height:62px;padding:0 26px;font-size:21px}
+.term-card .chip{font-size:17px;padding:3px 10px}
+.term-body{padding:22px 30px 26px;font-family:GeistMono;letter-spacing:0;font-size:17.6px;line-height:1.5;white-space:pre-wrap;color:#d4d4d8}
+.bar-row{display:flex;align-items:flex-end;gap:56px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:16px}
+.bar-col .v{font:700 64px Geist;letter-spacing:-.04em}
+.bar-col .b{width:190px;border-radius:6px 6px 0 0}
+.bar-col .l{font:500 22px Geist;color:var(--muted);letter-spacing:-.01em;text-align:center}
+.cmt{font-size:22px;line-height:1.45}
+.cmt .who{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--muted)}
+.cmt .who b{color:#fafafa;font-weight:600}
+.cmt .bot{font-size:14px;border:1.5px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--faint)}
+.sug{border:2px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px}
+.sug .sh{font-size:17px;color:var(--faint);padding:8px 16px;border-bottom:2px solid rgba(255,255,255,.06)}
+.sug .ln{font-family:GeistMono;font-size:18px;padding:3px 16px;white-space:pre;letter-spacing:0}
+.sug .del{background:rgba(248,113,113,.10);color:#fca5a5}
+.sug .add{background:rgba(190,242,100,.08);color:#d9f99d}
+.btn{display:inline-block;margin-top:16px;background:var(--accent);color:#0a0a0b;font:600 18px Geist;border-radius:8px;padding:9px 16px;letter-spacing:-.01em}
+.col h3{margin:0 0 22px;font:600 26px Geist;letter-spacing:-.02em;display:flex;align-items:center;gap:16px}
+.item{display:flex;gap:16px;align-items:flex-start;font-size:23px;line-height:1.35;padding:13px 0;border-top:1.5px solid rgba(255,255,255,.06)}
+.item .t{color:#e4e4e7;font-weight:500}
+.item .d{color:var(--faint);font-size:19px;font-weight:500;letter-spacing:-.01em}
+.tick{flex:none;width:26px;height:26px;border-radius:6px;margin-top:3px}
+.tick.ok{background:rgba(252,211,77,.14);border:2px solid rgba(252,211,77,.55);color:var(--warn);font:700 17px Geist;display:flex;align-items:center;justify-content:center}
+.tick.ok::after{content:'✓'}
+.tick.road{border:2.5px dashed rgba(252,211,77,.7)}
+</style></head><body>
+
+<!-- A: real CLI formatter output on an example finding -->
+<section class="frame" data-out="x-cli-output" style="width:1600px;height:900px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="inner pad">
+    <div class="top"><div class="wm">unslop<i></i></div><span class="stamp soon">Private beta</span></div>
+    <div class="card term-card" style="margin-top:34px">
+      <div class="hd"><span class="dotsrow"><b></b><b></b><b></b></span><span style="margin-left:14px">zsh — acme/shop</span><span class="chip">Example data</span></div>
+      <div class="term-body" data-ansi="../../_kit/cli/sample-output.ansi" data-prefix="<span style='color:#bef264'>$</span> unslop scan&#10;<span style='color:#a1a1aa'>Scanning acme/shop </span><span style='color:#71717a'>(diff vs 3f9c2a17de)</span><span style='color:#a1a1aa'>…</span>&#10;"></div>
+    </div>
+  </div>
+  <div class="cap">Real output of the <span style="font-family:GeistMono">unslop scan</span> formatter (packages/cli/src/format.ts) for an example finding. Repo, path and code are example data.</div>
+</section>
+
+<!-- B: check run + PR review comment, strings from src/lib/check-run.ts and helpers.ts (mapIssueToPrComment) -->
+<section class="frame" data-out="x-pr-finding" style="width:1600px;height:900px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="inner pad">
+    <div class="top"><div class="wm">unslop<i></i></div><span class="stamp soon">Private beta</span></div>
+    <div style="display:flex;gap:40px;margin-top:34px;align-items:flex-start">
+      <div style="width:560px;display:flex;flex-direction:column;gap:26px">
+        <h2 class="h" style="font-size:58px">The check fails on a <span class="red">critical</span> finding.</h2>
+        <p class="sub" style="font-size:26px;margin:0">Every finding names its rule and, where it can, ships a one-click fix. Warnings never block a merge.</p>
+        <div class="card" style="padding:0">
+          <div class="hd" style="height:54px;padding:0 22px;font-size:19px">Checks<span class="chip" style="font-size:15px;padding:2px 9px">Example</span></div>
+          <div class="check" style="padding:20px 22px">
+            <div class="ic fail" style="width:38px;height:38px;font:700 22px Geist">✕</div>
+            <div><div style="font:600 24px Geist;color:#fafafa">Anti-Slop Gatekeeper</div><div style="font:500 20px Geist;color:#f87171">1 critical slop finding</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card cmt" style="flex:1;padding:24px 28px">
+        <div class="who" style="white-space:nowrap"><b>unslop-gatekeeper</b><span class="bot">bot</span><span>commented</span><span class="chip" style="font-size:15px;padding:2px 9px">Example</span></div>
+        <div style="margin-top:6px;font:400 17px GeistMono;letter-spacing:0;color:var(--faint)">app/api/checkout/webhook/route.ts · line 11</div>
+        <div style="margin-top:16px;font-weight:600;color:#fafafa">🚨 SEC-031 <span style="color:#f87171;font-weight:500">(CRITICAL)</span></div>
+        <div style="margin-top:10px;color:#d4d4d8">An error is silently swallowed and the handler returns a success response anyway, so failures (including skipped authorization checks) look identical to successes. Propagate errors and return a proper failure status.</div>
+        <div style="margin-top:16px;font-weight:600;color:#fafafa">💡 Suggested fix <span style="color:#a1a1aa;font-weight:500">(1-click commit):</span></div>
+        <div class="sug"><div class="sh">Suggested change</div>
+          <div class="ln del">-   // retry later</div>
+          <div class="ln add">+   console.error(err);</div>
+          <div class="ln add">+   return Response.json({ ok: false }, { status: 500 });</div>
+        </div>
+        <span class="btn">Commit suggestion</span>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Check name, titles and comment format are the product’s own strings. The finding is example data; the rule text is SEC-031’s published explanation.</div>
+</section>
+
+<!-- C: AIRA matched-control replication (arXiv 2604.17587, Study 3) -->
+<section class="frame" data-out="x-study-aira" style="width:1600px;height:900px">
+  <div class="dots"></div>
+  <div class="inner pad">
+    <div class="top"><div class="wm" style="font-size:28px">unslop<i></i></div><span class="faint" style="font-size:20px;font-weight:500;letter-spacing:0">Research, not our benchmark</span></div>
+    <div style="display:flex;gap:90px;margin-top:60px;align-items:flex-end">
+      <div style="flex:1">
+        <div class="h" style="font-size:190px;line-height:.95"><span class="lime">1.80×</span></div>
+        <h2 class="h" style="font-size:50px;margin-top:26px">more high-severity findings per file in AI-attributed code.</h2>
+        <p class="sub" style="font-size:25px;margin:22px 0 0">Matched-control replication: 955 AI-attributed files vs. 955 human-control files. Same direction in JavaScript, Python and TypeScript.</p>
+      </div>
+      <div class="bar-row" style="height:520px">
+        <div class="bar-col"><div class="v lime">0.435</div><div class="b" style="height:380px;background:var(--accent)"></div><div class="l">AI-attributed</div></div>
+        <div class="bar-col"><div class="v" style="color:#a1a1aa">0.242</div><div class="b" style="height:211px;background:#3f3f46"></div><div class="l">Human control</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Source: Parris, “AIRA — AI-Induced Risk Audit”, BDB Labs 2026, arXiv 2604.17587, Study 3. High-severity findings per file.</div>
+</section>
+
+<!-- D: iterative refinement erosion (arXiv 2506.11022) -->
+<section class="frame" data-out="x-study-erosion" style="width:1600px;height:900px">
+  <div class="dots"></div>
+  <div class="inner pad">
+    <div class="top"><div class="wm" style="font-size:28px">unslop<i></i></div><span class="faint" style="font-size:20px;font-weight:500;letter-spacing:0">Research, not our benchmark</span></div>
+    <div style="display:flex;gap:80px;margin-top:56px;align-items:flex-end">
+      <div style="flex:1">
+        <h2 class="h" style="font-size:64px">Ask GPT-4o to “improve” the same code ten times.</h2>
+        <p class="sub" style="font-size:27px;margin:26px 0 0">Average vulnerabilities per sample went up, not down. Even prompts asking for security added new ones, just fewer.</p>
+        <p class="sub" style="font-size:21px;margin:26px 0 0;color:var(--faint)">GPT-4o, 400 samples, 4 prompting strategies. Significant between early and late iterations (F(9,90) = 14.32, p &lt; 0.001), not between adjacent ones.</p>
+      </div>
+      <div class="bar-row" style="height:560px;gap:34px">
+        <div class="bar-col"><div class="v" style="color:#a1a1aa;font-size:56px">2.1</div><div class="b" style="width:150px;height:112px;background:#52525b"></div><div class="l">first<br>iterations</div></div>
+        <div class="bar-col"><div class="v" style="color:#fcd34d;font-size:56px">4.7</div><div class="b" style="width:150px;height:250px;background:#a16207"></div><div class="l">iterations<br>3–7</div></div>
+        <div class="bar-col"><div class="v red" style="font-size:56px">6.2</div><div class="b" style="width:150px;height:330px;background:#f87171"></div><div class="l">iterations<br>8–10</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Source: “Security Degradation in Iterative AI Code Generation”, IEEE-ISTAS 2025, arXiv 2506.11022, §IV. Average vulnerabilities per sample.</div>
+</section>
+
+<!-- E: build in public: what works in the private beta vs. what's on the roadmap -->
+<section class="frame" data-out="x-status-board" style="width:1600px;height:900px">
+  <div class="dots"></div>
+  <div class="inner pad">
+    <div class="top"><div class="wm">unslop<i></i></div><span class="faint" style="font-size:22px;font-weight:500;letter-spacing:-.01em">Build log · where we are</span></div>
+    <div style="display:flex;gap:56px;margin-top:40px">
+      <div class="col" style="flex:1">
+        <h3>Built and running <span class="stamp soon">Private beta</span></h3>
+        <div class="item"><span class="tick ok"></span><div><div class="t">GitHub App: check run + PR comments</div><div class="d">Critical finding fails the check. Rule ID and 1-click fix per finding.</div></div></div>
+        <div class="item"><span class="tick ok"></span><div><div class="t"><span style="font-family:GeistMono;font-size:21px">unslop scan</span> before you push</div><div class="d">CLI with --fix and --dry-run. Secret filter before any upload.</div></div></div>
+        <div class="item"><span class="tick ok"></span><div><div class="t">VS Code: “Apply Gatekeeper Fix”</div><div class="d">Findings inline as diagnostics. Same engine as the PR check.</div></div></div>
+        <div class="item"><span class="tick ok"></span><div><div class="t">MCP server for coding agents</div><div class="d">5 tools: scan, get result, connect repo, review PR, resolve finding.</div></div></div>
+        <div class="item"><span class="tick ok"></span><div><div class="t">119 rules from published research</div><div class="d">55 with a deterministic detector. The rest: LLM review (JS/TS today) + blind verifier.</div></div></div>
+      </div>
+      <div class="col concept" style="flex:1;padding:26px 30px 10px">
+        <h3>Next <span class="stamp road">Roadmap</span></h3>
+        <div class="item"><span class="tick road"></span><div><div class="t">Fail when a revision gets worse</div><div class="d">Compare severity-weighted findings with the previous push.</div></div></div>
+        <div class="item"><span class="tick road"></span><div><div class="t">Integrity trend per repo</div><div class="d">See whether AI-assisted changes add debt faster than you remove it.</div></div></div>
+        <div class="item"><span class="tick road"></span><div><div class="t">A second model vendor as verifier</div><div class="d">A finding is not confirmed by the model family that wrote it.</div></div></div>
+        <div class="item"><span class="tick road"></span><div><div class="t">Signed certificate per commit SHA</div><div class="d">Which rules a codebase was checked against, and what passed.</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Nothing here is publicly installable yet. Roadmap items are planned, not built, and have no dates. Waitlist: unslop.codes</div>
+</section>
+
+</body></html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>unslop · regenerate erosion</title>
+<style>
+/* Brand fonts: Geist + Silkscreen are the repo's own files (src/app/(marketing)/assets), Geist 500/600 + Geist Mono from fontsource (OFL). */
+@font-face{font-family:Geist;src:url(assets/fonts/geist-regular.ttf) format('truetype');font-weight:400}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-500.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-600.woff2) format('woff2');font-weight:600}
+@font-face{font-family:Geist;src:url(assets/fonts/geist-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:Silkscreen;src:url(assets/fonts/silkscreen-bold.ttf) format('truetype');font-weight:700}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-400.woff2) format('woff2');font-weight:400}
+@font-face{font-family:GeistMono;src:url(assets/fonts/geist-mono-500.woff2) format('woff2');font-weight:500}
+/* Design tokens = src/app/globals.css (@theme inline) */
+:root{--surface:#0a0a0b;--raised:#18181b;--edge:#27272a;--ink:#f4f4f5;--muted:#a1a1aa;--accent:#bef264;--warn:#fcd34d;--danger:#f87171}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--surface);font-family:Geist,sans-serif;color:var(--ink);letter-spacing:-.025em}
+.a{position:absolute;left:0;top:0}
+.m{position:absolute;left:0;width:1080px;overflow:hidden;text-align:center}
+.m>span{display:inline-block;white-space:nowrap}
+.w{display:inline-block;will-change:transform}
+.px{font-family:Silkscreen;font-weight:700;color:var(--accent);letter-spacing:0;font-size:.86em}
+.rd{color:var(--danger)}
+.lm{color:var(--accent)}
+.card{position:absolute;background:#0c0c0e;border:2px solid rgba(255,255,255,.10);border-radius:24px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.9)}
+.hd{position:absolute;left:0;right:0;top:0;height:84px;border-bottom:2px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 34px;font:500 28px Geist;color:#a1a1aa;letter-spacing:-.01em;gap:16px}
+.ex{margin-left:auto;font:500 24px Geist;color:#71717a;border:2px solid rgba(255,255,255,.10);border-radius:8px;padding:4px 12px;letter-spacing:0}
+.code{font-family:GeistMono;font-size:29px;letter-spacing:0;white-space:pre}
+.ln{position:absolute;left:0;height:56px;display:flex;align-items:center;width:100%}
+.ln .no{width:78px;box-sizing:border-box;text-align:right;padding-right:26px;color:#3f3f46;flex:none}
+.k{color:#a1a1aa}.c{color:#71717a}
+.btn{position:absolute;border-radius:8px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+</style></head><body>
+<div id="stage">
+  <div id="dots" class="a" style="width:1080px;height:1920px;background-image:radial-gradient(rgba(255,255,255,.075) 2px,transparent 2.2px);background-size:36px 36px;-webkit-mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent);mask-image:radial-gradient(70% 55% at 50% 42%,#000,transparent)"></div>
+  <div id="wash" class="a" style="width:1600px;height:900px;left:-60px;top:-520px;background:radial-gradient(closest-side,rgba(190,242,100,.06),transparent)"></div>
+  <div id="world" class="a" style="width:1080px;height:1920px;transform-origin:540px 960px">
+    <div id="cam" class="a" style="width:1080px;height:1920px;transform-origin:0 0"></div>
+    <div id="hud" class="a" style="width:1080px;height:1920px;z-index:40"></div>
+  </div>
+  <div id="beta" class="a" style="z-index:95;left:0;top:168px;width:1080px;text-align:center;visibility:hidden"><span style="display:inline-flex;align-items:center;gap:14px;font:600 34px Geist;letter-spacing:.04em;text-transform:uppercase;color:#fcd34d;border:3px solid rgba(252,211,77,.55);border-radius:10px;padding:10px 22px"><i style="width:14px;height:14px;border-radius:50%;background:#fcd34d;display:block"></i><span id="betaTxt"></span></span></div>
+  <svg id="cur" class="a" viewBox="0 0 44 44" style="z-index:90;width:58px;height:58px"><path d="M5 3 L5 34 L12.5 27 L17.5 39 L22.5 37 L17.6 25.4 L27.5 25.4 Z" fill="#fafafa" stroke="#0a0a0b" stroke-width="2.4" stroke-linejoin="round"/></svg>
+</div>
+<script>
+// ---------------------------------------------------------------- copy (i18n)
+// EN = the product's default locale (src/i18n/config.ts). Product strings (check name/titles, comment format) are the app's own.
+const STR = {
+  en: {
+    hA: 'Hit regenerate.', hB1: 'It quietly added', hB2: 'a <b class="rd">SQL injection.</b>', hC: 'That’s not bad luck.',
+    example: 'Example', orig: 'Original', regen: 'Regenerated ×', regenBtn: 'Regenerate',
+    sH: 'Vulnerabilities per sample', axis: 'as “improve this code” rounds pile up →', cap: 'Even with a security-focused prompt.',
+    src: 'Iterative-refinement study · arXiv 2506.11022',
+    hD: 'Unslop checks <b class="lm">every push.</b>', hE1: 'A critical finding', hE2: '<b class="rd">fails</b> the check.',
+    commits: 'Commits', c0: 'feat: add user lookup', c1: 'refactor: improve this code', c2: 'Apply suggestions from code review',
+    checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', failed: '1 critical slop finding', passed: 'No AI slop found',
+    hF1: 'It names the <b class="lm">rule.</b>', hF2: 'And the <b class="lm">fix.</b>',
+    justNow: 'just now', expl: 'SQL injection: user input concatenated or interpolated into a query lets attackers read or alter your database.',
+    fixLbl: 'Suggested fix', fixTail: '(1-click commit):', sugg: 'Suggested change', commit: 'Commit suggestion', committed: 'Suggestion committed',
+    hG: 'Re-checked. <b class="px">Clean.</b>',
+    tag: 'A review gate for AI-written code.', sub1: 'Every push. Every revision.', sub2: '119 research-backed rules.', url: 'unslop.codes', beta: 'Private beta',
+  },
+  de: {
+    hA: 'Klick auf Regenerate.', hB1: 'Still und leise kam', hB2: 'eine <b class="rd">SQL-Injection</b> dazu.', hC: 'Das ist kein Pech.',
+    example: 'Beispiel', orig: 'Original', regen: 'Regenerated ×', regenBtn: 'Regenerate',
+    sH: 'Schwachstellen pro Sample', axis: 'wenn sich „Verbessere diesen Code“-Runden stapeln →', cap: 'Selbst mit Security-Prompt.',
+    src: 'Studie zu iterativem Refinement · arXiv 2506.11022',
+    hD: 'Unslop prüft <b class="lm">jeden Push.</b>', hE1: 'Ein kritisches Finding', hE2: 'lässt den Check <b class="rd">scheitern.</b>',
+    commits: 'Commits', c0: 'feat: add user lookup', c1: 'refactor: improve this code', c2: 'Apply suggestions from code review',
+    checkName: 'Anti-Slop Gatekeeper', running: 'Reviewing for AI slop…', failed: '1 critical slop finding', passed: 'No AI slop found',
+    hF1: 'Es nennt die <b class="lm">Regel.</b>', hF2: 'Und den <b class="lm">Fix.</b>',
+    justNow: 'just now', expl: 'SQL injection: user input concatenated or interpolated into a query lets attackers read or alter your database.',
+    fixLbl: 'Suggested fix', fixTail: '(1-click commit):', sugg: 'Suggested change', commit: 'Commit suggestion', committed: 'Suggestion committed',
+    hG: 'Neu geprüft. <b class="px">Sauber.</b>',
+    tag: 'Ein Review-Gate für KI-Code.', sub1: 'Jeder Push. Jede Revision.', sub2: '119 forschungsbasierte Regeln.', url: 'unslop.codes', beta: 'Private Beta',
+  },
+};
+const LANG = new URLSearchParams(location.search).get('lang') === 'de' ? 'de' : 'en';
+const T = STR[LANG];
+// ?beta=1: "Private beta" stamp for the whole film (distribution/channels: phase A, product not publicly usable yet).
+const BETA = new URLSearchParams(location.search).get('beta') === '1';
+
+// ---------------------------------------------------------------- engine (same primitives as film 01)
+const LIME = '#bef264', RED = '#f87171', AMBER = '#fcd34d';
+const BEAT = 60 / 128, BAR = 4 * BEAT;
+const BRK = 3 * BAR, DROP = 7 * BAR, DUR = 15 * BAR;               // break 5.625 s, drop 13.125 s, 28.125 s
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x, lerp = (a, b, u) => a + (b - a) * u;
+const E = { io: u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2, out: u => 1 - Math.pow(1 - u, 3), in: u => u * u * u, o5: u => 1 - Math.pow(1 - u, 5) };
+const P = (t, t0, d, e = E.io) => e(clamp((t - t0) / d));
+function step(tau, f = 2.6, z = .7) { if (tau <= 0) return 0; const w = 2 * Math.PI * f, wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + z * w / wd * Math.sin(wd * tau)); }
+const sp = (t, t0, f = 2.4, z = .75) => step(t - t0, f, z);
+const pop = (t, t0, f = 3, z = .55) => clamp(sp(t, t0, f, z), 0, 1.25);
+const $ = id => document.getElementById(id), px = v => v + 'px';
+const cam = $('cam'), hud = $('hud');
+function mk(parent, html, z = 5) { parent.insertAdjacentHTML('beforeend', html); const e = parent.lastElementChild; e.style.zIndex = z; return e; }
+function box(el, x, y, w, h) { const s = el.style; s.left = px(x); s.top = px(y); if (w != null) s.width = px(w); if (h != null) s.height = px(h); }
+const vis = (el, on) => { el.style.visibility = on ? 'visible' : 'hidden'; };
+function wordify(root) {
+  const walk = (node) => { [...node.childNodes].forEach((c) => {
+    if (c.nodeType === 3) { const frag = document.createDocumentFragment(); c.textContent.split(/(\s+)/).forEach((w) => {
+      if (!w) return; if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+      const s = document.createElement('span'); s.className = 'w'; s.textContent = w; frag.appendChild(s); }); c.replaceWith(frag); }
+    else if (c.nodeType === 1) walk(c); }); };
+  walk(root); return root;
+}
+function line(html, y, size, weight = 700, color = '#fafafa', parent = hud) {
+  const el = mk(parent, `<div class="m" style="top:${y}px;height:${Math.round(size * 1.34)}px;line-height:${Math.round(size * 1.3)}px"><span style="font:${weight} ${size}px Geist;color:${color}">${html}</span></div>`, 20);
+  wordify(el.firstElementChild); el.dataset.size = size; return el;
+}
+function fitLine(el, maxW = 940) { const s0 = el.firstElementChild, w = s0.getBoundingClientRect().width; if (w > maxW) s0.style.fontSize = px(parseFloat(el.dataset.size) * maxW / w); }
+function rise(el, t, tin, tout, f = 2.1) {
+  const ws = el.querySelectorAll('.w'), o = tout == null ? 0 : P(t, tout, .3, E.in);
+  ws.forEach((w, i) => { const u = clamp(step(t - tin - i * .06, f, .76), 0, 1.06);
+    w.style.transform = `translateY(${(1 - u) * 112 - o * 118}%) rotate(${(1 - clamp(u)) * 5}deg)`; });
+  vis(el, t >= tin && (tout == null || t < tout + .32));
+}
+function squiggle(x0, x1, y) { let d = `M${x0} ${y}`; for (let x = x0, i = 0; x < x1; x += 9, i++) d += ` L${Math.min(x + 9, x1)} ${y + (i % 2 ? -5 : 5)}`; return d; }
+function drawOn(path, u) { const L = path.getTotalLength(); path.setAttribute('stroke-dasharray', L); path.setAttribute('stroke-dashoffset', L * (1 - u)); }
+
+// ---------------------------------------------------------------- scene 1: the regenerate loop (example code)
+const CX = 70, CW = 940, LH = 56, CT = 106, CH = 29 * .6;
+// Each regenerate rewrites one line; the third one interpolates the id into the SQL string (example code).
+const L0 = '<span class="k">export async function</span> getUser(id: string) {';
+const Q1 = '  <span class="k">const</span> user = <span class="k">await</span> db.query(', Q2 = '  <span class="k">const</span> { rows } = <span class="k">await</span> db.query(';
+const S1 = "    'SELECT * FROM users WHERE id = $1', [id]);", S2 = '    `SELECT * FROM users WHERE id = ${id}`);';
+const ROUNDS = [
+  [L0, Q1, S1, '  <span class="k">return</span> user.rows[0];', '}'],
+  [L0, Q1, S1, '  <span class="k">return</span> user.rows[0] ?? <span class="k">null</span>;', '}'],
+  [L0, Q2, S1, '  <span class="k">return</span> rows[0] ?? <span class="k">null</span>;', '}'],
+  [L0, Q2, S2, '  <span class="k">return</span> rows[0] ?? <span class="k">null</span>;', '}'],
+];
+const CHANGED = [-1, 3, 1, 2];                                     // line rewritten by each regenerate
+const CLICKS = [BEAT, 2 * BEAT, 3 * BEAT];                         // three regenerates on the beat
+const CY = 560;
+const codeCard = mk(cam, `<div class="card" style="width:${CW}px;height:${CT + 5 * LH + 26}px"><div class="hd">lib/users.ts<span id="rchip" style="font:600 26px Geist;color:#fafafa;border:2px solid rgba(255,255,255,.14);border-radius:8px;padding:4px 12px;letter-spacing:0"></span><span class="ex">${T.example}</span></div></div>`, 10);
+const chg = mk(codeCard, `<div class="a" style="left:0;width:${CW}px;height:${LH}px"></div>`, 1);
+const codeLines = [0, 1, 2, 3, 4].map(i => mk(codeCard, `<div class="ln code" style="top:${CT + i * LH}px"><span class="no">${i + 1}</span><span class="src"></span></div>`, 2));
+const sq = mk(codeCard, `<svg class="a" width="${CW}" height="500" style="overflow:visible"><path id="sq" fill="none" stroke="${RED}" stroke-width="3.5" stroke-linecap="round"/></svg>`, 3);
+const BTN = [300, CY + CT + 5 * LH + 26 + 70, 480, 116];           // x, y, w, h
+const regenBtn = mk(cam, `<div class="btn" style="width:${BTN[2]}px;height:${BTN[3]}px;background:#fafafa;color:#0a0a0b;font:600 42px Geist;letter-spacing:-.02em;gap:18px;border-radius:12px;box-shadow:0 20px 50px -20px rgba(0,0,0,.9)">
+  <svg width="40" height="40" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="#0a0a0b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${T.regenBtn}</div>`, 11);
+// deterministic glyph scramble for the line being rewritten (seeded per frame, no Math.random)
+function scramble(src, t, seed) {
+  const plain = src.replace(/<[^>]+>/g, ''), G = '#$%&*+<>?/\\{}[]=~^01xX', f = Math.floor(t * 60);
+  let r = (f * 2654435761 + seed * 97) >>> 0, out = '';
+  for (const ch of plain) { r = (r * 1664525 + 1013904223) >>> 0; out += ch === ' ' ? ' ' : G[r % G.length]; }
+  return out;
+}
+
+const TT = {
+  hA: line(T.hA, 354, 100),
+  hB1: line(T.hB1, 300, 84), hB2: line(T.hB2, 408, 84), hC: line(T.hC, 354, 92),
+  sH: line(T.sH, 320, 64, 600),
+  hD: line(T.hD, 354, 80),
+  hE1: line(T.hE1, 300, 84), hE2: line(T.hE2, 408, 84),
+  hF1: line(T.hF1, 300, 84), hF2: line(T.hF2, 408, 84),
+  hG: line(T.hG, 354, 92),
+};
+
+// ---------------------------------------------------------------- scene 2: the research chart (arXiv 2506.11022, values from the Golden DB / MARKETING_CLAIMS §3)
+const BARS = [2.1, 4.7, 6.2], BW = 190, BX = [155, 445, 735], BASE = 1180, SCALE = 76;
+const bars = BARS.map((v, i) => mk(hud, `<div class="a" style="width:${BW}px;background:${RED};opacity:${[.45, .72, 1][i]};border-radius:10px 10px 0 0"></div>`, 15));
+const vals = BARS.map((v) => mk(hud, `<div class="a" style="width:${BW}px;text-align:center;font:700 72px Geist;letter-spacing:-.03em;color:#fafafa"></div>`, 15));
+const baseLine = mk(hud, `<div class="a" style="left:120px;top:${BASE}px;width:840px;height:3px;background:#3f3f46"></div>`, 15);
+const axis = line(`<span style="color:#a1a1aa">${T.axis}</span>`, BASE + 22, 32, 500);
+const cap = line(T.cap, 1300, 50, 600);
+const srcLn = line(`<span style="color:#71717a">${T.src}</span>`, 1386, 28, 500);
+
+// ---------------------------------------------------------------- scene 3-5: the PR's commit list, one check run per push (check name/titles = src/lib/check-run.ts)
+const ICON = {
+  spin: `<svg width="36" height="36" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="rgba(252,211,77,.22)" stroke-width="6"/><circle class="arc" cx="28" cy="28" r="22" fill="none" stroke="${AMBER}" stroke-width="6" stroke-linecap="round" stroke-dasharray="40 200"/></svg>`,
+  fail: `<svg width="36" height="36" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="rgba(248,113,113,.14)" stroke="${RED}" stroke-width="5"/><path d="M20 20l16 16M36 20L20 36" stroke="${RED}" stroke-width="6" stroke-linecap="round"/></svg>`,
+  ok: `<svg width="36" height="36" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="rgba(190,242,100,.14)" stroke="${LIME}" stroke-width="5"/><path d="M18 29l7 7 13-15" fill="none" stroke="${LIME}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const ROW = 150, LY = 600;
+const COMMITS = [[T.c0, 'a41c9e2'], [T.c1, '7d03b5f'], [T.c2, 'e19f4a0']];
+const list = mk(cam, `<div class="card" style="width:${CW}px;height:${84 + 3 * ROW}px"><div class="hd">${T.commits}<span class="ex">${T.example}</span></div>
+  <div class="a" style="left:45px;top:${84 + 38}px;width:3px;height:${2 * ROW + 10}px;background:#27272a"></div>
+  ${COMMITS.map(([msg, sha], i) => `<div class="a row" style="left:0;top:${84 + i * ROW}px;width:${CW}px;height:${ROW}px">
+    <div class="a tint" style="left:0;top:0;width:${CW}px;height:${ROW}px;background:rgba(239,68,68,.09)"></div>
+    <div class="a" style="left:36px;top:36px;width:21px;height:21px;border-radius:50%;background:#0c0c0e;border:3px solid #52525b;box-sizing:border-box"></div>
+    <div class="a" style="left:86px;top:24px;font:600 36px Geist;color:#fafafa;white-space:nowrap">${msg}</div>
+    <div class="a code" style="left:${CW - 170}px;top:30px;font-size:24px;color:#71717a">${sha}</div>
+    <div class="a" style="left:86px;top:84px;width:36px;height:36px"><div class="a i0">${ICON.spin}</div><div class="a i1">${ICON.fail}</div><div class="a i2">${ICON.ok}</div></div>
+    <div class="a" style="left:136px;top:84px;height:40px;width:760px;overflow:hidden;white-space:nowrap;font:400 30px/38px Geist;color:#a1a1aa">${T.checkName} · <span style="position:relative;display:inline-block;width:420px;height:38px;vertical-align:top;overflow:hidden"><span class="a s0">${T.running}</span><span class="a s1" style="color:#fca5a5;font-weight:500">${T.failed}</span><span class="a s2" style="color:${LIME};font-weight:500">${T.passed}</span></span></div>
+  </div>`).join('')}</div>`, 12);
+const rows = [...list.querySelectorAll('.row')];
+// row timing: [appear, verdict time, verdict state 1=fail 2=ok]
+const RS = [[10.55, 11.25, 2], [10.72, DROP, 1], [20.55, 21.5625, 2]];
+
+// ---------------------------------------------------------------- scene 4: the unslop[bot] review comment (format = src/lib/pipeline/helpers.ts mapIssueToPrComment)
+const SUG = [['-', '    `SELECT * FROM users WHERE id = ${id}`);'], ['+', "    'SELECT * FROM users WHERE id = $1', [id]);"]];
+const cmt = mk(cam, `<div class="card" style="width:${CW}px;height:480px">
+  <div class="hd" style="height:100px;gap:18px;color:#71717a">
+    <span style="width:60px;height:60px;border-radius:10px;background:#0a0a0b;border:2px solid rgba(190,242,100,.35);display:flex;align-items:center;justify-content:center"><img src="assets/img/shield-mark.svg" style="width:52px;height:52px"></span>
+    <b style="font:600 32px Geist;color:#fafafa">unslop</b><span style="font:500 22px Geist;color:#a1a1aa;border:2px solid rgba(255,255,255,.14);border-radius:6px;padding:2px 8px;letter-spacing:0">bot</span><span>${T.justNow}</span><span class="ex">${T.example}</span></div>
+  <div class="a" style="left:40px;top:128px;font:500 26px Geist;color:#71717a;letter-spacing:-.01em">lib/users.ts · line 3 · 7d03b5f</div>
+  <div class="a cb" style="left:40px;top:178px;font:600 42px Geist;color:#fafafa;white-space:nowrap">🚨 SEC-004 <span style="font-weight:500;font-size:34px;color:#fca5a5">(CRITICAL)</span></div>
+  <div class="a cb" style="left:40px;top:250px;width:860px;font:400 33px/1.4 Geist;color:#d4d4d8;letter-spacing:-.012em">${T.expl}</div>
+  <div class="a cb" style="left:40px;top:430px;font:400 31px Geist;color:#d4d4d8;white-space:nowrap">💡 <b style="font-weight:600;color:#fafafa">${T.fixLbl}</b> ${T.fixTail}</div>
+  <div class="a cb" style="left:40px;top:490px;width:860px;height:160px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:rgba(0,0,0,.45);overflow:hidden">
+    <div class="a" style="left:24px;top:14px;font:500 24px Geist;color:#71717a;letter-spacing:0">${T.sugg}</div>
+    ${SUG.map(([m, s], i) => `<div class="ln code" style="top:${56 + i * 46}px;height:46px;font-size:27px;background:${m === '-' ? 'rgba(239,68,68,.10)' : 'rgba(163,230,53,.10)'};color:${m === '-' ? '#fca5a5' : LIME}"><span style="width:48px;text-align:center;flex:none;color:${m === '-' ? RED : LIME}">${m}</span><span>${s}</span></div>`).join('')}
+  </div>
+  <div class="btn cb" id="cbtn" style="left:40px;top:680px;height:70px;padding:0 32px;background:${LIME};color:#0a0a0b;font:600 31px Geist;letter-spacing:-.01em"><span id="cbl"></span></div>
+</div>`, 13);
+
+// ---------------------------------------------------------------- end card (pixel shield = packages/vscode-extension/icon.png, 16 x 16 grid)
+const SHIELD = ['...##########...', '...##########...', '...#######..#...', '...######..##...', '...#..##..###...', '...##....####...', '...###..#####...', '....########....', '.....######.....', '......####......', '.......##.......'];
+const CELL = 26, SX = 540 - 8 * CELL, SY = 420, END = 13 * BAR;       // end card on bar 14 = 24.375 s
+const cells = [];
+SHIELD.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === '#') cells.push([x, y, mk(hud, `<div class="a" style="width:${CELL + .6}px;height:${CELL + .6}px;background:${LIME}"></div>`, 30)]); }));
+const word = mk(hud, `<div class="a" style="font:700 132px Silkscreen;color:#fafafa;letter-spacing:0;white-space:nowrap;line-height:1">unslop</div>`, 30);
+const caret = mk(hud, `<div class="a" style="width:52px;height:100px;background:${LIME}"></div>`, 30);
+const tag = line(T.tag, 1010, 66, 700), sub1 = line(`<span style="color:#d4d4d8">${T.sub1}</span>`, 1118, 44, 500), sub2 = line(`<span style="color:#a1a1aa">${T.sub2}</span>`, 1180, 42, 400);
+const url = line(`<span style="font-family:Silkscreen;font-weight:400;letter-spacing:0;color:#d4d4d8">${T.url}</span>`, 1330, 46, 400);
+
+// ---------------------------------------------------------------- camera keys [t, zoom, focusX, focusY, screenX, screenY]
+const FOC = [470, CY + CT + 2.5 * LH];
+const CAM = [[0, 1, 540, 960, 540, 960], [1.85, 1, 540, 960, 540, 960], [2.6, 1.12, FOC[0], FOC[1], 490, 860], [5.62, 1.15, FOC[0], FOC[1], 490, 860], [5.625, 1, 540, 960, 540, 960], [99, 1, 540, 960, 540, 960]];
+function camAt(t) {
+  let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++;
+  const a = CAM[k], b = CAM[k + 1], u = b[0] - a[0] < .01 ? 1 : E.io(clamp((t - a[0]) / (b[0] - a[0])));
+  const z = Math.exp(lerp(Math.log(a[1]), Math.log(b[1]), u));
+  return [z, lerp(a[2], b[2], u), lerp(a[3], b[3], u), lerp(a[4], b[4], u), lerp(a[5], b[5], u)];
+}
+function beatPunch(t) {
+  let p = 0;
+  for (let k = 0; DROP + k * BEAT < END - .1; k++) { const bt = DROP + k * BEAT; if (t >= bt) p += (k % 4 === 0 ? .022 : .008) * Math.exp(-(t - bt) * 8) * Math.sin(Math.min(Math.PI, (t - bt) * 24)); }
+  return p;
+}
+
+// ---------------------------------------------------------------- seek (film time; every value derived from t)
+function sceneLoop(t) {
+  const cIn = clamp(sp(t, -0.4, 2.2, .8), 0, 1.02);
+  box(codeCard, CX, CY + (1 - cIn) * 90); codeCard.style.transform = `scale(${lerp(.95, 1, clamp(cIn))})`; codeCard.style.opacity = clamp(cIn * 1.6); vis(codeCard, t < BRK);
+  const r = CLICKS.filter(c => t >= c).length, ci = CHANGED[r], since = r ? t - CLICKS[r - 1] : 99, scr = since < .2;
+  codeLines.forEach((l, i) => { const src = l.querySelector('.src');
+    if (i === ci && scr) { src.textContent = scramble(ROUNDS[r][i], t, i); src.style.color = r === 3 ? '#fca5a5' : '#d9f99d'; }
+    else { src.innerHTML = ROUNDS[r][i]; src.style.color = ''; }
+    l.style.opacity = clamp((t + .45 - i * .04) / .2); });
+  $('rchip').textContent = r ? `${T.regen}${r}` : T.orig;
+  $('rchip').style.transform = `scale(${r ? pop(t, CLICKS[r - 1], 3.6, .5) : 1})`;
+  // rewritten line: lime flash for the harmless rewrites, red and underlined for the injection
+  const danger = r === 3;
+  box(chg, 0, CT + Math.max(ci, 0) * LH); chg.style.visibility = r > 0 ? 'inherit' : 'hidden';
+  chg.style.background = danger ? `rgba(239,68,68,${.14 * P(since, 0, .2)})` : `rgba(190,242,100,${.16 * (1 - P(since, .2, .5))})`;
+  chg.style.borderLeft = danger ? `6px solid ${RED}` : 'none';
+  const sqp = $('sq'); sqp.setAttribute('d', squiggle(78 + 4 * CH, 78 + 42 * CH, CT + 2 * LH + 46)); drawOn(sqp, P(t, CLICKS[2] + .3, .45, E.out)); sq.style.visibility = danger ? 'inherit' : 'hidden';
+  // the regenerate button: pressed on every click, leaves after the third
+  let press = 0; CLICKS.forEach(c => { if (t >= c - .05 && t < c + .08) press = .06; });
+  const bOut = P(t, 1.72, .3, E.in), bIn = clamp(sp(t, -0.3, 2.4, .7), 0, 1.03);
+  box(regenBtn, BTN[0], BTN[1] + (1 - bIn) * 60 + bOut * 40); regenBtn.style.transform = `scale(${lerp(.9, 1, clamp(bIn)) * (1 - press) * (1 - bOut * .08)})`;
+  regenBtn.style.opacity = clamp(bIn * 1.5) * (1 - bOut); vis(regenBtn, t < 2.05);
+  const cur = $('cur');
+  if (t < 2.05) { let dip = 0; CLICKS.forEach(c => { if (t >= c - .05 && t < c + .08) dip = .14; });
+    const u = P(t, -0.2, .55, E.out), x = lerp(1000, BTN[0] + BTN[2] * .62, u), y = lerp(1500, BTN[1] + BTN[3] * .6, u);
+    vis(cur, true); cur.style.opacity = 1 - bOut; cur.style.transform = `translate(${x - 5}px,${y - 4}px) scale(${1 - dip})`; }
+  rise(TT.hA, t, -0.22, 1.72); rise(TT.hB1, t, 1.9, 3.55); rise(TT.hB2, t, 2.05, 3.55); rise(TT.hC, t, 3.72, 5.3, 2.4);
+}
+// small camera shake on every regenerate (added to the world transform)
+function shake(t) { let x = 0, y = 0; CLICKS.forEach((c, i) => { if (t >= c) { const d = Math.exp(-(t - c) * 14); x += d * 9 * Math.sin((t - c) * 70 + i); y += d * 5 * Math.cos((t - c) * 60 + i); } }); return [x, y]; }
+function sceneChart(t) {
+  const on = t >= BRK && t < 10.35, out = P(t, 9.95, .35, E.in);
+  rise(TT.sH, t, BRK + .02, 9.95);
+  BARS.forEach((v, i) => { const t0 = 5.95 + i * .47, u = clamp(sp(t, t0, 1.8, .82), 0, 1.02), h = v * SCALE * u * (1 - out);
+    box(bars[i], BX[i], BASE - h, null, h); vis(bars[i], on && t >= t0);
+    const vu = P(t, t0 + .05, .6, E.out); vals[i].textContent = (v * vu).toFixed(1); box(vals[i], BX[i], BASE - h - 96); vals[i].style.opacity = vu * (1 - out); vis(vals[i], on && t >= t0); });
+  box(baseLine, 120, BASE); baseLine.style.transform = `scaleX(${P(t, BRK + .1, .5, E.out) * (1 - out)})`; vis(baseLine, on);
+  rise(axis, t, 6.2, 9.95); rise(cap, t, 7.6, 9.95); rise(srcLn, t, 7.85, 9.95);
+}
+function sceneChecks(t, ft) {
+  rise(TT.hD, t, 10.35, 12.95);
+  rise(TT.hE1, t, DROP + .05, 15.5); rise(TT.hE2, t, DROP + .2, 15.5);
+  rise(TT.hG, t, 21.62, END - .3, 2.4);
+  // list: in 10.4, fades out in place for the comment (15.55), back at 20.3, out before the end card
+  const lIn = clamp(sp(t, 10.4, 2.2, .8), 0, 1.02), lOut = P(t, 15.55, .3, E.in), lBack = P(t, 20.3, .35, E.out), lEnd = P(t, END - .35, .3, E.in);
+  const shown = t < 15.9 ? 1 - lOut : lBack * (1 - lEnd);
+  box(list, CX, lerp(760, LY, lIn), null, 84 + ROW * lerp(2, 3, clamp(sp(t, 20.45, 2.4, .85), 0, 1.01)) + 8); list.style.opacity = t < 15.9 ? clamp(lIn * 1.5) * (1 - lOut) : shown;
+  list.style.transform = `scale(${lerp(.95, 1, clamp(lIn)) * (1 - (t < 15.9 ? lOut : 1 - lBack + lEnd) * .05)})`; vis(list, t >= 10.4 && t < END + .1 && shown > .001);
+  const failing = t >= DROP && t < 20.3;
+  list.style.borderColor = failing ? `rgba(248,113,113,${.1 + .4 * P(t, DROP, .2, E.out)})` : t >= 21.5625 ? `rgba(190,242,100,${.1 + .3 * P(t, 21.5625, .25, E.out)})` : 'rgba(255,255,255,.10)';
+  rows.forEach((row, i) => { const [ta, tv, sv] = RS[i], st = t < tv ? 0 : sv, u = P(t, ta, .45, E.o5);
+    row.style.opacity = u; row.style.transform = `translateY(${(1 - u) * 24}px)`; row.style.visibility = t >= ta ? 'inherit' : 'hidden';
+    ['i0', 'i1', 'i2'].forEach((c, k) => { row.querySelector('.' + c).style.visibility = k === st ? 'inherit' : 'hidden'; });
+    row.querySelector('.' + ['i0', 'i1', 'i2'][st]).style.transform = `scale(${st ? pop(t, tv, 3.6, .5) : 1})`;
+    row.querySelector('.arc').setAttribute('transform', `rotate(${(ft * 400) % 360} 28 28)`);
+    ['s0', 's1', 's2'].forEach((c, k) => { const el = row.querySelector('.' + c); el.style.visibility = k === st ? 'inherit' : 'hidden';
+      el.style.transform = `translateY(${(1 - clamp(step(t - (k ? tv : ta), 3, .8), 0, 1.03)) * 100}%)`; });
+    row.querySelector('.tint').style.opacity = st === 1 ? P(t, tv, .2, E.out) : 0; });
+}
+function sceneComment(t) {
+  rise(TT.hF1, t, 15.9, 20.05); rise(TT.hF2, t, 17.65, 20.05);
+  const mIn = clamp(sp(t, 15.85, 2.1, .8), 0, 1.02), mOut = P(t, 20.2, .18, E.in);
+  box(cmt, CX, lerp(1400, 580, mIn) - mOut * 50); cmt.style.opacity = clamp(mIn * 1.5) * (1 - mOut);
+  cmt.style.transform = `scale(${lerp(.95, 1, clamp(mIn)) * (1 - mOut * .05)})`; vis(cmt, t >= 15.85 && t < 20.4);
+  cmt.style.height = px(lerp(420, 790, clamp(sp(t, 17.55, 2.2, .85), 0, 1.01)));
+  cmt.querySelectorAll('.cb').forEach((el, i) => { const tin = i < 2 ? 16.05 + i * .14 : 17.7 + (i - 2) * .16, u = P(t, tin, .45, E.o5);
+    el.style.opacity = u; el.style.transform = `translateY(${(1 - u) * 30}px)`; });
+  const click = 43 * BEAT;                                           // 20.156 s, on the beat
+  $('cbtn').style.transform = `scale(${t >= click && t < click + .12 ? .94 : 1})`;
+  $('cbl').textContent = t >= click + .12 ? T.committed : T.commit;
+  if (t < 2.05) return;
+  const cur = $('cur'); cur.style.opacity = 1; let on = false, x = 0, y = 0, dip = 0;
+  if (t >= 19.2 && t < 20.25) { const u = P(t, 19.2, .8, E.io); x = lerp(1120, CX + 40 + 250, u); y = lerp(1720, 580 + 680 + 46, u); on = true; if (t >= click && t < click + .12) dip = .14; }
+  vis(cur, on); cur.style.transform = `translate(${x - 5}px,${y - 4}px) scale(${1 - dip})`;
+}
+function sceneEnd(t, ft) {
+  cells.forEach(([x, y, el]) => { const u = pop(t, END + .03 + y * .035 + Math.abs(x - 7.5) * .012, 3.6, .6);
+    box(el, SX + x * CELL, SY + y * CELL); el.style.transform = `scale(${u})`; vis(el, t >= END); });
+  const wu = clamp(sp(t, END + .47, 2.4, .8), 0, 1.02), ww = word.offsetWidth, wx = 540 - (ww + 24 + 52) / 2;
+  box(word, wx, 772 + (1 - wu) * 60); word.style.opacity = clamp(wu * 1.4); vis(word, t >= END + .47);
+  box(caret, wx + ww + 24, 776 + (1 - wu) * 60); vis(caret, t >= END + .6 && Math.floor(ft / .55) % 2 === 0);
+  rise(tag, t, END + .85); rise(sub1, t, END + 1.2); rise(sub2, t, END + 1.35); rise(url, t, END + 1.7);
+}
+
+let TL = null;
+function warp(T) {                                                 // film time -> scene time (timeline.json anchors)
+  const a = TL.anchors; if (T <= a[0][1]) return a[0][0];
+  for (let k = 1; k < a.length; k++) if (T <= a[k][1]) { const [s0, f0] = a[k - 1], [s1, f1] = a[k]; return s0 + (s1 - s0) * (T - f0) / (f1 - f0); }
+  return a[a.length - 1][0];
+}
+window.seek = async (filmT) => {
+  const t = warp(filmT), ft = filmT;
+  const [z, fx, fy, sx, sy] = camAt(t);
+  cam.style.transform = `translate(${sx - fx * z}px,${sy - fy * z}px) scale(${z})`;
+  const [shx, shy] = shake(t);
+  $('world').style.transform = `translate(${shx}px,${shy}px) scale(${1 + beatPunch(t) + .035 * P(t, END + .6, 3.2, E.io)})`;
+  $('wash').style.transform = `translateX(${Math.sin(ft * .3) * 50}px)`;
+  sceneLoop(t); sceneChart(t); sceneChecks(t, ft); sceneComment(t); sceneEnd(t, ft);
+  return true;
+};
+
+(async () => {
+  await Promise.all(['400 40px Geist', '500 40px Geist', '600 40px Geist', '700 40px Geist', '700 40px Silkscreen', '400 40px Silkscreen', '400 30px GeistMono'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  TL = await (await fetch('timeline.json')).json();
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  hud.querySelectorAll('.m').forEach(el => fitLine(el));
+  if (BETA) { $('betaTxt').textContent = T.beta; $('beta').style.visibility = 'visible'; }
+  await window.seek(0); window.ready = true;
+})();
+</script></body></html>

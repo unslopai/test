@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>unslop · X 16:9 frames</title>
+<link rel="stylesheet" href="../../_kit/kit.css">
+<style>
+/* 1920×1080 backplates for the 16:9 X cuts. The 9:16 film (1080×1920) is overlaid by ffmpeg at full height:
+   608×1080 at x = 1232 (see make_x_cuts.sh). Everything left of x = 1160 is static and must stay readable when
+   X shows the video ~600 px wide on desktop: headline ≥ 76 px, sub ≥ 34 px. */
+.pl{position:absolute;left:110px;top:0;bottom:0;width:1030px;display:flex;flex-direction:column;justify-content:center;gap:34px}
+.pl .wm{font-size:40px}
+.pl .stamp{font-size:24px;padding:8px 16px}
+.pl h1{font-size:82px}
+.pl .sub{font-size:36px}
+.pl .foot{font-size:22px;color:var(--faint);font-weight:500;letter-spacing:0;line-height:1.45}
+.slot{position:absolute;left:1232px;top:0;width:608px;height:1080px;background:#0a0a0b;border-left:2px solid rgba(255,255,255,.07);border-right:2px solid rgba(255,255,255,.07)}
+</style></head><body>
+
+<section class="frame" data-out="plate-film01-beta" style="width:1920px;height:1080px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pl">
+    <div style="display:flex;align-items:center;gap:24px"><div class="wm">unslop<i></i></div><span class="stamp soon">Private beta</span></div>
+    <h1 class="h">An error swallowed.<br>A success returned.<br><span class="lime">SEC-031.</span></h1>
+    <p class="sub" style="margin:0">What unslop posts on the PR: the rule, why it matters, and a one-click fix.</p>
+    <p class="foot" style="margin:0">Code and PR are example data. 44 : 1 is from AIRA, arXiv 2604.17587, an exploratory comparison with one model.</p>
+  </div>
+  <div class="slot"></div>
+</section>
+
+<section class="frame" data-out="plate-film02-beta" style="width:1920px;height:1080px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pl">
+    <div style="display:flex;align-items:center;gap:24px"><div class="wm">unslop<i></i></div><span class="stamp soon">Private beta</span></div>
+    <h1 class="h">“Improve this code.”<br>Ten times.<br><span class="red">It got worse.</span></h1>
+    <p class="sub" style="margin:0">unslop reviews every push. A critical finding fails the check.</p>
+    <p class="foot" style="margin:0">Code and commits are example data. 2.1 → 4.7 → 6.2 vulnerabilities per sample: arXiv 2506.11022 (GPT-4o), averages by iteration group.</p>
+  </div>
+  <div class="slot"></div>
+</section>
+
+<section class="frame" data-out="plate-film03-launch" style="width:1920px;height:1080px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pl">
+    <div class="wm">unslop<i></i></div>
+    <h1 class="h">One command<br>before you <span class="px">push.</span></h1>
+    <div class="card" style="padding:26px 32px;font-family:GeistMono;font-size:34px;letter-spacing:0;line-height:1.6;color:#e4e4e7;width:760px"><span class="lime">$</span> npm i -g @unslopcodes/cli<br><span class="lime">$</span> unslop scan</div>
+    <p class="foot" style="margin:0">Terminal, editor and PR in the film are example data. unslop.codes</p>
+  </div>
+  <div class="slot"></div>
+</section>
+
+</body></html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>unslop · Product Hunt gallery</title>
+<link rel="stylesheet" href="../../_kit/kit.css">
+<script src="../../_kit/kit.js"></script>
+<style>
+/* Product Hunt gallery 1270×760 (RESEARCH.md §2) + thumbnail 240×240. Order: real product first, roadmap last.
+   Everything that shows a product surface uses the product's own strings (check-run.ts, helpers.ts, format.ts,
+   vscode-extension/src) with example data, labelled. The roadmap slide is drawn in the concept style. */
+.pg{position:absolute;inset:0;padding:56px 70px;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;gap:18px}
+.hdr .wm{font-size:26px}
+.hdr .lbl{margin-left:auto;font:500 20px Geist;color:var(--faint)}
+.stamp{font-size:17px;padding:6px 12px}
+.t{font:700 50px Geist;letter-spacing:-.035em;color:#fafafa;margin:0;line-height:1.06}
+.s{font:500 23px Geist;color:var(--muted);letter-spacing:-.01em;margin:14px 0 0;line-height:1.35}
+.foot{position:absolute;left:70px;right:70px;bottom:26px;font:500 16px Geist;color:var(--faint);letter-spacing:0}
+.box{border:2px solid var(--line);border-radius:14px;background:var(--card);padding:18px 20px}
+.box h4{margin:0 0 8px;font:600 21px Geist;color:#fafafa;letter-spacing:-.02em}
+.box p{margin:0;font:500 17px Geist;color:var(--muted);line-height:1.35;letter-spacing:-.01em}
+.lim .box{padding:28px 30px}
+.lim .box h4{font-size:27px;margin-bottom:12px}
+.lim .box p{font-size:21px}
+.arrow{align-self:center;width:34px;height:2px;background:#52525b;position:relative;flex:none}
+.arrow::after{content:"";position:absolute;right:-1px;top:-5px;border-left:9px solid #52525b;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.vs .ln{font-family:GeistMono;font-size:17px;letter-spacing:0;white-space:pre;height:30px;display:flex;align-items:center}
+.vs .no{width:44px;text-align:right;padding-right:16px;color:#3f3f46}
+.squig{text-decoration:underline wavy #f87171;text-underline-offset:5px;text-decoration-thickness:1.5px}
+.sb{height:34px;display:flex;align-items:center;gap:18px;padding:0 14px;font:500 15px Geist;color:#d4d4d8;border-top:2px solid rgba(255,255,255,.06)}
+</style></head><body>
+
+<!-- 1: the PR check -->
+<section class="frame" data-out="ph-01-pr-check" style="width:1270px;height:760px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">On every pull request</span></div>
+    <div style="display:flex;gap:34px;margin-top:40px">
+      <div style="width:430px">
+        <h2 class="t" style="font-size:58px">A review gate for <span class="lime">AI-written</span> code.</h2>
+        <p class="s">A critical finding fails the check. Every finding names its rule and, where it can, a one-click fix.</p>
+        <div class="card" style="margin-top:26px">
+          <div class="hd" style="height:46px;padding:0 18px;font-size:16px">Checks<span class="chip" style="font-size:13px;padding:2px 8px">Example</span></div>
+          <div class="check" style="padding:16px 18px"><div class="ic fail" style="width:34px;height:34px;font:700 19px Geist">✕</div><div><div style="font:600 21px Geist;color:#fafafa">Anti-Slop Gatekeeper</div><div style="font:500 17px Geist;color:#f87171">1 critical slop finding</div></div></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;padding:24px 26px;font-size:20px;line-height:1.45">
+        <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:16px;white-space:nowrap"><b style="color:#fafafa;font-weight:600">unslop-gatekeeper</b><span style="font-size:12px;border:1.5px solid var(--line);border-radius:5px;padding:0 6px;color:var(--faint)">bot</span><span>commented</span><span class="chip" style="font-size:13px;padding:2px 8px">Example</span></div>
+        <div style="margin-top:4px;font:400 14px GeistMono;color:var(--faint);letter-spacing:0">app/api/checkout/webhook/route.ts · line 11</div>
+        <div style="margin-top:12px;font-weight:600;color:#fafafa">🚨 SEC-031 <span style="color:#f87171;font-weight:500">(CRITICAL)</span></div>
+        <div style="margin-top:6px;color:#d4d4d8">An error is silently swallowed and the handler returns a success response anyway, so failures (including skipped authorization checks) look identical to successes. Propagate errors and return a proper failure status.</div>
+        <div style="margin-top:12px;font-weight:600;color:#fafafa">💡 Suggested fix <span style="color:#a1a1aa;font-weight:500">(1-click commit):</span></div>
+        <div style="border:2px solid var(--line);border-radius:9px;overflow:hidden;margin-top:10px">
+          <div style="font-size:13px;color:var(--faint);padding:6px 14px;border-bottom:2px solid rgba(255,255,255,.06)">Suggested change</div>
+          <div style="font:400 15px GeistMono;letter-spacing:0;padding:3px 14px;background:rgba(248,113,113,.10);color:#fca5a5;white-space:pre">-   // retry later</div>
+          <div style="font:400 15px GeistMono;letter-spacing:0;padding:3px 14px;background:rgba(190,242,100,.08);color:#d9f99d;white-space:pre">+   console.error(err);</div>
+          <div style="font:400 15px GeistMono;letter-spacing:0;padding:3px 14px;background:rgba(190,242,100,.08);color:#d9f99d;white-space:pre">+   return Response.json({ ok: false }, { status: 500 });</div>
+        </div>
+        <span style="display:inline-block;margin-top:12px;background:var(--accent);color:#0a0a0b;font:600 15px Geist;border-radius:7px;padding:7px 13px">Commit suggestion</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Check name, titles and comment format are the product’s own strings. Code and finding are example data.</div>
+</section>
+
+<!-- 2: the terminal -->
+<section class="frame" data-out="ph-02-terminal" style="width:1270px;height:760px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Before you push</span></div>
+    <h2 class="t" style="font-size:42px;margin-top:22px">One command: <span style="font-family:GeistMono;font-size:.82em;letter-spacing:0" class="lime">unslop scan</span></h2>
+    <div class="card" style="margin-top:20px">
+      <div class="hd" style="height:42px;padding:0 18px;font-size:15px"><span class="dotsrow"><b></b><b></b><b></b></span><span style="margin-left:10px">zsh — acme/shop</span><span class="chip" style="font-size:13px;padding:2px 8px">Example data</span></div>
+      <div data-ansi="../../_kit/cli/sample-output.ansi" data-prefix="<span style='color:#bef264'>$</span> unslop scan&#10;<span style='color:#a1a1aa'>Scanning acme/shop </span><span style='color:#71717a'>(diff vs 3f9c2a17de)</span><span style='color:#a1a1aa'>…</span>&#10;" style="padding:16px 22px 20px;font-family:GeistMono;font-size:14.6px;line-height:1.5;letter-spacing:0;white-space:pre-wrap;color:#d4d4d8"></div>
+    </div>
+  </div>
+  <div class="foot">Real output of the unslop CLI formatter for an example finding. <span style="font-family:GeistMono">unslop scan --fix</span> applies the suggested fixes it can match exactly.</div>
+</section>
+
+<!-- 3: the editor -->
+<section class="frame" data-out="ph-03-editor" style="width:1270px;height:760px">
+  <div class="dots"></div><div class="wash"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">In VS Code</span></div>
+    <div style="display:flex;gap:40px;margin-top:30px;align-items:flex-start">
+      <div style="width:380px">
+        <h2 class="t" style="font-size:44px">Findings inline. Fix with one click.</h2>
+        <p class="s">Same engine as the PR check. The status bar shows what’s open, and the score sits in the tooltip, not next to the count.</p>
+      </div>
+      <div class="card vs" style="flex:1;position:relative">
+        <div class="hd" style="height:40px;padding:0 16px;font-size:14px">route.ts — acme/shop<span class="chip" style="font-size:12px;padding:2px 8px">Example</span></div>
+        <div style="padding:12px 0 16px">
+          <div class="ln"><span class="no">7</span><span><span class="k">export async function</span> POST(req) {</span></div>
+          <div class="ln"><span class="no">8</span><span>  <span class="k">const</span> event = <span class="k">await</span> req.json();</span></div>
+          <div class="ln"><span class="no">9</span><span>  <span class="k">try</span> {</span></div>
+          <div class="ln"><span class="no">10</span><span>    <span class="k">await</span> chargeCustomer(event);</span></div>
+          <div class="ln"><span class="no">11</span><span>  } <span class="squig">catch (err) {</span></span></div>
+          <div class="ln"><span class="no">12</span><span>    <span class="c squig">// retry later</span></span></div>
+          <div class="ln"><span class="no">13</span><span>  }</span></div>
+          <div class="ln"><span class="no">14</span><span>  <span class="k">return</span> Response.json({ ok: <span class="k">true</span> });</span></div>
+          <div class="ln"><span class="no">15</span><span>}</span></div>
+        </div>
+        <div style="position:absolute;left:120px;top:228px;width:500px;background:#18181b;border:1.5px solid #3f3f46;border-radius:8px;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);padding:12px 14px;font:500 14px Geist;color:#d4d4d8;line-height:1.4">An error is silently swallowed and the handler returns a success response anyway, so failures (including skipped authorization checks) look identical to successes. Propagate errors and return a proper failure status.<div style="margin-top:6px;font:400 13px GeistMono;color:var(--faint)">unslop(SEC-031)</div>
+          <div style="margin-top:10px;border-top:1.5px solid #3f3f46;padding-top:8px;display:flex;align-items:center;gap:8px;color:#fafafa;font-weight:600">💡 Apply Gatekeeper Fix (Approved)</div>
+        </div>
+        <div class="sb" style="margin-top:88px"><span style="color:var(--faint)">⎇ main</span><span style="margin-left:auto;background:rgba(248,113,113,.18);color:#fca5a5;border-radius:4px;padding:3px 9px">🛡 1 critical</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Strings from packages/vscode-extension (diagnostic source “unslop”, quick fix, status bar). Code is example data.</div>
+</section>
+
+<!-- 4: how it decides -->
+<section class="frame" data-out="ph-04-how-it-decides" style="width:1270px;height:760px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">How it decides</span></div>
+    <h2 class="t" style="font-size:44px;margin-top:24px">You can see which part of a verdict came from a model.</h2>
+    <div style="display:flex;gap:14px;margin-top:44px;align-items:stretch">
+      <div class="box" style="width:210px"><h4>Your diff</h4><p>PR, local changes, or an agent’s working tree.</p></div>
+      <div class="arrow"></div>
+      <div style="display:flex;flex-direction:column;gap:14px;width:330px">
+        <div class="box" style="border-color:rgba(190,242,100,.35)"><h4><span class="lime">55 rules</span> by deterministic detectors</h4><p>Regex, tree-sitter, ESLint, config and registry checks. No model involved.</p></div>
+        <div class="box"><h4>The other rules: an LLM reviewer</h4><p>JS/TS only for now. On the standard route, a second blind call re-checks each claim.</p></div>
+      </div>
+      <div class="arrow"></div>
+      <div class="box" style="width:230px"><h4>Every finding is labelled</h4><p>deterministic · confirmed · uncertain · self-reported</p></div>
+      <div class="arrow"></div>
+      <div class="box" style="width:190px"><h4>The check</h4><p><span class="red">critical</span> → fails<br>warnings → neutral<br>nothing → passes</p></div>
+    </div>
+    <p class="s" style="margin-top:34px;font-size:20px">119 rules in total, each traced to a published study on how AI-generated code fails.</p>
+  </div>
+</section>
+
+<!-- 5: evidence -->
+<section class="frame" data-out="ph-05-evidence" style="width:1270px;height:760px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Research, not our benchmark</span></div>
+    <div style="display:flex;gap:70px;margin-top:40px;align-items:flex-end">
+      <div style="flex:1">
+        <div class="h lime" style="font-size:150px;line-height:.9">1.80×</div>
+        <h2 class="t" style="font-size:40px;margin-top:22px">more high-severity findings per file in AI-attributed code.</h2>
+        <p class="s">Matched-control replication: 955 AI-attributed files vs. 955 human-control files. Same direction in JavaScript, Python and TypeScript.</p>
+      </div>
+      <div style="display:flex;gap:34px;align-items:flex-end;height:420px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:700 44px Geist;color:var(--accent)">0.435</div><div style="width:140px;height:320px;background:var(--accent);border-radius:5px 5px 0 0"></div><div style="font:500 17px Geist;color:var(--muted)">AI-attributed</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font:700 44px Geist;color:#a1a1aa">0.242</div><div style="width:140px;height:178px;background:#3f3f46;border-radius:5px 5px 0 0"></div><div style="font:500 17px Geist;color:var(--muted)">Human control</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Parris, “AIRA — AI-Induced Risk Audit”, BDB Labs 2026, arXiv 2604.17587, Study 3. High-severity findings per file.</div>
+</section>
+
+<!-- 6: limits -->
+<section class="frame" data-out="ph-06-limits" style="width:1270px;height:760px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="lbl">Where it stops</span></div>
+    <h2 class="t" style="font-size:46px;margin-top:24px">What it doesn’t do. Yet, or ever.</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:40px" class="lim">
+      <div class="box"><h4>Not fully deterministic</h4><p>55 of 119 rules have a deterministic detector. The rest need an LLM, and each finding says how it was verified.</p></div>
+      <div class="box"><h4>LLM review: JS/TS only, for now</h4><p>Other languages get the deterministic pre-scanner.</p></div>
+      <div class="box"><h4>No revision-over-revision gate yet</h4><p>Every push gets its own review. Failing a check because a push got worse is on the roadmap.</p></div>
+      <div class="box"><h4>Won’t catch everything</h4><p>Nothing blocks 100% of AI vulnerabilities. We document the gaps.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7: roadmap (concept) -->
+<section class="frame" data-out="ph-07-roadmap" style="width:1270px;height:760px">
+  <div class="dots"></div>
+  <div class="pg">
+    <div class="hdr"><div class="wm">unslop<i></i></div><span class="stamp road" style="margin-left:auto">Roadmap · Concept</span></div>
+    <h2 class="t" style="font-size:44px;margin-top:22px">What we’re building next. Planned, not built, no dates.</h2>
+    <div style="display:flex;gap:26px;margin-top:30px">
+      <div class="concept" style="flex:1;padding:20px 24px">
+        <div class="anno" style="font-size:16px">Concept sketch · example data</div>
+        <h4 style="margin:10px 0 4px;font:600 22px Geist;color:#fafafa">Integrity trend per repository</h4>
+        <svg viewBox="0 0 520 190" style="width:100%;margin-top:6px">
+          <g stroke="rgba(255,255,255,.14)" stroke-width="2" stroke-dasharray="5 7"><line x1="30" y1="10" x2="30" y2="170"/><line x1="30" y1="170" x2="510" y2="170"/><line x1="30" y1="95" x2="510" y2="95"/></g>
+          <polyline fill="none" stroke="#fcd34d" stroke-width="4" stroke-dasharray="11 8" stroke-linejoin="round" points="30,150 85,146 140,134 195,137 250,118 305,112 360,114 415,96 470,90 505,78"/>
+        </svg>
+        <p style="margin:6px 0 0;font:500 17px Geist;color:var(--muted)">Are AI-assisted changes adding debt faster than you remove it?</p>
+      </div>
+      <div class="concept" style="flex:1;padding:20px 24px">
+        <div class="anno" style="font-size:16px">Concept sketch · example data</div>
+        <h4 style="margin:10px 0 12px;font:600 22px Geist;color:#fafafa">Signed record per commit SHA</h4>
+        <div style="display:grid;grid-template-columns:150px 1fr;row-gap:9px;font:400 16px GeistMono;letter-spacing:0">
+          <b style="font-weight:400;color:var(--faint)">commit</b><span style="color:#d4d4d8">3f9c2a17de…</span>
+          <b style="font-weight:400;color:var(--faint)">rules checked</b><span style="color:#d4d4d8">119 (55 deterministic)</span>
+          <b style="font-weight:400;color:var(--faint)">critical</b><span style="color:#d4d4d8">0</span>
+          <b style="font-weight:400;color:var(--faint)">not reviewed</b><span style="color:#d4d4d8">0 files</span>
+          <b style="font-weight:400;color:var(--faint)">signature</b><span style="display:inline-block;height:16px;width:210px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.14) 0 8px,transparent 8px 12px);margin-top:3px"></span>
+        </div>
+        <p style="margin:12px 0 0;font:500 17px Geist;color:var(--muted)">Records what was checked. Never claims “bug-free”.</p>
+      </div>
+    </div>
+    <p class="s" style="margin-top:24px;font-size:19px">Also planned: failing a check when a push gets worse than the previous one, and a second model vendor as verifier.</p>
+  </div>
+</section>
+
+<!-- thumbnail -->
+<section class="frame" data-out="ph-thumbnail" style="width:240px;height:240px;background:#0a0a0b">
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><img src="../../_kit/assets/shield-mark.svg" style="width:150px;height:150px;image-rendering:pixelated"></div>
+</section>
+
+</body></html>
