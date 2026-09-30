@@ -172,3 +172,33 @@ describe('HAL-002 — hallucinated stdlib APIs (Go)', () => {
         expect(ruleIdsOf(typescriptFindings)).toHaveLength(0);
     });
 });
+
+describe('prose files — Markdown and translation catalogs (LANGUAGE_COVERAGE_SPEC §4.4)', () => {
+    function scanProseFile(path: string, sourceLines: readonly string[]) {
+        const lineMap = new Map(sourceLines.map((lineText, lineIndex) => [lineIndex + 1, lineText]));
+        return runRegexEngine({ path, language: path.endsWith('.json') ? 'json' : 'other', lines: lineMap });
+    }
+
+    it('does not flag quoted patterns in Markdown or UI sentences in a translation catalog', () => {
+        const markdownFindings = scanProseFile('docs/specs/pre_scanner_design.md', [
+            '| SEC-017 disabled TLS verification | RGX: `verify=False`, `rejectUnauthorized: false` |',
+            '| SEC-024 permissive CORS | RGX: `Access-Control-Allow-Origin: *` |',
+            '| SEC-050 LOLBins | RGX denylist: `certutil -urlcache` |',
+            '',
+            '',
+            '',
+            'TODO: ask claude to extend this table',
+        ]);
+        const catalogFindings = scanProseFile('messages/en.json', [
+            '  "keyLimit": "API key limit reached — revoke an unused key under <keysLink>API Keys</keysLink> first.",',
+        ]);
+
+        expect(markdownFindings).toEqual([]);
+        expect(catalogFindings).toEqual([]);
+    });
+
+    it('still flags a provider-format secret in Markdown', () => {
+        const readmeFindings = scanProseFile('README.md', ['export AWS_KEY=AKIAIOSFODNN7EXAMPLE']);
+        expect(ruleIdsOf(readmeFindings)).toEqual(['SEC-005']);
+    });
+});

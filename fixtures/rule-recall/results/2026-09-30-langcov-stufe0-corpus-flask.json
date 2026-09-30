@@ -1,0 +1,2073 @@
+{
+  "capturedAt": "2026-09-30T09:51:54.767Z",
+  "corpusLabel": "flask",
+  "fileCount": 130,
+  "filesByExtension": {
+    ".json": 2,
+    ".sh": 1,
+    ".md": 6,
+    ".yml": 1,
+    ".yaml": 7,
+    ".py": 83,
+    ".toml": 5,
+    "requirements.txt": 1,
+    ".html": 20,
+    ".sql": 2,
+    ".css": 2
+  },
+  "totalDurationMs": 3731,
+  "maxScanDurationMs": 1172,
+  "findings": [
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "docs/conf.py",
+      "line": 72,
+      "exactQuote": "def github_link(name, rawtext, text, lineno, inliner, options=None, content=None):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_auth.py",
+      "line": 8,
+      "exactQuote": "def test_register(client, app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_auth.py",
+      "line": 39,
+      "exactQuote": "def test_login(client, auth):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_blog.py",
+      "line": 6,
+      "exactQuote": "def test_index(client, auth):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_blog.py",
+      "line": 25,
+      "exactQuote": "def test_author_required(app, client, auth):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_blog.py",
+      "line": 46,
+      "exactQuote": "def test_create(client, auth, app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_blog.py",
+      "line": 57,
+      "exactQuote": "def test_update(client, auth, app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_blog.py",
+      "line": 75,
+      "exactQuote": "def test_delete(client, auth, app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_db.py",
+      "line": 8,
+      "exactQuote": "def test_get_close_db(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_db.py",
+      "line": 19,
+      "exactQuote": "def test_init_db_command(runner, monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "examples/tutorial/tests/test_factory.py",
+      "line": 4,
+      "exactQuote": "def test_config():"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 311,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 633,
+      "exactQuote": "def run("
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 633,
+      "exactQuote": "def run("
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1105,
+      "exactQuote": "def url_for("
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1105,
+      "exactQuote": "def url_for("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1105,
+      "exactQuote": "def url_for("
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1227,
+      "exactQuote": "def make_response(self, rv: ft.ResponseReturnValue) -> Response:"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1227,
+      "exactQuote": "def make_response(self, rv: ft.ResponseReturnValue) -> Response:"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/app.py",
+      "line": 1369,
+      "exactQuote": "def preprocess_request(self, ctx: AppContext) -> ft.ResponseReturnValue | None:"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/blueprints.py",
+      "line": 19,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "MAINT-002",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 650,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "src/flask/cli.py",
+      "line": 1036,
+      "exactQuote": "except ImportError:"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "src/flask/cli.py",
+      "line": 1098,
+      "exactQuote": "except ValueError:"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 41,
+      "exactQuote": "def find_best_app(module: ModuleType) -> Flask:"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 120,
+      "exactQuote": "def find_app_by_string(module: ModuleType, app_name: str) -> Flask:"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 120,
+      "exactQuote": "def find_app_by_string(module: ModuleType, app_name: str) -> Flask:"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 563,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 698,
+      "exactQuote": "def load_dotenv("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/cli.py",
+      "line": 935,
+      "exactQuote": "def run_command("
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "src/flask/config.py",
+      "line": 163,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/debughelpers.py",
+      "line": 124,
+      "exactQuote": "def explain_template_loading_attempts("
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/helpers.py",
+      "line": 63,
+      "exactQuote": "def stream_with_context("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/helpers.py",
+      "line": 200,
+      "exactQuote": "def url_for("
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/helpers.py",
+      "line": 417,
+      "exactQuote": "def send_file("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/helpers.py",
+      "line": 417,
+      "exactQuote": "def send_file("
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/app.py",
+      "line": 279,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/app.py",
+      "line": 279,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/blueprints.py",
+      "line": 174,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/blueprints.py",
+      "line": 273,
+      "exactQuote": "def register(self, app: App, options: dict[str, t.Any]) -> None:"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/blueprints.py",
+      "line": 273,
+      "exactQuote": "def register(self, app: App, options: dict[str, t.Any]) -> None:"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "src/flask/sansio/scaffold.py",
+      "line": 376,
+      "exactQuote": "def add_url_rule("
+    },
+    {
+      "ruleId": "SEC-014",
+      "severity": "CRITICAL",
+      "path": "src/flask/sessions.py",
+      "line": 277,
+      "exactQuote": "\"\"\"Don't access ``hashlib.sha1`` until runtime. FIPS builds may not include"
+    },
+    {
+      "ruleId": "SEC-014",
+      "severity": "CRITICAL",
+      "path": "src/flask/sessions.py",
+      "line": 281,
+      "exactQuote": "return hashlib.sha1(string)"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "src/flask/testing.py",
+      "line": 49,
+      "exactQuote": "def __init__("
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_appctx.py",
+      "line": 68,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_appctx.py",
+      "line": 87,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 34,
+      "exactQuote": "def test_request_context_means_app_context(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 40,
+      "exactQuote": "def test_app_context_provides_current_app(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 116,
+      "exactQuote": "def test_app_tearing_down_with_unhandled_exception(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 139,
+      "exactQuote": "def test_app_ctx_globals_methods(app, app_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 172,
+      "exactQuote": "def test_context_refcounts(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 197,
+      "exactQuote": "def test_clean_pop(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_appctx.py",
+      "line": 216,
+      "exactQuote": "def test_robust_teardown(app: flask.Flask, client: FlaskClient) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_async.py",
+      "line": 82,
+      "exactQuote": "def test_async_route(path, async_app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_async.py",
+      "line": 97,
+      "exactQuote": "def test_async_before_after_request():"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_basic.py",
+      "line": 826,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_basic.py",
+      "line": 838,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1058,
+      "exactQuote": "def test_trap_bad_request_key_error(app, client, debug, trap, expect_key, expect_abort):"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1631,
+      "exactQuote": "def test_werkzeug_passthrough_errors("
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1919,
+      "exactQuote": "def test_run_from_config("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 33,
+      "exactQuote": "def test_options_work(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 132,
+      "exactQuote": "def test_request_dispatching(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 160,
+      "exactQuote": "def test_url_mapping(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 196,
+      "exactQuote": "def test_werkzeug_routing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 217,
+      "exactQuote": "def test_endpoint_decorator(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 237,
+      "exactQuote": "def test_session_accessed(app: flask.Flask, client: FlaskClient) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 313,
+      "exactQuote": "def test_session_using_session_settings(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 356,
+      "exactQuote": "def test_session_using_samesite_attribute(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 383,
+      "exactQuote": "def test_missing_session(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 396,
+      "exactQuote": "def test_session_secret_key_fallbacks(app, client) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 424,
+      "exactQuote": "def test_session_expiration(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 456,
+      "exactQuote": "def test_session_stored_last(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 470,
+      "exactQuote": "def test_session_special_types(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 501,
+      "exactQuote": "def test_session_cookie_setting(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 542,
+      "exactQuote": "def test_session_vary_cookie(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 603,
+      "exactQuote": "def test_session_refresh_vary(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 620,
+      "exactQuote": "def test_flashes(app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 629,
+      "exactQuote": "def test_extended_flashing(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 654,
+      "exactQuote": "def test_with_categories():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 684,
+      "exactQuote": "def test_filters2():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 710,
+      "exactQuote": "def test_request_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 735,
+      "exactQuote": "def test_request_preprocessing_early_return(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 762,
+      "exactQuote": "def test_after_request_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 777,
+      "exactQuote": "def test_teardown_request_handler(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 795,
+      "exactQuote": "def test_teardown_request_handler_debug_mode(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 813,
+      "exactQuote": "def test_teardown_request_handler_error(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 851,
+      "exactQuote": "def test_before_after_request_order(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 889,
+      "exactQuote": "def test_error_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 927,
+      "exactQuote": "def test_error_handling_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 959,
+      "exactQuote": "def test_before_request_and_routing_errors(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 973,
+      "exactQuote": "def test_user_error_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 989,
+      "exactQuote": "def test_http_error_subclass_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1021,
+      "exactQuote": "def test_errorhandler_precedence(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1058,
+      "exactQuote": "def test_trap_bad_request_key_error(app, client, debug, trap, expect_key, expect_abort):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1100,
+      "exactQuote": "def test_error_handler_after_processor_error(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1129,
+      "exactQuote": "def test_enctype_debug_helper(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1144,
+      "exactQuote": "def test_response_types(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1238,
+      "exactQuote": "def test_response_type_errors():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1287,
+      "exactQuote": "def test_make_response(app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1309,
+      "exactQuote": "def test_make_response_with_response_instance(app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1331,
+      "exactQuote": "def test_jsonify_no_prettyprint(app, compact):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1361,
+      "exactQuote": "def test_url_generation(app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1425,
+      "exactQuote": "def test_static_files(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1435,
+      "exactQuote": "def test_static_url_path():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1446,
+      "exactQuote": "def test_static_url_path_with_ending_slash():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1491,
+      "exactQuote": "def test_static_route_with_host_matching():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1513,
+      "exactQuote": "def test_request_locals():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1529,
+      "exactQuote": "def test_server_name_matching("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1565,
+      "exactQuote": "def test_server_name_subdomain():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_basic.py",
+      "line": 1631,
+      "exactQuote": "def test_werkzeug_passthrough_errors("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1645,
+      "exactQuote": "def test_url_processors(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1674,
+      "exactQuote": "def test_inject_blueprint_url_defaults(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1707,
+      "exactQuote": "def test_no_setup_after_first_request(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1722,
+      "exactQuote": "def test_routing_redirect_debugging(monkeypatch, app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1742,
+      "exactQuote": "def test_route_decorator_custom_endpoint(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1767,
+      "exactQuote": "def test_get_method_on_g(app_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1775,
+      "exactQuote": "def test_g_iteration_protocol(app_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1783,
+      "exactQuote": "def test_subdomain_basic_support():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_basic.py",
+      "line": 1793,
+      "exactQuote": "def test_index():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1830,
+      "exactQuote": "def test_subdomain_matching_other_name(matching):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1853,
+      "exactQuote": "def test_multi_route_rules(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1865,
+      "exactQuote": "def test_multi_route_class_views(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1919,
+      "exactQuote": "def test_run_from_config("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1931,
+      "exactQuote": "def test_max_cookie_size(app, client, recwarn):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_basic.py",
+      "line": 1962,
+      "exactQuote": "def test_app_freed_on_zero_refcount():"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 1000,
+      "exactQuote": "def test_nesting_url_prefixes("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 7,
+      "exactQuote": "def test_blueprint_specific_error_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 45,
+      "exactQuote": "def test_blueprint_specific_user_error_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 79,
+      "exactQuote": "def test_blueprint_app_error_handling(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 130,
+      "exactQuote": "def test_blueprint_url_defaults(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 150,
+      "exactQuote": "def test_blueprint_url_processors(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 175,
+      "exactQuote": "def test_templates_and_static(test_apps):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 269,
+      "exactQuote": "def test_empty_url_defaults(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 283,
+      "exactQuote": "def test_route_decorator_custom_endpoint(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 333,
+      "exactQuote": "def test_endpoint_decorator(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 350,
+      "exactQuote": "def test_template_filter(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 387,
+      "exactQuote": "def test_add_template_filter(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 400,
+      "exactQuote": "def test_template_filter_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 413,
+      "exactQuote": "def test_add_template_filter_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 510,
+      "exactQuote": "def test_template_test(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 547,
+      "exactQuote": "def test_add_template_test(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 560,
+      "exactQuote": "def test_template_test_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 573,
+      "exactQuote": "def test_add_template_test_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 670,
+      "exactQuote": "def test_context_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 711,
+      "exactQuote": "def test_template_global(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 765,
+      "exactQuote": "def test_request_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 796,
+      "exactQuote": "def test_app_request_processing(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 835,
+      "exactQuote": "def test_app_url_processors(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 862,
+      "exactQuote": "def test_nested_blueprint(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 911,
+      "exactQuote": "def test_nested_callback_order(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 1041,
+      "exactQuote": "def test_child_and_parent_subdomain(app, client) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 1086,
+      "exactQuote": "def test_blueprint_renaming(app, client) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 47,
+      "exactQuote": "def test_find_best_app(test_apps):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 160,
+      "exactQuote": "def test_prepare_import(request, value, path, result):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 230,
+      "exactQuote": "def test_get_version(test_apps, capsys):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 246,
+      "exactQuote": "def test_scriptinfo(test_apps, monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 306,
+      "exactQuote": "def test_with_appcontext(runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 319,
+      "exactQuote": "def test_appgroup_app_context(runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 347,
+      "exactQuote": "def test_flaskgroup_app_context(runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 365,
+      "exactQuote": "def test_flaskgroup_debug(runner, set_debug_flag):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 397,
+      "exactQuote": "def test_no_command_echo_loading_error():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 412,
+      "exactQuote": "def test_help_echo_loading_error():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 427,
+      "exactQuote": "def test_help_echo_exception():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 488,
+      "exactQuote": "def test_all_methods(self, invoke):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 495,
+      "exactQuote": "def test_no_routes(self, runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 502,
+      "exactQuote": "def test_subdomain(self, runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 511,
+      "exactQuote": "def test_host(self, runner):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 536,
+      "exactQuote": "def test_load_dotenv(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 559,
+      "exactQuote": "def test_dotenv_path(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 585,
+      "exactQuote": "def test_run_cert_path():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_cli.py",
+      "line": 649,
+      "exactQuote": "def test_cli_blueprints(app):"
+    },
+    {
+      "ruleId": "ARCH-003",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 94,
+      "exactQuote": "{\"k\": False}"
+    },
+    {
+      "ruleId": "ARCH-003",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 104,
+      "exactQuote": "{\"k\": False}"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_config.py",
+      "line": 19,
+      "exactQuote": "def test_config_from_pyfile():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_config.py",
+      "line": 25,
+      "exactQuote": "def test_config_from_object():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_config.py",
+      "line": 31,
+      "exactQuote": "def test_config_from_file_json():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_config.py",
+      "line": 38,
+      "exactQuote": "def test_config_from_file_toml():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 48,
+      "exactQuote": "def test_from_prefixed_env(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 79,
+      "exactQuote": "def test_from_prefixed_env_nested(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_config.py",
+      "line": 132,
+      "exactQuote": "def test_config_from_class():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 144,
+      "exactQuote": "def test_config_from_envvar(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 161,
+      "exactQuote": "def test_config_from_envvar_missing(monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 174,
+      "exactQuote": "def test_config_missing():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 186,
+      "exactQuote": "def test_config_missing_file():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_config.py",
+      "line": 217,
+      "exactQuote": "def test_get_namespace():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_converters.py",
+      "line": 8,
+      "exactQuote": "def test_custom_converters(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_converters.py",
+      "line": 29,
+      "exactQuote": "def test_context_available(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 34,
+      "exactQuote": "def test_send_file(self, app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 44,
+      "exactQuote": "def test_static_file(self, app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 123,
+      "exactQuote": "def test_url_for_with_alternating_schemes(self, app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 135,
+      "exactQuote": "def test_url_with_method(self, app, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 164,
+      "exactQuote": "def test_redirect_no_app():"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_helpers.py",
+      "line": 220,
+      "exactQuote": "def test_name_with_import_error(self, modules_tmp_path):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 256,
+      "exactQuote": "def test_streaming_with_context_and_custom_close(self, app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 301,
+      "exactQuote": "def test_async_view(self, app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_helpers.py",
+      "line": 342,
+      "exactQuote": "def test_make_response(self):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 15,
+      "exactQuote": "def test_bad_request_debug_message(app, client, debug):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 70,
+      "exactQuote": "def test_jsonify_basic_types(test_value, app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 78,
+      "exactQuote": "def test_jsonify_dicts(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 105,
+      "exactQuote": "def test_jsonify_arrays(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 176,
+      "exactQuote": "def test_jsonify_uuid_types(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json.py",
+      "line": 270,
+      "exactQuote": "def test_json_key_sorting(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json_tag.py",
+      "line": 32,
+      "exactQuote": "def test_duplicate_tag():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_json_tag.py",
+      "line": 73,
+      "exactQuote": "def test_tag_order():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 36,
+      "exactQuote": "def test_logger(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 42,
+      "exactQuote": "def test_logger_debug(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 48,
+      "exactQuote": "def test_existing_handler(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 54,
+      "exactQuote": "def test_wsgi_errors_stream(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 70,
+      "exactQuote": "def test_has_level_handler():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_logging.py",
+      "line": 86,
+      "exactQuote": "def test_log_view_exception(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_regression.py",
+      "line": 4,
+      "exactQuote": "def test_aborting(app):"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_reqctx.py",
+      "line": 38,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "MAINT-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_reqctx.py",
+      "line": 57,
+      "exactQuote": "except Exception:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 15,
+      "exactQuote": "def test_teardown_on_pop(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 29,
+      "exactQuote": "def test_teardown_with_previous_exception(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 46,
+      "exactQuote": "def test_teardown_with_handled_exception(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 62,
+      "exactQuote": "def test_proper_test_request_context(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 106,
+      "exactQuote": "def test_context_binding(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 122,
+      "exactQuote": "def test_context_test(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 147,
+      "exactQuote": "def test_copy_context_thread("
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 177,
+      "exactQuote": "def test_session_error_pops_context():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_reqctx.py",
+      "line": 201,
+      "exactQuote": "def test_session_dynamic_cookie_name():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_request.py",
+      "line": 25,
+      "exactQuote": "def test_limit_config(app: Flask):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_request.py",
+      "line": 57,
+      "exactQuote": "def test_trusted_hosts_config(app: Flask) -> None:"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_session_interface.py",
+      "line": 6,
+      "exactQuote": "def test_open_session_with_endpoint():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 4,
+      "exactQuote": "def test_template_rendered(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 25,
+      "exactQuote": "def test_before_render_template():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 50,
+      "exactQuote": "def test_request_signals():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 95,
+      "exactQuote": "def test_request_exception_signal():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 115,
+      "exactQuote": "def test_appcontext_signals(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 139,
+      "exactQuote": "def test_flash_signal(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_signals.py",
+      "line": 163,
+      "exactQuote": "def test_appcontext_tearing_down_signal(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_subclassing.py",
+      "line": 6,
+      "exactQuote": "def test_suppressed_exception_logging():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 113,
+      "exactQuote": "def test_escaping_without_template_filename(app, client, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 123,
+      "exactQuote": "def test_template_filter(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 157,
+      "exactQuote": "def test_add_template_filter(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 167,
+      "exactQuote": "def test_template_filter_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 177,
+      "exactQuote": "def test_add_template_filter_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 241,
+      "exactQuote": "def test_template_test(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 275,
+      "exactQuote": "def test_add_template_test(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 285,
+      "exactQuote": "def test_template_test_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 295,
+      "exactQuote": "def test_add_template_test_with_name(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 359,
+      "exactQuote": "def test_add_template_global(app, app_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 443,
+      "exactQuote": "def test_templates_auto_reload(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 475,
+      "exactQuote": "def test_templates_auto_reload_debug_run(app, monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 488,
+      "exactQuote": "def test_template_loader_debugging(test_apps, monkeypatch):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 15,
+      "exactQuote": "def test_environ_defaults_from_config(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 30,
+      "exactQuote": "def test_environ_defaults(app, client, app_ctx, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 42,
+      "exactQuote": "def test_environ_base_default(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 57,
+      "exactQuote": "def test_environ_base_modified(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 73,
+      "exactQuote": "def test_client_open_environ(app, client, request):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 89,
+      "exactQuote": "def test_specify_url_scheme(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 101,
+      "exactQuote": "def test_path_is_url(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 116,
+      "exactQuote": "def test_blueprint_with_subdomain():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 140,
+      "exactQuote": "def test_redirect_session(app, client, app_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 157,
+      "exactQuote": "def test_session_transactions(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 198,
+      "exactQuote": "def test_session_transactions_keep_context(app, client, req_ctx):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 214,
+      "exactQuote": "def test_test_client_context_binding(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 243,
+      "exactQuote": "def test_reuse_client(client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 253,
+      "exactQuote": "def test_full_url_request(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 265,
+      "exactQuote": "def test_json_request_and_response(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 284,
+      "exactQuote": "def test_client_json_no_app_context(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 304,
+      "exactQuote": "def test_subdomain():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 323,
+      "exactQuote": "def test_nosubdomain(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 340,
+      "exactQuote": "def test_cli_runner_class(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_testing.py",
+      "line": 352,
+      "exactQuote": "def test_cli_invoke(app):"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 176,
+      "exactQuote": "from blueprintapp import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_blueprints.py",
+      "line": 236,
+      "exactQuote": "from blueprintapp import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_instance_config.py",
+      "line": 25,
+      "exactQuote": "from config_module_app import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_instance_config.py",
+      "line": 41,
+      "exactQuote": "from config_package_app import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_templating.py",
+      "line": 489,
+      "exactQuote": "from blueprintapp import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_instance_config.py",
+      "line": 73,
+      "exactQuote": "from site_app import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_instance_config.py",
+      "line": 92,
+      "exactQuote": "from installed_package import app"
+    },
+    {
+      "ruleId": "SEC-035",
+      "severity": "WARNING",
+      "path": "tests/test_instance_config.py",
+      "line": 107,
+      "exactQuote": "import site_package"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 10,
+      "exactQuote": "def test_error_handler_no_match(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 61,
+      "exactQuote": "def test_error_handler_subclass(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 100,
+      "exactQuote": "def test_error_handler_http_subclass(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 136,
+      "exactQuote": "def test_error_handler_blueprint(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 163,
+      "exactQuote": "def test_default_error_handler():"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 253,
+      "exactQuote": "def test_handle_class_or_code(self, app, client, to_handle):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 269,
+      "exactQuote": "def test_handle_generic_http(self, app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_user_error_handler.py",
+      "line": 283,
+      "exactQuote": "def test_handle_generic(self, app, client):"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_views.py",
+      "line": 17,
+      "exactQuote": "def test_basic_view(app):"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_views.py",
+      "line": 28,
+      "exactQuote": "def test_method_based_view(app):"
+    },
+    {
+      "ruleId": "TEST-001",
+      "severity": "CRITICAL",
+      "path": "tests/test_views.py",
+      "line": 41,
+      "exactQuote": "def test_view_patching(app):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 80,
+      "exactQuote": "def test_view_decorators(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 152,
+      "exactQuote": "def test_implicit_head(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 166,
+      "exactQuote": "def test_explicit_head(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 200,
+      "exactQuote": "def test_methods_var_inheritance(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 218,
+      "exactQuote": "def test_multiple_inheritance(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 237,
+      "exactQuote": "def test_remove_method_from_parent(app, client):"
+    },
+    {
+      "ruleId": "TEST-002",
+      "severity": "WARNING",
+      "path": "tests/test_views.py",
+      "line": 256,
+      "exactQuote": "def test_init_once(app, client):"
+    }
+  ]
+}

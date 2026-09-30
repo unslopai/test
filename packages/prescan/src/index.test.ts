@@ -214,3 +214,26 @@ describe('runPrescan — config-file routing and companion files (v4)', () => {
         expect(filtered.findings).toEqual([]);
     });
 });
+
+describe('runPrescan — workspace packages (LANGUAGE_COVERAGE_SPEC §4.4)', () => {
+    it('does not look up a dependency that a companion workspace manifest declares as its own name', async () => {
+        const manifestLines = ['{', '  "dependencies": {', '    "@unslop/shared": "0.1.0"', '  }', '}'];
+        const unreachableFetch: typeof fetch = async () => { throw new Error('must not be called'); };
+
+        const prescanResult = await runPrescan(
+            {
+                files: [buildScannableFile({
+                    path: 'packages/cli/package.json',
+                    content: manifestLines.join('\n'),
+                    patch: buildPatchForAddedLines(1, manifestLines),
+                })],
+                companionFiles: [{ path: 'packages/shared/package.json', content: '{\n  "name": "@unslop/shared"\n}' }],
+            },
+            DEFAULT_PRESCAN_CONFIG,
+            { fetchImpl: unreachableFetch },
+        );
+
+        expect(prescanResult.findings).toEqual([]);
+        expect(prescanResult.skippedChecks).toEqual([]);
+    });
+});

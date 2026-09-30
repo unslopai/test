@@ -44,7 +44,17 @@ npm run benchmark:rules              # full suite (real Vertex calls, real Pro b
 npm run benchmark:rules -- --only r11 # substring filter (one bundle / ecosystem)
 npm run benchmark:rules -- --keep     # keep replay jobs + telemetry in the DB
 npm run benchmark:rules -- --out results/2026-08-24.json
+npm run benchmark:rules -- --bypass-filter                       # model potential: every fixture file reaches the model
+npm run benchmark:rules -- --bypass-filter --ecosystems polyglot # r01/r02/r11/r12/r13 under a polyglot repo's Law filter
 ```
+
+Two paths (`docs/specs/LANGUAGE_COVERAGE_SPEC.md` §7.1). The default is the
+**production path**: the model only gets files that pass `isReviewableFile`, and
+a fixture without a reviewable file aborts like the webhook does, so neither
+lane scans it. `--bypass-filter` is the mode of every run up to 2026-09-30 and
+is reported as **model potential**. Each report carries `pathMode` and counts
+hits by the lane a file reaches in production. Never quote a model-potential
+number as production behavior.
 
 The runner reuses the real cascade (complexity-router → draft → blind verifier →
 pro escalation → integrity scorer), RAG/Practices off for a reproducible

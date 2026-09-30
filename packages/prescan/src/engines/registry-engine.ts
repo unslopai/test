@@ -12,9 +12,16 @@
  *    IMMER geprüft — ein 404-Paket in package.json ist starke Evidenz.
  *  - Modulnamen, die als Pfadsegment im Diff vorkommen (src/myapp/… ⇒ myapp),
  *    gelten als First-Party und werden übersprungen.
+ *  - Python-Importe (LANGUAGE_COVERAGE_SPEC §4.4): Standardbibliothek,
+ *    Docstring-Zeilen und Fließtext sind keine Kandidaten. Ein 404 auf einen
+ *    Import-Namen ist nur WARNING, weil Import- und Distributionsname
+ *    auseinanderfallen können und lokale Module außerhalb des Diffs unsichtbar sind.
+ *  - package.json: nur Zeilen in Dependency-Abschnitten, keine Workspace-Pakete.
  */
 import { RULE_REGISTRY } from '../rules/registry';
+import { extractPackageJsonDependency } from './registry/package-json-deps';
 import { extractPyprojectCandidates } from './registry/pyproject-deps';
+import { collectPythonStringBlockLines, extractPythonImportRoot } from './registry/python-imports';
 import type { PrescanLanguage } from '../language';
 import type {
     PrescanFinding,
@@ -36,19 +43,6 @@ const NODE_BUILTINS = new Set([
     'https', 'inspector', 'module', 'net', 'os', 'path', 'perf_hooks', 'process', 'punycode',
     'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'timers', 'tls', 'trace_events',
     'tty', 'url', 'util', 'v8', 'vm', 'wasi', 'worker_threads', 'zlib',
-]);
-
-const PYTHON_STDLIB = new Set([
-    'abc', 'argparse', 'array', 'asyncio', 'base64', 'bisect', 'builtins', 'calendar', 'collections',
-    'concurrent', 'configparser', 'contextlib', 'copy', 'csv', 'ctypes', 'dataclasses', 'datetime',
-    'decimal', 'difflib', 'dis', 'email', 'enum', 'errno', 'functools', 'gc', 'getpass', 'glob',
-    'gzip', 'hashlib', 'heapq', 'hmac', 'html', 'http', 'importlib', 'inspect', 'io', 'ipaddress',
-    'itertools', 'json', 'logging', 'math', 'mimetypes', 'multiprocessing', 'operator', 'os',
-    'pathlib', 'pickle', 'platform', 'pprint', 'queue', 'random', 're', 'secrets', 'select',
-    'shlex', 'shutil', 'signal', 'site', 'socket', 'sqlite3', 'ssl', 'stat', 'statistics',
-    'string', 'struct', 'subprocess', 'sys', 'tempfile', 'textwrap', 'threading', 'time',
-    'tomllib', 'traceback', 'types', 'typing', 'unittest', 'urllib', 'uuid', 'venv', 'warnings',
-    'weakref', 'xml', 'zipfile', 'zoneinfo',
 ]);
 
 const RUST_BUILTINS = new Set(['std', 'core', 'alloc', 'crate', 'self', 'super', 'test', 'proc_macro']);
@@ -73,15 +67,29 @@ export interface RegistryEngineFile {
     /** Zeilennummer → Zeilentext, NUR added lines. */
     readonly addedLineTexts: ReadonlyMap<number, string>;
     /**
-     * Alle bekannten Zeilen der Datei — nur für Manifeste mit Zeilen-
-     * übergreifendem Kontext (pyproject.toml: Tabellen-Header + Arrays).
-     * Kandidaten entstehen trotzdem ausschließlich für Added Lines.
+     * Alle bekannten Zeilen der Datei — für Dateien mit zeilenübergreifendem
+     * Kontext (pyproject.toml: Tabellen-Header + Arrays, package.json:
+     * Abschnitt, Python: Docstrings). Kandidaten entstehen trotzdem
+     * ausschließlich für Added Lines.
      */
     readonly lineTexts?: ReadonlyMap<number, string>;
 }
 
+export interface RegistryEngineOptions {
+    /** Paketnamen des eigenen Repos (Workspace-Pakete) — nie ein Registry-Befund. */
+    readonly firstPartyPackages?: ReadonlySet<string>;
+}
+
+/** Was eine Datei zur Kandidaten-Extraktion beiträgt, einmal pro Datei berechnet. */
+interface CandidateScope {
+    readonly file: RegistryEngineFile;
+    readonly lineTexts: ReadonlyMap<number, string>;
+    readonly firstPartyNames: ReadonlySet<string>;
+    readonly firstPartyPackages: ReadonlySet<string>;
+    readonly pythonStringBlockLines: ReadonlySet<number>;
+}
+
 const JS_IMPORT_PATTERN = /(?:from\s+|require\s*\(\s*|import\s*\(\s*)["']([^"']+)["']|^\s*import\s+["']([^"']+)["']/;
-const PYTHON_IMPORT_PATTERN = /^\s*(?:from\s+([A-Za-z_][\w.]*)\s+import|import\s+([A-Za-z_][\w.]*))/;
 const RUST_USE_PATTERN = /^\s*(?:pub\s+)?use\s+([a-z_][a-z0-9_]*)(?:::|;|\s)/;
 const CARGO_DEPENDENCY_PATTERN = /^([a-zA-Z0-9_-]+)\s*=/;
 const REQUIREMENTS_PATTERN = /^([A-Za-z0-9][A-Za-z0-9._-]*)/;
@@ -89,13 +97,27 @@ const REQUIREMENTS_PATTERN = /^([A-Za-z0-9][A-Za-z0-9._-]*)/;
 const NPM_PACKAGE_NAME_PATTERN = /^[A-Za-z0-9][\w.~-]*$/;
 const HF_PRETRAINED_PATTERN = /(?:from_pretrained|hf_hub_download|snapshot_download)\s*\(\s*["']([\w.-]+\/[\w.-]+)["']/;
 
-export function extractPackageCandidates(files: readonly RegistryEngineFile[]): PackageCandidate[] {
+export function extractPackageCandidates(
+    files: readonly RegistryEngineFile[],
+    options: RegistryEngineOptions = {},
+): PackageCandidate[] {
     const firstPartyNames = collectFirstPartyNames(files);
+    const firstPartyPackages = options.firstPartyPackages ?? new Set<string>();
     const candidates: PackageCandidate[] = [];
 
     for (const file of files) {
+        const lineTexts = file.lineTexts ?? file.addedLineTexts;
+        const candidateScope: CandidateScope = {
+            file,
+            lineTexts,
+            firstPartyNames,
+            firstPartyPackages,
+            pythonStringBlockLines: file.language === 'python'
+                ? collectPythonStringBlockLines(lineTexts)
+                : new Set<number>(),
+        };
         for (const [lineNumber, lineText] of file.addedLineTexts) {
-            candidates.push(...extractCandidatesFromLine(file, lineNumber, lineText, firstPartyNames));
+            candidates.push(...extractCandidatesFromLine(candidateScope, lineNumber, lineText));
         }
         candidates.push(...extractPyprojectManifestCandidates(file));
     }
@@ -131,11 +153,11 @@ function collectFirstPartyNames(files: readonly RegistryEngineFile[]): ReadonlyS
 }
 
 function extractCandidatesFromLine(
-    file: RegistryEngineFile,
+    candidateScope: CandidateScope,
     lineNumber: number,
     lineText: string,
-    firstPartyNames: ReadonlySet<string>,
 ): PackageCandidate[] {
+    const { file } = candidateScope;
     const baseCandidate = { path: file.path, line: lineNumber, lineText };
     const candidates: PackageCandidate[] = [];
 
@@ -144,12 +166,12 @@ function extractCandidatesFromLine(
         candidates.push({ ...baseCandidate, registry: 'hf-hub', packageName: hfMatch[1], fromManifest: false });
     }
 
-    const importedPackage = extractImportedPackage(file, lineText, firstPartyNames);
+    const importedPackage = extractImportedPackage(candidateScope, lineNumber, lineText);
     if (importedPackage) {
         candidates.push({ ...baseCandidate, ...importedPackage, fromManifest: false });
     }
 
-    const manifestPackage = extractManifestPackage(file, lineText);
+    const manifestPackage = extractManifestPackage(candidateScope, lineNumber, lineText);
     if (manifestPackage) {
         candidates.push({ ...baseCandidate, ...manifestPackage, fromManifest: true });
     }
@@ -158,11 +180,12 @@ function extractCandidatesFromLine(
 }
 
 function extractImportedPackage(
-    file: RegistryEngineFile,
+    candidateScope: CandidateScope,
+    lineNumber: number,
     lineText: string,
-    firstPartyNames: ReadonlySet<string>,
 ): { registry: RegistryId; packageName: string } | null {
-    switch (file.language) {
+    const { firstPartyNames } = candidateScope;
+    switch (candidateScope.file.language) {
         case 'typescript':
         case 'tsx':
         case 'javascript': {
@@ -172,11 +195,9 @@ function extractImportedPackage(
             return npmPackage ? { registry: 'npm', packageName: npmPackage } : null;
         }
         case 'python': {
-            const importMatch = PYTHON_IMPORT_PATTERN.exec(lineText);
-            const moduleName = (importMatch?.[1] ?? importMatch?.[2])?.split('.')[0];
-            const isCheckable = moduleName !== undefined
-                && !PYTHON_STDLIB.has(moduleName)
-                && !firstPartyNames.has(moduleName.toLowerCase());
+            if (candidateScope.pythonStringBlockLines.has(lineNumber)) return null;
+            const moduleName = extractPythonImportRoot(lineText);
+            const isCheckable = moduleName !== null && !firstPartyNames.has(moduleName.toLowerCase());
             return isCheckable ? { registry: 'pypi', packageName: moduleName } : null;
         }
         case 'rust': {
@@ -205,16 +226,16 @@ function normalizeNpmImport(importTarget: string, firstPartyNames: ReadonlySet<s
 }
 
 function extractManifestPackage(
-    file: RegistryEngineFile,
+    candidateScope: CandidateScope,
+    lineNumber: number,
     lineText: string,
 ): { registry: RegistryId; packageName: string } | null {
-    const fileName = file.path.split('/').pop() ?? '';
+    const fileName = candidateScope.file.path.split('/').pop() ?? '';
 
     if (fileName === 'package.json') {
-        const dependencyMatch = /^\s*"(@?[A-Za-z0-9._/-]+)"\s*:\s*"[^"]*"\s*,?\s*$/.exec(lineText);
-        const isDependencyShaped = dependencyMatch !== null
-            && !/^(name|version|description|main|types|license|type|private|scripts|exports|engines|packageManager|homepage|repository|author|files|bin|workspaces)$/.test(dependencyMatch[1]);
-        return isDependencyShaped ? { registry: 'npm', packageName: dependencyMatch[1] } : null;
+        const declaredPackage = extractPackageJsonDependency(candidateScope.lineTexts, lineNumber);
+        const isCheckable = declaredPackage !== null && !candidateScope.firstPartyPackages.has(declaredPackage);
+        return isCheckable ? { registry: 'npm', packageName: declaredPackage } : null;
     }
     if (fileName === 'requirements.txt') {
         const requirementMatch = REQUIREMENTS_PATTERN.exec(lineText.trim());
@@ -257,8 +278,9 @@ export interface RegistryEngineResult {
 export async function runRegistryEngine(
     files: readonly RegistryEngineFile[],
     ports: PrescanPorts,
+    options: RegistryEngineOptions = {},
 ): Promise<RegistryEngineResult> {
-    const candidates = extractPackageCandidates(files);
+    const candidates = extractPackageCandidates(files, options);
     const findings: PrescanFinding[] = [];
     const skippedChecks: SkippedCheck[] = [];
     // Ein Existenz-Ergebnis pro registry:packageName, geteilt über alle
@@ -400,19 +422,36 @@ function interpretLookupStatus(status: number, ok: boolean): boolean | null {
     return null;
 }
 
+/**
+ * Ein 404 auf einen Python-Import-Namen beweist kein halluziniertes Paket:
+ * der Name kann ein lokales Modul sein oder anders heißen als seine
+ * Distribution. Deshalb WARNING mit eigenem Text; Manifest-Deklarationen
+ * und alle anderen Registries bleiben beim Urteil der Regel.
+ */
+const PYTHON_IMPORT_EXPLANATION = 'No PyPI distribution carries the name of this imported module. '
+    + 'Import names can differ from distribution names, and local modules outside this diff are '
+    + 'invisible to the check. If neither the repository nor its requirements provide the module, '
+    + 'the import is hallucinated and a slopsquatting target.';
+
+function isPythonImportCandidate(candidate: PackageCandidate): boolean {
+    return candidate.registry === 'pypi' && !candidate.fromManifest;
+}
+
 function buildRegistryFinding(ruleId: string, candidate: PackageCandidate): PrescanFinding {
     const descriptor = RULE_REGISTRY.get(ruleId);
     const lookupUrl = REGISTRY_URL_BUILDERS[candidate.registry](candidate.packageName);
+    const isImportNameOnly = isPythonImportCandidate(candidate);
+    const explanation = isImportNameOnly ? PYTHON_IMPORT_EXPLANATION : descriptor?.explanation ?? '';
 
     return {
         ruleId,
         ruleTitle: descriptor?.title ?? ruleId,
-        severity: descriptor?.severity ?? 'CRITICAL',
+        severity: isImportNameOnly ? 'WARNING' : descriptor?.severity ?? 'CRITICAL',
         path: candidate.path,
         line: candidate.line,
         endLine: candidate.line,
         exactQuote: candidate.lineText.trim().substring(0, 200),
-        explanation: `${descriptor?.explanation ?? ''} (verified 404: ${lookupUrl})`,
+        explanation: `${explanation} (verified 404: ${lookupUrl})`,
         engine: 'registry',
         fileLevel: false,
     };

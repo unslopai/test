@@ -11,6 +11,7 @@ import { githubReporterStep } from '@/lib/pipeline/steps/github-reporter-step';
 import {
     buildCascadeState,
     buildPipelineContext,
+    buildPrescanStats,
     buildPullRequestFile,
     buildReviewIssue,
 } from '@/lib/pipeline/testing/context-fixture';
@@ -210,6 +211,101 @@ describe('githubReporterStep', () => {
         expect(createPullRequestReviewMock.mock.calls[0][6]).toBe('COMMENT');
     });
 
+    it('sagt bei einem Lauf ohne Modell-Review, dass kein Modell gelesen hat — kein Häkchen, kein Score-Block', async () => {
+        const deterministicOnlyContext = buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(deterministicOnlyContext);
+
+        const postedBody = createPullRequestReviewMock.mock.calls[0][4];
+        expect(postedBody).toBe(
+            'ℹ️ **Anti-Slop Gatekeeper**: Deterministic checks only: this pull request changes no TypeScript or '
+            + 'JavaScript file, so no model reviewed it. The pre-scanner checked 2 files and found nothing.',
+        );
+        expect(createPullRequestReviewMock.mock.calls[0][6]).toBe('COMMENT');
+        expect(postPRCommentMock).not.toHaveBeenCalled();
+    });
+
+    it('nennt den fehlenden Modell-Review auch neben deterministischen Findings', async () => {
+        const scannedFile = buildPullRequestFile({ filename: 'services/report_job.py', patch: '@@ -0,0 +1,3 @@\n+import os\n+import hallucinated_kit\n+' });
+        const deterministicFindingContext = buildPipelineContext({
+            prFiles: [scannedFile],
+            prescanIssues: [buildReviewIssue({
+                rule: 'SEC-005 (Hardcoded secret)', path: scannedFile.filename, line: 2, endLine: 2, source: 'pre-scanner',
+            })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(deterministicFindingContext);
+
+        const postedBody = createPullRequestReviewMock.mock.calls[0][4];
+        expect(postedBody).toContain('so no model reviewed it. The deterministic pre-scanner found 1 critical and 0 warning findings.');
+        expect(postedBody).not.toContain('Cognitive Integrity Score');
+    });
+
+    it('meldet einen ausgefallenen Pre-Scan bei vorhandenen Lane-Dateien als Ausfall — kein ✅ „No reviewable code files“', async () => {
+        const degradedPrescanContext = buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            llmSkipped: true,
+            abortReason: 'No reviewable code files in this pull request.',
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: true,
+                degradedReason: 'internal route timeout',
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 0,
+                rulesDisabled: [],
+                filesScanned: 0,
+                filesSkipped: [],
+                skippedChecks: [{ ruleId: '*', reason: 'step-failure' }],
+                llmSkipped: false,
+                durationMs: 0,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(degradedPrescanContext);
+
+        const postedComment = postPRCommentMock.mock.calls[0][3];
+        expect(postedComment).toMatch(/^⚠️ \*\*Anti-Slop Gatekeeper\*\*: Not reviewed: the deterministic pre-scanner failed/);
+        expect(postedComment).not.toContain('✅');
+        expect(postedComment).not.toContain('No reviewable code files');
+        expect(createPullRequestReviewMock).not.toHaveBeenCalled();
+    });
+
     // Check Runs gehören dem Worker (nach der Persistenz), nicht dem Reporter:
     // der Reporter ist abschaltbar, und ein Fehler beim Check-Run-Abschluss darf
     // das bereits gepostete Review nicht mehr aus der DB kippen.
@@ -319,5 +415,156 @@ describe('githubReporterStep — finding_comments persistence', () => {
 
         expect(fetchReviewCommentsMock).not.toHaveBeenCalled();
         expect(capturedCommentRows()[0].github_comment_id).toBeNull();
+    });
+});
+
+// =============================================================================
+// KI-Kennzeichnung (Art. 50 Abs. 2 KI-VO, LEGAL_PAGES_SPEC §4a.3)
+// =============================================================================
+
+describe('githubReporterStep — KI-Kennzeichnung', () => {
+    const AI_LABEL = '_AI-generated. Check it before you rely on it._';
+    const AI_MARKER = '<!-- unslop:ai-generated -->';
+    const DETERMINISTIC_ONLY_REASON = 'Deterministic checks only: this pull request changes no TypeScript or '
+        + 'JavaScript file, so no model reviewed it.';
+    beforeEach(() => {
+        resetReporterMocks();
+    });
+
+    function postedReviewBody(): string {
+        return createPullRequestReviewMock.mock.calls[0][4];
+    }
+
+    function postedInlineBodies(): string[] {
+        return createPullRequestReviewMock.mock.calls[0][5].map((inlineComment) => inlineComment.body);
+    }
+
+    it('kennzeichnet Review-Body und Inline-Kommentar eines Modell-Reviews sichtbar und maschinenlesbar', async () => {
+        await githubReporterStep.execute(buildReportableContext());
+
+        expect(postedReviewBody()).toContain(AI_LABEL);
+        expect(postedReviewBody().endsWith(AI_MARKER)).toBe(true);
+        // Die Kopfzeile bleibt die erste Zeile: daran erkennt review-posting.ts den eigenen Review wieder.
+        expect(postedReviewBody().split('\n')[0]).toBe('## 🛡️ Anti-Slop Gatekeeper Review');
+        expect(postedInlineBodies()).toHaveLength(1);
+        expect(postedInlineBodies()[0]).toContain(AI_LABEL);
+        expect(postedInlineBodies()[0]).toContain(AI_MARKER);
+    });
+
+    it('lässt ein Pre-Scan-Finding im selben Review ohne Label, das Modell-Finding trägt es', async () => {
+        const reviewedFile = buildPullRequestFile({
+            patch: '@@ -40,3 +40,5 @@\n+import hallucinatedKit from "hallucinated-kit";\n+const data = fetchData();',
+        });
+        const mixedContext = buildPipelineContext({
+            issues: [buildReviewIssue({ line: 41, endLine: 41, verification: 'confirmed' })],
+            prescanIssues: [buildReviewIssue({
+                rule: 'SEC-035 (Package does not exist on its registry)',
+                line: 40,
+                endLine: 40,
+                source: 'pre-scanner',
+                verification: 'deterministic',
+            })],
+            prFiles: [reviewedFile],
+            reviewableFiles: [reviewedFile],
+            reviewSummary: 'Two findings.',
+            githubToken: 'token-under-test',
+            cascade: buildCascadeState({ integrityScore: 91 }),
+        });
+
+        await githubReporterStep.execute(mixedContext);
+
+        const deterministicComment = postedInlineBodies().find((inlineBody) => inlineBody.includes('SEC-035'));
+        const modelComment = postedInlineBodies().find((inlineBody) => inlineBody.includes('Condition 3'));
+        expect(deterministicComment).toBeDefined();
+        expect(deterministicComment).not.toContain('AI-generated');
+        expect(deterministicComment).not.toContain(AI_MARKER);
+        expect(modelComment).toContain(AI_LABEL);
+        expect(modelComment).toContain(AI_MARKER);
+        // Der Review als Ganzes enthält Modell-Inhalt.
+        expect(postedReviewBody()).toContain(AI_MARKER);
+    });
+
+    it('kennzeichnet auch den Kommentar „No AI slop found“: das Urteil stammt vom Modell', async () => {
+        const cleanContext = buildPipelineContext({
+            reviewableFiles: [buildPullRequestFile()],
+            cascade: buildCascadeState({ integrityScore: 100 }),
+        });
+
+        await githubReporterStep.execute(cleanContext);
+
+        expect(postedReviewBody()).toContain('No AI slop found');
+        expect(postedReviewBody()).toContain(AI_LABEL);
+        expect(postedReviewBody().endsWith(AI_MARKER)).toBe(true);
+    });
+
+    it('kennzeichnet einen Lauf ohne Modell nicht: weder Body noch Inline-Kommentar (deterministic_only)', async () => {
+        const scannedFile = buildPullRequestFile({
+            filename: 'services/report_job.py',
+            patch: '@@ -0,0 +1,3 @@\n+import os\n+import hallucinated_kit\n+',
+        });
+        const deterministicOnlyContext = buildPipelineContext({
+            prFiles: [scannedFile],
+            prescanIssues: [buildReviewIssue({
+                rule: 'SEC-035 (Package does not exist on its registry)',
+                path: scannedFile.filename,
+                line: 2,
+                endLine: 2,
+                source: 'pre-scanner',
+                verification: 'deterministic',
+            })],
+            llmSkipped: true,
+            deterministicOnlyReason: DETERMINISTIC_ONLY_REASON,
+            prescanStats: buildPrescanStats({ llmSkipped: true }),
+        });
+
+        await githubReporterStep.execute(deterministicOnlyContext);
+
+        expect(postedReviewBody()).not.toContain('AI-generated');
+        expect(postedReviewBody()).not.toContain(AI_MARKER);
+        expect(postedInlineBodies()).toHaveLength(1);
+        expect(postedInlineBodies()[0]).not.toContain('AI-generated');
+        expect(postedInlineBodies()[0]).not.toContain(AI_MARKER);
+    });
+
+    it('kennzeichnet den Short-Circuit des Pre-Scanners nicht: Outcome reviewed, aber kein Modell lief', async () => {
+        const reviewedFile = buildPullRequestFile({
+            patch: '@@ -40,3 +40,5 @@\n+import hallucinatedKit from "hallucinated-kit";\n+const data = fetchData();',
+        });
+        const shortCircuitContext = buildPipelineContext({
+            prescanIssues: [buildReviewIssue({
+                rule: 'SEC-035 (Package does not exist on its registry)',
+                line: 40,
+                endLine: 40,
+                source: 'pre-scanner',
+                verification: 'deterministic',
+            })],
+            prFiles: [reviewedFile],
+            reviewableFiles: [reviewedFile],
+            reviewSummary: 'LLM review skipped: 1 critical structural violations found by the deterministic pre-scanner. Fix these first.',
+            githubToken: 'token-under-test',
+            llmSkipped: true,
+            prescanStats: buildPrescanStats({ llmSkipped: true, criticalCount: 1, findingsCount: 1 }),
+        });
+
+        await githubReporterStep.execute(shortCircuitContext);
+
+        expect(postedReviewBody()).toContain('LLM review skipped');
+        expect(postedReviewBody()).not.toContain('AI-generated');
+        expect(postedReviewBody()).not.toContain(AI_MARKER);
+        expect(postedInlineBodies()[0]).not.toContain(AI_MARKER);
+    });
+
+    it('kennzeichnet den Hinweis „nichts geprüft“ nicht', async () => {
+        const abortedContext = buildPipelineContext({
+            shouldAbort: true,
+            abortReason: 'No reviewable code files in this pull request.',
+        });
+
+        await githubReporterStep.execute(abortedContext);
+
+        const postedComment = postPRCommentMock.mock.calls[0][3];
+        expect(postedComment).not.toContain('AI-generated');
+        expect(postedComment).not.toContain(AI_MARKER);
+        expect(createPullRequestReviewMock).not.toHaveBeenCalled();
     });
 });

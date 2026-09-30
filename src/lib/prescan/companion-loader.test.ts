@@ -77,6 +77,83 @@ describe('loadCompanionFiles', () => {
     });
 });
 
+describe('loadCompanionFiles — workspace manifests (SEC-035)', () => {
+    it('adds the manifest of every npm workspace when the diff touches a package.json', async () => {
+        const manifestByPath = new Map([
+            ['package.json', '{ "name": "anti-slop", "workspaces": ["packages/*", "tools/cli"] }'],
+            ['packages/shared/package.json', '{ "name": "@unslop/shared" }'],
+            ['tools/cli/package.json', '{ "name": "@unslopcodes/cli" }'],
+        ]);
+        const port = buildPort({
+            listDirectory: vi.fn(async () => [{ name: 'shared', isFile: false }, { name: 'README.md', isFile: true }]),
+            readFile: vi.fn(async (filePath: string) => manifestByPath.get(filePath) ?? null),
+        });
+
+        const companions = await loadCompanionFiles({ ...PARAMS, scannedPaths: ['packages/cli/package.json'] }, port);
+
+        expect(companions).toEqual([
+            { path: 'packages/shared/package.json', content: '{ "name": "@unslop/shared" }' },
+            { path: 'tools/cli/package.json', content: '{ "name": "@unslopcodes/cli" }' },
+        ]);
+        expect(port.listDirectory).toHaveBeenCalledWith('packages');
+    });
+
+    it('reads pnpm-workspace.yaml, so pnpm workspace packages reach the core as first-party names', async () => {
+        const manifestByPath = new Map([
+            ['package.json', '{ "name": "acme-monorepo", "private": true }'],
+            ['pnpm-workspace.yaml', "packages:\n  - 'packages/*'\n  - \"apps/web\"\n  - '!**/test/**'\n"],
+            ['packages/utils/package.json', '{ "name": "@acme/utils" }'],
+            ['apps/web/package.json', '{ "name": "@acme/web" }'],
+        ]);
+        const port = buildPort({
+            listDirectory: vi.fn(async () => [{ name: 'utils', isFile: false }]),
+            readFile: vi.fn(async (filePath: string) => manifestByPath.get(filePath) ?? null),
+        });
+
+        const companions = await loadCompanionFiles({ ...PARAMS, scannedPaths: ['apps/web/package.json'] }, port);
+
+        expect(companions).toEqual([
+            { path: 'packages/utils/package.json', content: '{ "name": "@acme/utils" }' },
+            { path: 'apps/web/package.json', content: '{ "name": "@acme/web" }' },
+        ]);
+        expect(port.readFile).toHaveBeenCalledWith('pnpm-workspace.yaml');
+    });
+
+    it('loads workspace manifests in parallel, never more than four requests at once', async () => {
+        const workspaceNames = Array.from({ length: 12 }, (_, workspaceIndex) => `pkg-${workspaceIndex}`);
+        let inFlightReads = 0;
+        let peakInFlightReads = 0;
+        const port = buildPort({
+            listDirectory: vi.fn(async () => workspaceNames.map((workspaceName) => ({ name: workspaceName, isFile: false }))),
+            readFile: vi.fn(async (filePath: string) => {
+                if (filePath === 'package.json') return '{ "workspaces": ["packages/*"] }';
+                if (filePath === 'pnpm-workspace.yaml') return null;
+                inFlightReads += 1;
+                peakInFlightReads = Math.max(peakInFlightReads, inFlightReads);
+                await new Promise((resolveRead) => setTimeout(resolveRead, 5));
+                inFlightReads -= 1;
+                return `{ "name": "${filePath}" }`;
+            }),
+        });
+
+        const companions = await loadCompanionFiles({ ...PARAMS, scannedPaths: ['package.json'] }, port);
+
+        expect(companions).toHaveLength(12);
+        expect(companions[0].path).toBe('packages/pkg-0/package.json');
+        expect(peakInFlightReads).toBeGreaterThan(1);
+        expect(peakInFlightReads).toBeLessThanOrEqual(4);
+    });
+
+    it('returns no workspace manifests when the root manifest is unreadable (fail-soft)', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const port = buildPort({ readFile: vi.fn(async () => { throw new Error('rate limited'); }) });
+
+        expect(await loadCompanionFiles({ ...PARAMS, scannedPaths: ['package.json'] }, port)).toEqual([]);
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
+    });
+});
+
 describe('loadCompanionFiles — default GitHub port', () => {
     it('treats a truncated directory listing (1000-entry cap) as unknown and sends a timeout signal', async () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

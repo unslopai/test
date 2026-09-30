@@ -6,6 +6,7 @@ Wenn irgendwo (ROADMAP, Code-Kommentare, ältere Docs) eine Spec nur mit Dateina
 
 | Ordner | Inhalt |
 |---|---|
+| `release.md` | GitHub Actions (CI, npm- und Marketplace-Publish): Secrets, Build-Platzhalter, Blocker vor dem ersten echten Publish, Ablauf am Launch-Tag. |
 | `ROADMAP_ARCHIVE.md` | Eingefrorene Vollfassung der ROADMAP (Stand 2026-09-17) mit allen Receipts. Verweise wie „ROADMAP §3t“ / „To-Do §16“ in älteren Notizen meinen die Abschnitte dieser Datei. Wird nicht fortgeschrieben. |
 | `specs/` | Alle Feature-Specs. Kern: `SPEC.md` (Router Cascade, Cognitive Integrity), `PADDLE_SPEC.md`, `VSCODE_UX_SPEC.md`, `GITHUB_APP_SPEC.md`, `MCP_SPEC.md`. Dazu Pre-Scanner, Prompt-Caching, Operator-Settings, Onboarding, Dashboard, i18n, Modell-Migration, LLM-Lane-Quality, Waitlist/E-Mail (`WAITLIST_SPEC.md`), Rechtsseiten (`LEGAL_PAGES_SPEC.md`), Draft-Recall auf großen Diffs (`LARGE_DIFF_RECALL_SPEC.md`, Entwurf 2026-09-29), Sprachabdeckung für Nicht-JS/TS-Code (`LANGUAGE_COVERAGE_SPEC.md`, Entwurf 2026-09-30). |
 | `strategy/` | `MODEL_STRATEGY_2026-08.md`, `UNIT_ECONOMICS.md`, `MARKETING_CLAIMS.md`, `BEST_PRACTICES_PLAN.md` |

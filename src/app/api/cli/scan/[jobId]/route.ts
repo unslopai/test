@@ -11,10 +11,11 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveApiKey } from '@/lib/api-keys';
+import { isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { classifyJobFailure } from '@/lib/job-failure';
 import { scheduleLazyReap } from '@/lib/lazy-reaper';
 import { normalizeBareRuleId } from '@/lib/pipeline/helpers';
-import type { RerollNotice, ScanPhase, SkippedStage } from '@unslop/shared';
+import type { RerollNotice, ScanOutcome, ScanPhase, SkippedStage } from '@unslop/shared';
 
 const STALLED_JOB_THRESHOLD_MS = 5 * 60 * 1000;
 
@@ -115,6 +116,8 @@ interface PersistedResultBlob {
     review?: { has_slop?: boolean; issues?: { rule?: string }[]; summary?: string };
     files_reviewed?: number;
     nothing_reviewed?: boolean;
+    deterministic_only?: boolean;
+    prescan?: { filesScanned?: unknown; llmSkipped?: unknown } | null;
     omitted_files?: unknown;
     cognitive_integrity_score?: number | null;
     degradations?: unknown;
@@ -130,26 +133,41 @@ interface PersistedResultBlob {
  * Fallback — ein terminales Ergebnis mit 0 geprüften Dateien darf sich nie
  * als geprüfter Clean-Scan ausgeben. Partials (terminal=false) sind kein
  * Urteil und bleiben 'reviewed'; ihre Phase 'deterministic' trägt den Status.
+ * 'deterministic_only' (LANGUAGE_COVERAGE_SPEC §6.2) kommt nur vom Marker: dort
+ * sind 0 geprüfte Dateien der Normalfall, der Pre-Scanner lief trotzdem.
  */
 function toScanResult(persistedResult: unknown, options: { terminal: boolean }): Record<string, unknown> {
     const resultBlob = (persistedResult ?? {}) as PersistedResultBlob;
 
     const filesReviewed = resultBlob.files_reviewed ?? 0;
-    const nothingReviewed = resultBlob.nothing_reviewed === true
-        || (options.terminal && filesReviewed === 0);
+    const filesScanned = resultBlob.prescan?.filesScanned;
+    const reviewOutcome = resolvePersistedOutcome(resultBlob, options.terminal);
 
     return {
         hasSlop: resultBlob.review?.has_slop ?? false,
         issues: resultBlob.review?.issues ?? [],
         summary: resultBlob.review?.summary ?? '',
         filesReviewed,
-        outcome: nothingReviewed ? 'nothing_reviewed' : 'reviewed',
+        ...(typeof filesScanned === 'number' ? { filesScanned } : {}),
+        outcome: reviewOutcome,
+        // KI-Kennzeichnung (LEGAL_PAGES_SPEC §4a.3): ein Partial trägt nur
+        // Pre-Scan-Findings, auch wenn sein Outcome vorläufig 'reviewed' heißt;
+        // beim Short-Circuit des Pre-Scanners lief ebenfalls kein Modell.
+        aiGenerated: options.terminal
+            && isAiGeneratedRun(reviewOutcome, resultBlob.prescan?.llmSkipped === true),
         omittedFiles: parseStringList(resultBlob.omitted_files),
         cognitiveIntegrityScore: resultBlob.cognitive_integrity_score ?? null,
         degradations: parseStringList(resultBlob.degradations),
         skippedStages: parseSkippedStages(resultBlob.skipped_stages),
         draftUnreviewedFiles: parseStringList(resultBlob.draft_unreviewed_files),
     };
+}
+
+function resolvePersistedOutcome(resultBlob: PersistedResultBlob, terminal: boolean): ScanOutcome {
+    if (resultBlob.deterministic_only === true) return 'deterministic_only';
+    const nothingReviewed = resultBlob.nothing_reviewed === true
+        || (terminal && (resultBlob.files_reviewed ?? 0) === 0);
+    return nothingReviewed ? 'nothing_reviewed' : 'reviewed';
 }
 
 /** Strukturelle Validierung eines persistierten String-Arrays (ARCH-002); alles andere wird []. */

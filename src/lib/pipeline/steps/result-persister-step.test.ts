@@ -10,6 +10,7 @@ import {
     buildPullRequestFile,
     buildReviewIssue,
 } from '@/lib/pipeline/testing/context-fixture';
+import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
 
 const {
     terminalUpdateMock,
@@ -59,6 +60,7 @@ interface TerminalUpdatePayload {
         };
         files_reviewed: number;
         nothing_reviewed: boolean;
+        deterministic_only: boolean;
         omitted_files: readonly string[];
     };
 }
@@ -182,6 +184,53 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
         expect(persistedResult.files_reviewed).toBe(1);
     });
 
+    it('persists a run without model review as deterministic_only, with its findings and the reason in the summary', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            prescanIssues: [buildReviewIssue({ rule: 'SEC-005 (Hardcoded secret)', source: 'pre-scanner' })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        }));
+
+        const persistedResult = capturedUpdatePayload().result;
+        expect(persistedResult.deterministic_only).toBe(true);
+        expect(persistedResult.nothing_reviewed).toBe(false);
+        expect(persistedResult.files_reviewed).toBe(0);
+        expect(persistedResult.review.issues).toHaveLength(1);
+        expect(persistedResult.review.summary).toBe(
+            'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model '
+            + 'reviewed it. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+        );
+    });
+
+    it('falls back to nothing_reviewed when the pre-scanner did not run for a diff without reviewable files', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            llmSkipped: true,
+            abortReason: 'No reviewable code files in this pull request.',
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+            prescanStats: null,
+        }));
+
+        const persistedResult = capturedUpdatePayload().result;
+        expect(persistedResult.nothing_reviewed).toBe(true);
+        expect(persistedResult.deterministic_only).toBe(false);
+        expect(persistedResult.review.summary).toBe('No reviewable code files in this pull request.');
+    });
+
     it('writes no fingerprint in the abort path', async () => {
         await resultPersisterStep.execute(buildPipelineContext({
             shouldAbort: true,
@@ -229,6 +278,95 @@ describe('resultPersisterStep — degradations im result (DEADLINE_GUARD_SPEC D6
         const persistedResult = terminalUpdateMock.mock.calls[0][0].result;
         expect(persistedResult.degradations).toEqual(['draft_partial']);
         expect(persistedResult.draft_unreviewed_files).toEqual(['src/lib/alpha.ts', 'src/lib/beta.ts']);
+    });
+});
+
+describe('resultPersisterStep — Summary aus den tatsächlichen Findings (LANGUAGE_COVERAGE_SPEC §5, Befund b)', () => {
+    beforeEach(() => {
+        terminalUpdateMock.mockReset();
+        terminalUpdateMock.mockImplementation(() => ({ eq: terminalUpdateEqMock }));
+        terminalUpdateEqMock.mockImplementation(() => ({ eq: statusGuardEqMock }));
+        statusGuardEqMock.mockImplementation(() => ({ select: terminalSelectMock }));
+        terminalSelectMock.mockResolvedValue({ data: [{ id: 'job-under-test' }], error: null });
+        previousJobMaybeSingleMock.mockResolvedValue({ data: null, error: null });
+    });
+
+    const sqlInterpolationFinding = buildReviewIssue({
+        rule: 'SEC-004 (SQL built by string interpolation)',
+        severity: 'CRITICAL',
+        path: 'src/lib/user-lookup.ts',
+        line: 5,
+        endLine: 5,
+        source: 'pre-scanner',
+    });
+
+    it('Replay Job 3f26b2da: nennt das CRITICAL des Pre-Scanners statt "No AI slop found."', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewableFiles: [buildPullRequestFile({ filename: 'src/lib/user-lookup.ts' })],
+            reviewSummary: 'No AI slop found.',
+            issues: [],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload().result.review.summary).toBe(
+            'The deterministic pre-scanner found 1 critical and 0 warning findings. '
+            + 'The model review reported no further findings.',
+        );
+    });
+
+    it('hängt die deterministischen Findings an eine Modell-Summary mit eigenen Findings an', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'Found 1 critical naming issue.',
+            issues: [buildReviewIssue()],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload().result.review.summary).toBe(
+            'Found 1 critical naming issue. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+        );
+    });
+
+    it('sagt nie "reported no further findings", wenn Modell-Findings veröffentlicht werden (leere Draft-Summary)', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: '',
+            issues: [buildReviewIssue()],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        const persistedSummary = capturedUpdatePayload().result.review.summary;
+        expect(persistedSummary).not.toContain('reported no further findings');
+        expect(persistedSummary).toBe('Final result: 2 critical and 0 warning findings.');
+    });
+
+    it('zählt nach dem E4-Deckel jeden Treffer: 10 CRITICAL bleiben 10, auch bei 4 veröffentlichten Einträgen', async () => {
+        const tenCriticalHits = Array.from({ length: 10 }, (_, hitIndex) => ({
+            ...sqlInterpolationFinding, path: `src/lib/queries/lookup-${hitIndex}.ts`,
+        }));
+
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'No AI slop found.',
+            issues: [],
+            prescanIssues: capRepeatedRuleHits(tenCriticalHits),
+        }));
+
+        const persistedReview = capturedUpdatePayload().result.review;
+        expect(persistedReview.issues).toHaveLength(4);
+        expect(persistedReview.summary).toBe(
+            'The deterministic pre-scanner found 10 critical and 0 warning findings. '
+            + 'The model review reported no further findings.',
+        );
+    });
+
+    it('lässt die Summary eines Laufs ohne Findings und die Short-Circuit-Summary unverändert', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({ reviewSummary: '' }));
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'LLM review skipped: 1 critical structural violations found by the deterministic pre-scanner. Fix these first.',
+            llmSkipped: true,
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload(0).result.review.summary).toBe('No AI slop found.');
+        expect(capturedUpdatePayload(1).result.review.summary).toContain('LLM review skipped');
     });
 });
 

@@ -93,7 +93,7 @@ In unserer Datenbank bei Supabase speichern wir zu jedem Review:
 - das Ergebnis mit den Findings einschließlich der zitierten Code-Stellen und Korrekturvorschläge;
 - technische Protokolldaten der Modellaufrufe: Modell, Dauer und Verbrauch sowie die Zwischenergebnisse der Prüfschritte, die sich auf den geprüften Code beziehen können. Scheitert ein Review, kann die Fehlermeldung einen kurzen Ausschnitt der Modellantwort und damit des geprüften Codes enthalten.
 
-Die Strukturdaten Ihrer Repositories (Abschnitt 6.1) speichern wir zusammen mit den Suchvektoren, solange das Repository verbunden ist. Trennen Sie ein Repository oder entfernen Sie es aus der GitHub App, verwenden wir sie nicht mehr und löschen sie spätestens 30 Tage danach zusammen mit der Repository-Verbindung. [VORBEDINGUNG V4: Deaktivierung auch beim Entfernen aus der GitHub App und Löschung trotz markierter Hinweise umgesetzt]
+Die Strukturdaten Ihrer Repositories (Abschnitt 6.1) speichern wir zusammen mit den Suchvektoren, solange das Repository verbunden ist. Trennen Sie ein Repository oder entfernen Sie es aus der GitHub App, verwenden wir sie nicht mehr und löschen sie spätestens 30 Tage danach zusammen mit der Repository-Verbindung. [VORBEDINGUNG V4: Migration 052 angewendet]
 
 Wenn Sie einen Hinweis bewusst als erledigt oder unzutreffend markieren, speichern wir diese Entscheidung mit Ihrer Begründung, dem Zeitpunkt, der Commit-Kennung und dem Benutzerkonto als Nachweis.
 
@@ -159,10 +159,10 @@ Wir speichern personenbezogene Daten, solange wir sie für den jeweiligen Zweck 
 |---|---|
 | Laufzeitprotokolle bei Vercel | für uns 1 Tag einsehbar; interne Aufbewahrung durch Vercel [VORBEDINGUNG V1] |
 | Protokolle bei Supabase | [SUPABASE-LOGFRIST] |
-| Konto, Anmeldedaten, GitHub-Zugriffstoken, API-Schlüssel | bis zur Löschung Ihres Kontos; danach Löschung binnen [LÖSCHFRIST-NACH-KONTOLÖSCHUNG] |
-| Review-Aufträge, Diffs, Ergebnisse und Protokolldaten der Modellaufrufe | [SPEICHERFRIST-REVIEWDATEN] |
+| Konto, Anmeldedaten, GitHub-Zugriffstoken, API-Schlüssel | bis zur Löschung Ihres Kontos; danach Löschung binnen 30 Tagen [VORBEDINGUNG V4: Migration 052 angewendet] |
+| Review-Aufträge, Diffs, Ergebnisse und Protokolldaten der Modellaufrufe | 90 Tage ab Eingang des Auftrags; den Diff-Text, den CLI, VS-Code-Erweiterung oder MCP-Server hochladen, löschen wir schon nach 30 Tagen; mit der Löschung des Repositorys oder Ihres Kontos früher [VORBEDINGUNG V3: Migration 052 angewendet] |
 | Strukturdaten und Suchvektoren eines Repositorys | solange das Repository verbunden ist; danach Löschung spätestens 30 Tage nach der Trennung [VORBEDINGUNG V4] |
-| Als erledigt oder unzutreffend markierte Hinweise | [SPEICHERFRIST-DISMISSALS] |
+| Als erledigt oder unzutreffend markierte Hinweise | bis zur Löschung des Repositorys oder Ihres Kontos [VORBEDINGUNG V4: Migration 052 angewendet] |
 | Warteliste | [SPEICHERFRIST-WAITLIST]; unbestätigte Einträge [SPEICHERFRIST-WAITLIST-UNBESTÄTIGT]; der Einwilligungsnachweis darüber hinaus bis [NACHWEISFRIST-WAITLIST] |
 | E-Mail-Korrespondenz | bis die Anfrage erledigt ist; geschäftliche Korrespondenz 6 Jahre (§ 257 HGB) |
 | Abrechnungsunterlagen | 8 Jahre (Buchungsbelege) bzw. 10 Jahre (Bücher und Abschlüsse) nach § 257 HGB und § 147 AO |

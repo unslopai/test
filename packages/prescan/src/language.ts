@@ -68,6 +68,39 @@ export function hasTreeSitterGrammar(language: PrescanLanguage): boolean {
     return !LANGUAGES_WITHOUT_GRAMMAR.has(language);
 }
 
+/**
+ * Prosa statt Code (LANGUAGE_COVERAGE_SPEC §4.4): Markdown zitiert unsichere
+ * Muster, um sie zu erklären, und Übersetzungskataloge enthalten UI-Sätze wie
+ * „API key limit reached“. Die Regex-Regeln über Code-Verhalten laufen dort
+ * nicht; nur Secrets in Provider-Format bleiben ein Befund.
+ */
+const PROSE_EXTENSION_PATTERN = /\.(md|mdx|markdown|rst|adoc)$/;
+const TRANSLATION_CATALOG_PATTERN =
+    /(^|\/)(messages|locales?|i18n|l10n|langs?|translations|_locales)\/.*\.(json|ya?ml|properties)$|\.(po|pot|arb|xlf|xliff)$/;
+
+export function isProseFile(filePath: string): boolean {
+    const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+    return PROSE_EXTENSION_PATTERN.test(normalizedPath) || TRANSLATION_CATALOG_PATTERN.test(normalizedPath);
+}
+
+/**
+ * Deterministische Lane (LANGUAGE_COVERAGE_SPEC §6.1): Dateitypen mit
+ * mindestens einer sprachspezifischen Regel. Nur sie lösen einen Review ohne
+ * Modell aus. JS/TS gehört nicht dazu, weil es die LLM-Lane erreicht; Dateien
+ * mit nur den universellen Regeln (Dockerfile, Shell, SQL) und Prosa auch nicht.
+ */
+const DETERMINISTIC_LANE_LANGUAGES: ReadonlySet<PrescanLanguage> = new Set([
+    'python', 'java', 'go', 'c', 'cpp', 'powershell', 'yaml', 'json', 'hcl',
+]);
+/** Python-Manifeste: SEC-035 prüft ihre Deklarationen, die Endung allein sagt das nicht. */
+const DETERMINISTIC_LANE_MANIFESTS: ReadonlySet<string> = new Set(['requirements.txt', 'pyproject.toml']);
+
+export function isDeterministicLaneFile(filePath: string): boolean {
+    if (isProseFile(filePath)) return false;
+    const fileName = filePath.replace(/\\/g, '/').split('/').pop() ?? '';
+    return DETERMINISTIC_LANE_MANIFESTS.has(fileName) || DETERMINISTIC_LANE_LANGUAGES.has(detectLanguage(filePath));
+}
+
 /** Test-Datei-Muster (TEST-010, pre_scanner_design.md §2). */
 const TEST_FILE_PATTERN = /\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]*\.py$|Test\.java$/;
 

@@ -52,6 +52,21 @@ interface PipelineIssue {
      * Finding-ID, Apply-Contract und den GitHub-Inline-Comment.
      */
     readonly occurrences?: readonly IssueOccurrence[];
+    /**
+     * Nur am Sammelfinding des E4-Deckels (`prescan-hit-cap.ts`): jede
+     * Fundstelle, für die es steht, der eigene Anker zuerst. Die Prescan-Dedupe
+     * und jede Zählung lesen daraus die tatsächlichen Treffer statt eines
+     * Eintrags (LANGUAGE_COVERAGE_SPEC §6.2). Landet mit dem Issue in
+     * `review_jobs.result`; der Shared-Contract kennt das Feld nicht.
+     */
+    readonly cappedHits?: readonly PrescanHitLocation[];
+}
+
+/** Eine Fundstelle eines Pre-Scanner-Treffers, dateiübergreifend (anders als IssueOccurrence). */
+interface PrescanHitLocation {
+    readonly path: string;
+    readonly line: number;
+    readonly endLine: number;
 }
 
 // =============================================================================
@@ -270,6 +285,13 @@ interface PipelineContext {
     /** Ob die Pipeline nach diesem Step abbrechen soll. */
     readonly shouldAbort: boolean;
     readonly abortReason?: string;
+    /**
+     * Gesetzt, wenn keine Datei die LLM-Lane erreicht, der Pre-Scanner aber
+     * läuft (LANGUAGE_COVERAGE_SPEC §6.2): der Satz, der auf jeder Oberfläche
+     * sagt, dass kein Modell gelesen hat und warum. `llmSkipped` ist dann true.
+     * Das Urteil des Laufs liefert `resolveReviewOutcome`.
+     */
+    readonly deterministicOnlyReason?: string;
 }
 
 // =============================================================================
@@ -318,6 +340,7 @@ export type {
     RepoAuthMode,
     TokenUsage,
     PipelineIssue,
+    PrescanHitLocation,
     PromptConfig,
     PipelineContext,
     PipelineStep,

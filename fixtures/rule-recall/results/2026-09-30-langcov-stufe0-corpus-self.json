@@ -1,0 +1,39 @@
+{
+  "capturedAt": "2026-09-30T09:52:51.628Z",
+  "corpusLabel": "self",
+  "fileCount": 313,
+  "filesByExtension": {
+    ".md": 182,
+    ".json": 36,
+    ".py": 26,
+    ".html": 11,
+    ".sh": 2,
+    ".css": 2,
+    ".sql": 54
+  },
+  "totalDurationMs": 2714,
+  "maxScanDurationMs": 1119,
+  "findings": [
+    {
+      "ruleId": "MAINT-002",
+      "severity": "WARNING",
+      "path": ".claude/skills/motion-design/scripts/remake/remake_render.py",
+      "line": 47,
+      "exactQuote": "except Exception: font = ImageFont.load_default()"
+    },
+    {
+      "ruleId": "ARCH-004",
+      "severity": "WARNING",
+      "path": ".claude/skills/motion-design/scripts/render_template.py",
+      "line": 34,
+      "exactQuote": "def sheet(folder, pattern, n, out, cols=4, size=360):"
+    },
+    {
+      "ruleId": "SEC-017",
+      "severity": "CRITICAL",
+      "path": "docs/research/asta_queries.json",
+      "line": 97,
+      "exactQuote": "\"TLS certificate validation disabled verify=False AI-generated network code\","
+    }
+  ]
+}

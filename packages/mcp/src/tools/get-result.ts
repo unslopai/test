@@ -58,7 +58,14 @@ function buildResultResponse(jobId: string, pollResponse: ScanPollResponse): Mcp
         filesReviewed: scanResult?.filesReviewed ?? 0,
         // Honesty contract (ROADMAP §3): zero findings with outcome
         // 'nothing_reviewed' means the review never ran — not a clean verdict.
+        // 'deterministic_only' means no model read the diff, only the
+        // deterministic pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2).
         outcome: scanResult?.outcome ?? null,
+        // AI Act Art. 50(2) marker: true only when a model took part in this
+        // result. Findings with verification "deterministic" are rule-based.
+        // A server that predates the field sends none: label when in doubt.
+        aiGenerated: scanResult?.aiGenerated
+            ?? (pollResponse.phase === 'complete' && scanResult?.outcome === 'reviewed'),
         omittedFiles: scanResult?.omittedFiles ?? [],
         cognitiveIntegrityScore: scanResult?.cognitiveIntegrityScore ?? null,
         ...(pollResponse.rerollNotice ? { rerollNotice: pollResponse.rerollNotice } : {}),

@@ -23,6 +23,19 @@
  *                                                                 # CascadeConfig-Override (Force-Pro-Experimente,
  *                                                                 # LLM_LANE_QUALITY_SPEC §3.1); landet im Report-JSON
  *   npx tsx scripts/rule-recall-benchmark.ts --runs 3             # jede Fixture N-mal (Stabilitaet pro Regel)
+ *   npx tsx scripts/rule-recall-benchmark.ts --bypass-filter      # Modell-Potenzial: jede Datei ans Modell
+ *   npx tsx scripts/rule-recall-benchmark.ts --bypass-filter --ecosystems polyglot
+ *                                                                 # Fixtures mit polyglotEcosystems im Manifest
+ *                                                                 # laufen mit dem Law-Filter eines polyglotten Repos
+ *
+ * Zwei Pfade (LANGUAGE_COVERAGE_SPEC §7.1):
+ *  - Produktionspfad (Default): das Modell bekommt nur, was `isReviewableFile`
+ *    durchlaesst; eine Fixture ohne reviewbare Datei bekommt wie im Webhook nur
+ *    den Pre-Scan (Route `deterministic`) oder bricht ab (nur Prosa).
+ *  - Modell-Potenzial (`--bypass-filter`): jede Fixture-Datei erreicht das
+ *    Modell. Das ist der Modus aller Laeufe bis 2026-09-30.
+ * Jeder Report nennt seinen Pfad und zaehlt die Treffer getrennt nach der
+ * Lane, die die Datei in Produktion erreicht.
  *
  * WARNUNG: echte LLM-Calls, echtes Pro-Eskalations-Budget des Dogfooding-Users.
  * RAG/Practices bleiben aus (reproduzierbare Baseline, wie im Replay-Rig).
@@ -43,7 +56,14 @@ import type {
     ParsedFixtureFile,
     RuleRecallManifest,
 } from '@/lib/benchmark/rule-recall-manifest';
+import {
+    planModelPotentialPath,
+    planProductionPath,
+    resolveProductionLane,
+} from '@/lib/benchmark/production-path';
+import type { ProductionLane, ProductionPathPlan } from '@/lib/benchmark/production-path';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
+import { buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { DEFAULT_CASCADE_CONFIG, INITIAL_CASCADE_STATE } from '@/lib/pipeline/defaults';
 import { DEFAULT_PRESCAN_CONFIG, runPrescan } from '@unslop/prescan';
 import type { PrescanFile } from '@unslop/prescan';
@@ -87,6 +107,20 @@ interface PlantedRuleResult {
     /** Pro-Zweitmeinung (LLM_LANE_QUALITY_SPEC §4) — additiv zum Draft. */
     readonly caughtBySecondOpinion: boolean;
     readonly survivedVerifier: boolean;
+    /** Lane, die diese Datei in Produktion erreicht — unabhaengig vom Pfad des Laufs. */
+    readonly productionLane: ProductionLane;
+}
+
+/** Welchen Pfad ein Lauf gefahren ist (LANGUAGE_COVERAGE_SPEC §7.1). */
+type BenchmarkPathMode = 'production' | 'model-potential';
+
+interface BenchmarkRunOptions {
+    readonly pathMode: BenchmarkPathMode;
+    /** --ecosystems polyglot: Manifest-Feld polyglotEcosystems ersetzt detectedEcosystems. */
+    readonly usePolyglotEcosystems: boolean;
+    readonly cascadeConfig: CascadeConfig;
+    /** null ⇔ --prescan-only: die LLM-Kaskade laeuft nicht. */
+    readonly ownerUserId: string | null;
 }
 
 interface FixtureResult {
@@ -212,14 +246,19 @@ async function resolveBudgetOwnerUserId(): Promise<string> {
     return accountRow.owner_user_id as string;
 }
 
+interface CascadeInput {
+    readonly fixtureFiles: readonly PullRequestFile[];
+    readonly reviewableFiles: readonly PullRequestFile[];
+    readonly detectedEcosystems: readonly string[] | null;
+}
+
 function buildContext(
     jobId: string,
     ownerUserId: string,
-    combinedDiff: string,
-    fixtureFiles: readonly PullRequestFile[],
-    detectedEcosystems: readonly string[] | null,
+    cascadeInput: CascadeInput,
     cascadeConfig: CascadeConfig,
 ): PipelineContext {
+    const { fixtureFiles, reviewableFiles, detectedEcosystems } = cascadeInput;
     return {
         jobId,
         repoFullName: 'rule-recall/benchmark',
@@ -230,8 +269,9 @@ function buildContext(
         repositoryId: null,
         ownerUserId,
         prFiles: fixtureFiles,
-        reviewableFiles: fixtureFiles,
-        combinedDiff,
+        reviewableFiles,
+        // Wie diff-loader-step.ts: der Diff entsteht aus den reviewbaren Dateien.
+        combinedDiff: buildCombinedDiff(reviewableFiles),
         omittedFiles: [],
         issues: [],
         reviewSummary: '',
@@ -242,7 +282,7 @@ function buildContext(
         detectedEcosystems,
         promptConfig: {
             activeConditionIds: ALL_CONDITION_IDS,
-            filePaths: fixtureFiles.map((fixtureFile) => fixtureFile.filename),
+            filePaths: reviewableFiles.map((reviewableFile) => reviewableFile.filename),
             overrideSmartDetection: false,
         },
         // Kein Job-Budget: der Harness misst Recall und Latenz ungedeckelt
@@ -278,18 +318,13 @@ interface CascadeLaneResult {
 
 async function runCascadeLane(
     fixtureName: string,
-    manifestEntry: ManifestEntry,
-    combinedDiff: string,
-    fixtureFiles: readonly PullRequestFile[],
+    cascadeInput: CascadeInput,
     ownerUserId: string,
     cascadeConfig: CascadeConfig,
 ): Promise<CascadeLaneResult> {
     const jobId = await createBenchmarkJob(fixtureName);
 
-    const initial = buildContext(
-        jobId, ownerUserId, combinedDiff, fixtureFiles, manifestEntry.detectedEcosystems,
-        cascadeConfig,
-    );
+    const initial = buildContext(jobId, ownerUserId, cascadeInput, cascadeConfig);
     const routed = await complexityRouterStep.execute(initial);
     const drafted = await draftReviewerStep.execute(routed);
     const verified = await claimVerifierStep.execute(drafted);
@@ -310,52 +345,100 @@ async function runCascadeLane(
     };
 }
 
-async function runFixture(
+/** Law-Filter-Eingang einer Fixture: mit --ecosystems polyglot die Manifest-Variante, sonst der Standardwert. */
+function resolveFixtureEcosystems(
+    manifestEntry: ManifestEntry,
+    usePolyglotEcosystems: boolean,
+): readonly string[] | null {
+    return usePolyglotEcosystems && manifestEntry.polyglotEcosystems
+        ? manifestEntry.polyglotEcosystems
+        : manifestEntry.detectedEcosystems;
+}
+
+function resolveRoute(cascadeLane: CascadeLaneResult | null, pathPlan: ProductionPathPlan): string {
+    if (pathPlan.aborted) return 'aborted';
+    if (pathPlan.reviewableFiles.length === 0) return 'deterministic';
+    return cascadeLane?.route ?? 'prescan-only';
+}
+
+/** Wie im Webhook: ohne reviewbare Datei (oder mit --prescan-only) laeuft keine Kaskade. */
+async function runCascadeForPlan(
     fixtureName: string,
     manifestEntry: ManifestEntry,
-    ownerUserId: string | null,
-    cascadeConfig: CascadeConfig,
-): Promise<FixtureResult> {
-    const combinedDiff = fs.readFileSync(path.join(RULE_RECALL_DIR, fixtureName), 'utf-8');
-    const fixtureFiles = parseFixtureFiles(fixtureName, combinedDiff);
+    runOptions: BenchmarkRunOptions,
+    fixturePlan: { readonly fixtureFiles: readonly PullRequestFile[]; readonly pathPlan: ProductionPathPlan },
+): Promise<CascadeLaneResult | null> {
+    if (runOptions.ownerUserId === null || fixturePlan.pathPlan.reviewableFiles.length === 0) return null;
+    return await runCascadeLane(
+        fixtureName,
+        {
+            fixtureFiles: fixturePlan.fixtureFiles,
+            reviewableFiles: fixturePlan.pathPlan.reviewableFiles,
+            detectedEcosystems: resolveFixtureEcosystems(manifestEntry, runOptions.usePolyglotEcosystems),
+        },
+        runOptions.ownerUserId,
+        runOptions.cascadeConfig,
+    );
+}
 
-    const prescanLane = await runPrescanLane(fixtureFiles);
-    // ownerUserId === null ⇔ --prescan-only: die LLM-Kaskade laeuft nicht.
-    const cascadeLane = ownerUserId === null
-        ? null
-        : await runCascadeLane(
-            fixtureName, manifestEntry, combinedDiff, fixtureFiles, ownerUserId, cascadeConfig,
-        );
-
-    const draftIssues = cascadeLane?.draftIssues ?? [];
-    const survivingIssues = cascadeLane?.survivingIssues ?? [];
-
-    const planted: PlantedRuleResult[] = manifestEntry.expected.map((expected) => ({
+function evaluatePlantedRules(
+    fixtureName: string,
+    manifestEntry: ManifestEntry,
+    laneIssues: { readonly prescanLane: PrescanLaneResult; readonly cascadeLane: CascadeLaneResult | null },
+    productionPlan: ProductionPathPlan,
+): PlantedRuleResult[] {
+    const { prescanLane, cascadeLane } = laneIssues;
+    return manifestEntry.expected.map((expected) => ({
         bundle: fixtureName,
         path: expected.path,
         ruleContains: expected.ruleContains,
-        caughtByDraft: matchesAnyIssue(expected, draftIssues),
+        caughtByDraft: matchesAnyIssue(expected, cascadeLane?.draftIssues ?? []),
         caughtByPrescan: matchesAnyIssue(expected, prescanLane.issues),
         caughtBySecondOpinion: matchesAnyIssue(expected, cascadeLane?.secondOpinionIssues ?? []),
-        survivedVerifier: matchesAnyIssue(expected, survivingIssues),
+        survivedVerifier: matchesAnyIssue(expected, cascadeLane?.survivingIssues ?? []),
+        productionLane: resolveProductionLane(expected.path, productionPlan),
     }));
+}
 
-    // Auf Negativ-Kontrollen ist JEDES Finding ein False Positive — aus beiden Lanes.
-    const falsePositives = manifestEntry.negativeControl
-        ? [
-            ...survivingIssues.map((issue) => ({
-                rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'llm' as const,
-            })),
-            ...prescanLane.issues.map((issue) => ({
-                rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'prescan' as const,
-            })),
-        ]
-        : [];
+/** Auf Negativ-Kontrollen ist JEDES Finding ein False Positive — aus beiden Lanes. */
+function collectFalsePositives(
+    manifestEntry: ManifestEntry,
+    survivingIssues: readonly IssueLike[],
+    prescanIssues: readonly IssueLike[],
+): FixtureResult['falsePositives'] {
+    if (!manifestEntry.negativeControl) return [];
+    return [
+        ...survivingIssues.map((issue) => ({
+            rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'llm' as const,
+        })),
+        ...prescanIssues.map((issue) => ({
+            rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'prescan' as const,
+        })),
+    ];
+}
+
+async function runFixture(
+    fixtureName: string,
+    manifestEntry: ManifestEntry,
+    runOptions: BenchmarkRunOptions,
+): Promise<FixtureResult> {
+    const combinedDiff = fs.readFileSync(path.join(RULE_RECALL_DIR, fixtureName), 'utf-8');
+    const fixtureFiles = parseFixtureFiles(fixtureName, combinedDiff);
+    const productionPlan = planProductionPath(fixtureFiles);
+    const pathPlan = runOptions.pathMode === 'production' ? productionPlan : planModelPotentialPath(fixtureFiles);
+
+    const prescanLane = await runPrescanLane(pathPlan.prescanFiles);
+    const cascadeLane = await runCascadeForPlan(fixtureName, manifestEntry, runOptions, { fixtureFiles, pathPlan });
+
+    const draftIssues = cascadeLane?.draftIssues ?? [];
+    const survivingIssues = cascadeLane?.survivingIssues ?? [];
+    const planted = evaluatePlantedRules(fixtureName, manifestEntry, { prescanLane, cascadeLane }, productionPlan);
+    const falsePositives = collectFalsePositives(manifestEntry, survivingIssues, prescanLane.issues);
 
     return {
         fixture: fixtureName,
         jobId: cascadeLane?.jobId ?? '',
-        route: cascadeLane?.route ?? 'prescan-only',
+        route: resolveRoute(cascadeLane, pathPlan),
         negativeControl: manifestEntry.negativeControl,
         fileCount: fixtureFiles.length,
         draftFindingCount: draftIssues.length,
@@ -401,6 +484,15 @@ function parseCascadeOverrides(rawOverrides: string | null): Partial<CascadeConf
     return parsedOverrides as Partial<CascadeConfig>;
 }
 
+/** --ecosystems polyglot — einziger gueltiger Wert; ein Tippfehler darf nicht still den Standard fahren. */
+function parseEcosystemsFlag(rawEcosystems: string | null): boolean {
+    if (rawEcosystems === null) return false;
+    if (rawEcosystems !== 'polyglot') {
+        throw new Error(`--ecosystems: "${rawEcosystems}" ist ungueltig (einziger Wert: polyglot).`);
+    }
+    return true;
+}
+
 /** --runs N — Wiederholungen pro Fixture (Default 1, muss ganzzahlig >= 1 sein). */
 function parseRunsPerFixture(rawRuns: string | null): number {
     if (rawRuns === null) return 1;
@@ -442,71 +534,121 @@ function pct(part: number, whole: number): string {
     return whole === 0 ? 'n/a' : `${((part / whole) * 100).toFixed(1)}%`;
 }
 
-function printReport(results: readonly FixtureResult[], prescanOnly: boolean): boolean {
-    const allPlanted = results.flatMap((result) => result.planted);
-    const caught = allPlanted.filter((planted) => planted.caughtByDraft);
-    const prescanCaught = allPlanted.filter((planted) => planted.caughtByPrescan);
-    const secondOpinionCaught = allPlanted.filter((planted) => planted.caughtBySecondOpinion);
-    // Kombiniert: Draft ODER deterministische Lane ODER Pro-Zweitmeinung
-    // (Prescan-Findings sind verifier-exempt, Second-Opinion-Findings verdict-los).
-    const combinedCaught = allPlanted.filter(
-        (planted) => planted.caughtByDraft || planted.caughtByPrescan || planted.caughtBySecondOpinion,
-    );
-    const survivedCombined = allPlanted.filter((planted) => planted.survivedVerifier || planted.caughtByPrescan);
-    const negativeControls = results.filter((result) => result.negativeControl);
-    const criticalFps = negativeControls.flatMap((result) =>
-        result.falsePositives.filter((fp) => fp.severity === 'CRITICAL'),
-    );
-    const warningFps = negativeControls.flatMap((result) =>
-        result.falsePositives.filter((fp) => fp.severity !== 'CRITICAL'),
-    );
+const PATH_MODE_LABELS: Readonly<Record<BenchmarkPathMode, string>> = {
+    production: 'PRODUKTIONSPFAD (Filter wie diff-loader; ohne reviewbare Datei nur Pre-Scan oder Abbruch)',
+    'model-potential': 'MODELL-POTENZIAL (--bypass-filter: jede Datei erreicht das Modell)',
+};
 
+const PRODUCTION_LANE_LABELS: Readonly<Record<ProductionLane, string>> = {
+    'model-and-prescan': 'Modell + Pre-Scan',
+    'prescan-only': 'nur Pre-Scan',
+    'not-scanned': 'keine Lane (Abbruch)',
+};
+
+function isCaughtByAnyLane(planted: PlantedRuleResult): boolean {
+    return planted.caughtByDraft || planted.caughtByPrescan || planted.caughtBySecondOpinion;
+}
+
+/**
+ * Treffer getrennt nach der Lane, die die Datei in Produktion erreicht. Im
+ * Modell-Potenzial-Lauf zeigt das, welcher Teil der Zahl auf Dateien beruht,
+ * die das Modell in Produktion nicht liest.
+ */
+function printRecallByProductionLane(allPlanted: readonly PlantedRuleResult[]): void {
+    console.log('\n--- Treffer nach Produktions-Lane der Datei ---');
+    for (const productionLane of Object.keys(PRODUCTION_LANE_LABELS) as ProductionLane[]) {
+        const plantedInLane = allPlanted.filter((planted) => planted.productionLane === productionLane);
+        const caughtInLane = plantedInLane.filter(isCaughtByAnyLane);
+        console.log(
+            `${PRODUCTION_LANE_LABELS[productionLane].padEnd(22)} ${caughtInLane.length}/${plantedInLane.length}`
+            + ` (${pct(caughtInLane.length, plantedInLane.length)})`,
+        );
+    }
+}
+
+function buildAggregateNumbers(results: readonly FixtureResult[], prescanOnly: boolean): AggregateNumbers {
+    const allPlanted = results.flatMap((result) => result.planted);
+    const negativeControls = results.filter((result) => result.negativeControl);
+    const negativeControlFps = negativeControls.flatMap((result) => result.falsePositives);
+    return {
+        allPlanted,
+        caught: allPlanted.filter((planted) => planted.caughtByDraft),
+        prescanCaught: allPlanted.filter((planted) => planted.caughtByPrescan),
+        secondOpinionCaught: allPlanted.filter((planted) => planted.caughtBySecondOpinion),
+        // Kombiniert: Draft ODER deterministische Lane ODER Pro-Zweitmeinung
+        // (Prescan-Findings sind verifier-exempt, Second-Opinion-Findings verdict-los).
+        combinedCaught: allPlanted.filter(isCaughtByAnyLane),
+        survivedCombined: allPlanted.filter((planted) => planted.survivedVerifier || planted.caughtByPrescan),
+        negativeControls,
+        criticalFps: negativeControlFps.filter((fp) => fp.severity === 'CRITICAL'),
+        warningFps: negativeControlFps.filter((fp) => fp.severity !== 'CRITICAL'),
+        prescanOnly,
+    };
+}
+
+function printReportHeader(prescanOnly: boolean, pathMode: BenchmarkPathMode): void {
     console.log(`\n=== Rule-Recall Benchmark (${new Date().toISOString()})${prescanOnly ? ' — PRESCAN-ONLY' : ''} ===`);
+    console.log(`Pfad: ${PATH_MODE_LABELS[pathMode]}`);
     if (!prescanOnly) {
         console.log(`Draft/Verify: ${MODEL_DRAFT} / ${MODEL_VERIFIER} | Escalation: ${MODEL_ESCALATION}`);
     }
     console.log('');
+}
 
-    printFixtureTable(results);
-    printAggregates({
-        allPlanted, caught, prescanCaught, secondOpinionCaught, combinedCaught, survivedCombined,
-        negativeControls, criticalFps, warningFps, prescanOnly,
-    });
+/** Ein Befund-Block des Reports; ohne Eintraege keine Ausgabe. */
+function printReportSection(sectionHeading: string, sectionLines: readonly string[]): void {
+    if (sectionLines.length === 0) return;
+    console.log(`\n${sectionHeading}`);
+    for (const sectionLine of sectionLines) {
+        console.log(`   - ${sectionLine}`);
+    }
+}
 
-    // Gating: prescan-only misst nur die deterministische Lane — Misses der
-    // LLM-Regeln sind dort erwartbar und gaten nicht.
-    const combinedMisses = allPlanted.filter(
-        (planted) => !planted.caughtByDraft && !planted.caughtByPrescan && !planted.caughtBySecondOpinion,
+/**
+ * Gating: prescan-only misst nur die deterministische Lane — Misses der
+ * LLM-Regeln sind dort erwartbar und gaten nicht (der Aufrufer prueft das).
+ * Im Produktionspfad liest das Modell nur reviewbare Dateien: ein Miss auf
+ * einer Datei ohne Modell-Lane ist dort der gemessene Ist-Zustand, kein Fehler.
+ */
+function collectCombinedMisses(
+    allPlanted: readonly PlantedRuleResult[],
+    pathMode: BenchmarkPathMode,
+): PlantedRuleResult[] {
+    return allPlanted.filter(
+        (planted) => !isCaughtByAnyLane(planted)
+            && (pathMode === 'model-potential' || planted.productionLane === 'model-and-prescan'),
     );
-    if (!prescanOnly && combinedMisses.length > 0) {
-        console.log(`\n[MISS] Weder Draft noch Prescan fanden diese gepflanzten Regeln:`);
-        for (const miss of combinedMisses) {
-            console.log(`   - ${miss.ruleContains} @ ${miss.path} (${miss.bundle})`);
-        }
-    }
+}
 
+function describePlanted(planted: PlantedRuleResult): string {
+    return `${planted.ruleContains} @ ${planted.path} (${planted.bundle})`;
+}
+
+function printReport(results: readonly FixtureResult[], prescanOnly: boolean, pathMode: BenchmarkPathMode): boolean {
+    const aggregateNumbers = buildAggregateNumbers(results, prescanOnly);
+    const { allPlanted, criticalFps } = aggregateNumbers;
+
+    printReportHeader(prescanOnly, pathMode);
+    printFixtureTable(results);
+    printAggregates(aggregateNumbers);
+    printRecallByProductionLane(allPlanted);
+
+    const combinedMisses = collectCombinedMisses(allPlanted, pathMode);
     const falseRefutations = allPlanted.filter((planted) => planted.caughtByDraft && !planted.survivedVerifier);
-    if (falseRefutations.length > 0) {
-        console.log(`\n[FALSE REFUTATION] Draft fand es, Verifier verwarf es:`);
-        for (const refuted of falseRefutations) {
-            console.log(`   - ${refuted.ruleContains} @ ${refuted.path} (${refuted.bundle})`);
-        }
-    }
-
-    if (criticalFps.length > 0) {
-        console.log(`\n[FALSE POSITIVE] CRITICAL-Findings auf Negativ-Kontrollen:`);
-        for (const fp of criticalFps) {
-            console.log(`   - [${fp.lane}] ${fp.rule} @ ${fp.path}`);
-        }
-    }
-
     const errored = results.filter((result) => result.error);
-    if (errored.length > 0) {
-        console.log(`\n[ERRORED] Fixtures mit Infra-/Modellfehler (Recall unbekannt, nicht bewertet):`);
-        for (const result of errored) {
-            console.log(`   - ${result.fixture}: ${(result.error ?? '').split('\n')[0]}`);
-        }
-    }
+    printReportSection(
+        '[MISS] Weder Draft noch Prescan fanden diese gepflanzten Regeln:',
+        prescanOnly ? [] : combinedMisses.map(describePlanted),
+    );
+    printReportSection('[FALSE REFUTATION] Draft fand es, Verifier verwarf es:', falseRefutations.map(describePlanted));
+    printReportSection(
+        '[FALSE POSITIVE] CRITICAL-Findings auf Negativ-Kontrollen:',
+        criticalFps.map((fp) => `[${fp.lane}] ${fp.rule} @ ${fp.path}`),
+    );
+    printReportSection(
+        '[ERRORED] Fixtures mit Infra-/Modellfehler (Recall unbekannt, nicht bewertet):',
+        errored.map((result) => `${result.fixture}: ${(result.error ?? '').split('\n')[0]}`),
+    );
 
     const clean = (prescanOnly || (combinedMisses.length === 0 && falseRefutations.length === 0))
         && criticalFps.length === 0 && errored.length === 0;
@@ -548,8 +690,8 @@ interface AggregateNumbers {
     readonly combinedCaught: readonly PlantedRuleResult[];
     readonly survivedCombined: readonly PlantedRuleResult[];
     readonly negativeControls: readonly FixtureResult[];
-    readonly criticalFps: readonly { severity: string }[];
-    readonly warningFps: readonly { severity: string }[];
+    readonly criticalFps: FixtureResult['falsePositives'];
+    readonly warningFps: FixtureResult['falsePositives'];
     readonly prescanOnly: boolean;
 }
 
@@ -665,7 +807,14 @@ export async function runRuleRecallBenchmark(): Promise<void> {
     const cascadeOverrides = parseCascadeOverrides(readCliFlag('--cascade'));
     const runsPerFixture = parseRunsPerFixture(readCliFlag('--runs'));
     const cascadeConfig: CascadeConfig = { ...DEFAULT_CASCADE_CONFIG, ...cascadeOverrides };
+    const pathMode: BenchmarkPathMode = process.argv.includes('--bypass-filter') ? 'model-potential' : 'production';
+    const usePolyglotEcosystems = parseEcosystemsFlag(readCliFlag('--ecosystems'));
     const ownerUserId = prescanOnly ? null : await resolveBudgetOwnerUserId();
+    const runOptions: BenchmarkRunOptions = { pathMode, usePolyglotEcosystems, cascadeConfig, ownerUserId };
+    console.log(`[benchmark] Pfad: ${PATH_MODE_LABELS[pathMode]}`);
+    if (usePolyglotEcosystems) {
+        console.log('[benchmark] --ecosystems polyglot: Fixtures mit polyglotEcosystems laufen mit dem Law-Filter eines polyglotten Repos.');
+    }
     if (ownerUserId) console.log(`[benchmark] Pro-Budget-Owner: ${ownerUserId}`);
     if (Object.keys(cascadeOverrides).length > 0) {
         console.log(`[benchmark] EXPERIMENT — CascadeConfig-Overrides: ${JSON.stringify(cascadeOverrides)}`);
@@ -682,9 +831,7 @@ export async function runRuleRecallBenchmark(): Promise<void> {
             console.log(`[benchmark] ${runLabel} ...`);
             const runIndexField = runsPerFixture > 1 ? { runIndex } : {};
             try {
-                const fixtureResult = await runFixture(
-                    fixtureName, manifest[fixtureName], ownerUserId, cascadeConfig,
-                );
+                const fixtureResult = await runFixture(fixtureName, manifest[fixtureName], runOptions);
                 results.push({ ...fixtureResult, ...runIndexField });
             } catch (fixtureError: unknown) {
                 // Ein transienter Modell-/Infra-Fehler auf EINER Fixture darf nicht
@@ -714,7 +861,7 @@ export async function runRuleRecallBenchmark(): Promise<void> {
         }
     }
 
-    const clean = printReport(results, prescanOnly);
+    const clean = printReport(results, prescanOnly, pathMode);
     if (runsPerFixture > 1) {
         printStabilityByRule(results, runsPerFixture);
     }
@@ -728,6 +875,10 @@ export async function runRuleRecallBenchmark(): Promise<void> {
         // Ergebnis darf nie als Normal-Lauf lesbar sein.
         cascadeOverrides: Object.keys(cascadeOverrides).length > 0 ? cascadeOverrides : null,
         runsPerFixture,
+        // LANGUAGE_COVERAGE_SPEC §7.1: ein Modell-Potenzial-Ergebnis darf nie
+        // als Produktionspfad lesbar sein.
+        pathMode,
+        ecosystems: usePolyglotEcosystems ? 'polyglot' : 'manifest',
         results,
     }, null, 2));
     console.log(`\nReport geschrieben: ${outPath}`);

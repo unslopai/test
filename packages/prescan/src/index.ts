@@ -11,10 +11,12 @@ import { readFileSync } from 'node:fs';
 import * as nodePath from 'node:path';
 import { extractAddedLines, extractNewFileLinesFromPatch } from './diff/added-lines';
 import { detectLanguage, hasTreeSitterGrammar, isTestFile } from './language';
+import type { PrescanLanguage } from './language';
 import { isNextConfigPath, runConfigFileChecks } from './engines/config';
 import { runEslintEngine } from './engines/eslint-engine';
 import { runRegexEngine } from './engines/regex-engine';
 import { runRegistryEngine } from './engines/registry-engine';
+import { readPackageJsonName } from './engines/registry/package-json-deps';
 import { runTreeSitterEngine } from './engines/tree-sitter-engine';
 import { IMPLEMENTED_RULE_IDS } from './rules/registry';
 import type { RegistryEngineFile } from './engines/registry-engine';
@@ -34,11 +36,11 @@ import type {
 export * from './types';
 export { DEFAULT_PRESCAN_CONFIG, resolvePrescanConfig } from './config';
 export { RULE_REGISTRY, IMPLEMENTED_RULE_IDS } from './rules/registry';
-export { detectLanguage, isTestFile } from './language';
+export { detectLanguage, isDeterministicLaneFile, isTestFile } from './language';
 export { extractAddedLines } from './diff/added-lines';
 export { shannonEntropy } from './engines/regex-engine';
 
-export const PRESCAN_CORE_VERSION = '0.4.0';
+export const PRESCAN_CORE_VERSION = '0.5.0';
 
 interface FileScanState {
     readonly config: PrescanConfig;
@@ -85,7 +87,9 @@ export async function runPrescan(
     }
 
     if (config.registryChecks && enabledRuleIds.has('SEC-035')) {
-        const registryResult = await runRegistryEngine(scanState.registryFiles, ports);
+        const registryResult = await runRegistryEngine(
+            scanState.registryFiles, ports, { firstPartyPackages: collectWorkspacePackageNames(input) },
+        );
         scanState.findings.push(...registryResult.findings);
         scanState.skippedChecks.push(...registryResult.skippedChecks);
     }
@@ -134,7 +138,7 @@ async function scanSingleFile(scanState: FileScanState, file: PrescanFile): Prom
         path: file.path,
         language,
         addedLineTexts: restrictLineMap(lineTexts, addedLines),
-        lineTexts: file.path.endsWith('pyproject.toml') ? lineTexts : undefined,
+        lineTexts: needsLineContext(file.path, language) ? lineTexts : undefined,
     });
 
     if (file.content === null) {
@@ -262,7 +266,35 @@ function collectNextConfigs(input: PrescanInput): PrescanCompanionFile[] {
     const diffConfigs = input.files
         .filter((file) => isNextConfigPath(file.path) && file.content !== null)
         .map((file) => ({ path: file.path, content: file.content }));
-    return [...diffConfigs, ...(input.companionFiles ?? [])];
+    const companionConfigs = (input.companionFiles ?? [])
+        .filter((companion) => !isPackageManifestPath(companion.path));
+    return [...diffConfigs, ...companionConfigs];
+}
+
+function isPackageManifestPath(filePath: string): boolean {
+    return (filePath.split('/').pop() ?? '') === 'package.json';
+}
+
+/** Dateien, deren Registry-Kandidaten Kontext über Zeilengrenzen brauchen. */
+function needsLineContext(filePath: string, language: PrescanLanguage): boolean {
+    return language === 'python' || filePath.endsWith('pyproject.toml') || isPackageManifestPath(filePath);
+}
+
+/**
+ * Namen der Pakete, die das Repo selbst stellt: jede package.json im Diff und
+ * jede, die der Aufrufer als Begleitdatei mitgibt (Workspace-Manifeste). Ein
+ * solcher Name in einem Dependency-Abschnitt ist kein Registry-Kandidat.
+ */
+function collectWorkspacePackageNames(input: PrescanInput): ReadonlySet<string> {
+    const manifestTexts = [...input.files, ...(input.companionFiles ?? [])]
+        .filter((manifestFile) => isPackageManifestPath(manifestFile.path))
+        .map((manifestFile) => manifestFile.content);
+    const packageNames = new Set<string>();
+    for (const manifestText of manifestTexts) {
+        const packageName = manifestText === null ? null : readPackageJsonName(manifestText);
+        if (packageName !== null) packageNames.add(packageName);
+    }
+    return packageNames;
 }
 
 function byteLengthOf(content: string): number {

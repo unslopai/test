@@ -1,0 +1,214 @@
+{
+  "capturedAt": "2026-09-30T09:58:59.924Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "production",
+  "ecosystems": "manifest",
+  "results": [
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "",
+      "route": "aborted",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 0,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "95245b00-6a78-46ce-bfaa-5f7b5148ce5a",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 2,
+      "survivingFindingCount": 2,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 147,
+      "integrityScore": 95,
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    }
+  ]
+}

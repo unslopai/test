@@ -7,8 +7,22 @@
  * f2c676ba meldete "Found 1 critical issue" neben 0 CRITICAL im Ergebnis.
  * Einen LLM-Satz kann man nicht korrigieren, nur ersetzen: dann gilt ein
  * Template, das aus denselben Issues zählt wie Reporter und Persister.
+ *
+ * Zweite Quelle desselben Widerspruchs (LANGUAGE_COVERAGE_SPEC §5, Befund b):
+ * die Modell-Summary kennt die Findings des Pre-Scanners nicht. Job 3f26b2da
+ * speicherte "No AI slop found." neben einem CRITICAL aus dem Pre-Scanner.
+ * `resolvePublishedSummary` ist deshalb die einzige Stelle, aus der Persister
+ * und Reporter ihre Summary beziehen.
  */
-import type { PipelineIssue } from '@/lib/pipeline/types';
+import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
+import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import type { PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
+
+/** Summary eines Laufs ohne jedes Finding. */
+export const CLEAN_REVIEW_SUMMARY = 'No AI slop found.';
+
+/** Beginn jeder Template-Summary: sie zählt bereits alle meldbaren Issues beider Lanes. */
+const FINAL_STATE_PREFIX = 'Final result:';
 
 /** A5: jedes Draft-Finding verworfen und auch sonst nichts zu melden. */
 export const ALL_REFUTED_SUMMARY =
@@ -46,10 +60,9 @@ export function buildFinalStateSummary(
 ): string {
     if (reportableIssues.length === 0) return ALL_REFUTED_SUMMARY;
 
-    const criticalCount = reportableIssues.filter((reportableIssue) => reportableIssue.severity === 'CRITICAL').length;
-    const warningCount = reportableIssues.length - criticalCount;
+    const { criticalCount, warningCount } = countHitsBySeverity(reportableIssues);
     const summarySentences = [
-        `Final result: ${criticalCount} critical and ${warningCount} warning ${pluralizeFinding(warningCount)}.`,
+        `${FINAL_STATE_PREFIX} ${criticalCount} critical and ${warningCount} warning ${pluralizeFinding(warningCount)}.`,
     ];
     if (verdictOutcome.downgradedCount > 0) {
         summarySentences.push(
@@ -63,6 +76,71 @@ export function buildFinalStateSummary(
         );
     }
     return summarySentences.join(' ');
+}
+
+/**
+ * Die veröffentlichte Summary: nie ein Satz, dem das veröffentlichte
+ * `issues[]` widerspricht.
+ *
+ *  - Nur deterministisch geprüft (LANGUAGE_COVERAGE_SPEC §6.2): der Satz, dass
+ *    kein Modell gelesen hat und warum, dann das Ergebnis des Pre-Scanners.
+ *    Auch ohne Finding nie der Clean-Satz.
+ *  - Kein Finding: die Modell-Summary, sonst der Clean-Satz.
+ *  - Short-Circuit (`llmSkipped`): der Pre-Scanner-Step hat die Summary selbst
+ *    geschrieben, sie nennt seine Findings schon.
+ *  - Template-Summary (A12a): zählt bereits beide Lanes.
+ *  - Sonst: der Modell-Text gilt nur für Findings der LLM-Lane. Die
+ *    deterministischen Findings kommen als eigener Satz dazu; hat das Modell
+ *    nichts gemeldet, ersetzt dieser Satz den Clean-Text. Hat das Modell
+ *    Findings, aber keinen Text, zählt die Template-Summary beide Lanes —
+ *    „reported no further findings“ stünde dann neben Modell-Findings.
+ */
+export function resolvePublishedSummary(
+    context: SummaryContext,
+    reportableIssues: readonly PipelineIssue[],
+): string {
+    if (resolveReviewOutcome(context) === 'deterministic_only') {
+        return buildDeterministicOnlySummary(context, reportableIssues);
+    }
+    if (reportableIssues.length === 0) return context.reviewSummary || CLEAN_REVIEW_SUMMARY;
+
+    const deterministicIssues = reportableIssues.filter((reportableIssue) => reportableIssue.source === 'pre-scanner');
+    const modelFindingCount = reportableIssues.length - deterministicIssues.length;
+    const modelSummary = context.reviewSummary.trim();
+    if (context.llmSkipped || modelSummary.startsWith(FINAL_STATE_PREFIX)) return modelSummary;
+    if (deterministicIssues.length === 0) return modelSummary || buildFinalStateSummary(reportableIssues, NO_VERDICT_CHANGES);
+
+    const deterministicSentence = describeDeterministicFindings(deterministicIssues);
+    if (modelFindingCount === 0) return `${deterministicSentence} The model review reported no further findings.`;
+    return modelSummary.length > 0
+        ? `${modelSummary} ${deterministicSentence}`
+        : buildFinalStateSummary(reportableIssues, NO_VERDICT_CHANGES);
+}
+
+type SummaryContext = Pick<
+    PipelineContext,
+    'reviewSummary' | 'llmSkipped' | 'shouldAbort' | 'deterministicOnlyReason' | 'prescanStats'
+>;
+
+/** "<Grund>. The deterministic pre-scanner found … / checked N files and found nothing." */
+export function buildDeterministicOnlySummary(
+    context: Pick<PipelineContext, 'deterministicOnlyReason' | 'prescanStats'>,
+    reportableIssues: readonly PipelineIssue[],
+): string {
+    const filesScanned = context.prescanStats?.filesScanned ?? 0;
+    const resultSentence = reportableIssues.length > 0
+        ? describeDeterministicFindings(reportableIssues)
+        : `The pre-scanner checked ${filesScanned} ${filesScanned === 1 ? 'file' : 'files'} and found nothing.`;
+    return `${context.deterministicOnlyReason ?? ''} ${resultSentence}`.trim();
+}
+
+const NO_VERDICT_CHANGES: VerdictOutcomeCounts = { refutedCount: 0, downgradedCount: 0 };
+
+/** "The deterministic pre-scanner found 1 critical and 2 warning findings." */
+function describeDeterministicFindings(deterministicIssues: readonly PipelineIssue[]): string {
+    const { criticalCount, warningCount } = countHitsBySeverity(deterministicIssues);
+    return `The deterministic pre-scanner found ${criticalCount} critical and ${warningCount} warning `
+        + `${pluralizeFinding(warningCount)}.`;
 }
 
 function pluralizeFinding(findingCount: number): string {

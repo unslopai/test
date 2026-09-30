@@ -101,7 +101,8 @@ export async function GET() {
         const { data: connectedRepos } = await supabaseAdmin
             .from('repositories')
             .select('id, github_repo_id, status, webhook_id, installation_id, '
-                + 'review_jobs(created_at, status, nothing_reviewed:result->nothing_reviewed, review:result->review)')
+                + 'review_jobs(created_at, status, nothing_reviewed:result->nothing_reviewed, '
+                + 'deterministic_only:result->deterministic_only, review:result->review)')
             .eq('user_id', user.id)
             .order('created_at', { referencedTable: 'review_jobs', ascending: false })
             .limit(1, { referencedTable: 'review_jobs' });

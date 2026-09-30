@@ -88,6 +88,11 @@ Webhook-Überwachung.
   bezahlter Embedding-Cache. `installation.deleted` ⇒ Repos `deactivated`, `installation_id`
   genullt, Installation als `deleted` markiert. Eine Re-Installation trifft denselben
   `repositories`-Datensatz (Unique `(user_id, github_repo_id)`) und ist ein Cache-Hit.
+  **Nachtrag 2026-09-30 (LEGAL_PAGES_SPEC §4a.2):** Beim Lösen von der Installation
+  (`installation.deleted`, `installation_repositories.removed`) bekommen die Chunks zusätzlich
+  `deactivated_at`, wie beim Trennen im Dashboard. Gelöscht wird weiterhin nichts sofort; die
+  Re-Ingestion reaktiviert sie über den Hash, der Cache-Hit bleibt. Nach 30 Tagen löscht der
+  Cron das Repo samt Chunks.
   `installation.suspend` ⇒ nur die Installation wird als `suspended` markiert; die Repos
   behalten ihre `installation_id`, damit `unsuspend` sie ohne Rekonstruktion zurückholt.
   **Der Repo-Sync hebt niemals einen `deactivated`-Status an** (Nachtrag aus Review 3): ein

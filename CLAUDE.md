@@ -24,7 +24,7 @@ THE LAW lives in `@.agents/rules/rules-unslop.md` — VERTEX-001, ASYNC-001, SEC
 - Dev server: `npm run dev`
 - Build: `npm run build`
 - Lint: `npm run lint`
-- Tests: `npm test` (vitest, 1341 tests — 1320 passing + 21 skipped as of 2026-09-28 — across root + all packages incl. `packages/prescan`, `packages/cli`, `packages/vscode-extension`)
+- Tests: `npm test` (vitest, 1524 tests — 1500 passing + 24 skipped as of 2026-09-30 — across root + all packages incl. `packages/prescan`, `packages/cli`, `packages/vscode-extension`)
 
 ## Current state & where to look
 

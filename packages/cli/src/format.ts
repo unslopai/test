@@ -69,7 +69,97 @@ function printNothingReviewed(scanResult: ScanResult): void {
     }
 }
 
+/**
+ * No model read this diff (no TypeScript or JavaScript file), only the
+ * deterministic pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2). Findings are
+ * real and listed like any other; zero findings is still not a clean verdict,
+ * so this branch never prints the green check. The summary carries the
+ * server's reason, including that a local diff only gets regex and registry rules.
+ */
+function printDeterministicOnly(scanResult: ScanResult): void {
+    console.log(yellow('⚠ Deterministic checks only — no model reviewed this diff.'));
+    console.log(`  ${sanitizeModelText(scanResult.summary)}`);
+    if (scanResult.issues.length === 0) {
+        console.log(dim('  No deterministic findings. This is NOT a clean verdict.'));
+        return;
+    }
+    printIssuesByFile(scanResult.issues);
+    const criticalCount = printResultCounts(scanResult.issues);
+    if (criticalCount > 0) printFixHint();
+}
+
+function printIssuesByFile(issues: readonly ScanIssue[]): void {
+    for (const [filePath, fileIssues] of groupByFile(issues)) {
+        console.log('\n' + bold(sanitizeModelText(filePath)));
+        for (const issue of fileIssues) {
+            printIssue(issue);
+        }
+    }
+}
+
+function printIssue(issue: ScanIssue): void {
+    // path:line is Ctrl+Click-able in terminals (opens the file in the editor).
+    // rule/path/critique/fixedCodeSnippet are model-authored — strip
+    // ANSI/OSC escapes before they reach the terminal (ROADMAP §12).
+    console.log(
+        `  ${severityBadge(issue.severity)} ${bold(sanitizeModelText(issue.rule))} ` +
+        cyan(`${sanitizeModelText(issue.path)}:${issue.line}`),
+    );
+    if (issue.occurrences && issue.occurrences.length >= 2) {
+        // Aggregated finding (one rule, many hits in this file): the
+        // anchor line above is the first occurrence, list the rest.
+        console.log(dim(
+            `    ${issue.occurrences.length} occurrences: ` +
+            `lines ${formatOccurrenceLineRefs(issue.occurrences)}`,
+        ));
+    }
+    console.log(`    ${sanitizeModelText(issue.critique).replace(/\n/g, '\n    ')}`);
+    if (issue.fixedCodeSnippet) {
+        console.log(dim('    Suggested fix:'));
+        console.log(dim('      ' + sanitizeModelText(issue.fixedCodeSnippet).replace(/\n/g, '\n      ')));
+    }
+}
+
+/** Prints the "Result:" line and returns the critical count for the caller's follow-up hint. */
+function printResultCounts(issues: readonly ScanIssue[]): number {
+    const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length;
+    const warningCount = issues.length - criticalCount;
+
+    console.log(
+        '\n' + bold('Result: ') +
+        `${issues.length} issue(s) — ` +
+        `${red(String(criticalCount) + ' critical')}, ${yellow(String(warningCount) + ' warning')}`,
+    );
+    return criticalCount;
+}
+
+function printFixHint(): void {
+    console.log(
+        '\n' + dim('Hint: open this folder in VS Code (with the Gatekeeper extension) to see these ' +
+        'issues inline, or re-run with ') + bold('unslop scan --fix') + dim(' to apply the suggested fixes.'),
+    );
+}
+
+/**
+ * AI Act Art. 50(2): a review a model took part in is labelled as AI-generated.
+ * The server sets the flag; deterministic-only and nothing-reviewed results
+ * never carry it, and neither branch reaches this line. A server that predates
+ * the field sends none: only reviewed results get here, so label when in doubt.
+ */
+function printAiDisclosure(scanResult: ScanResult): void {
+    if (scanResult.aiGenerated ?? true) {
+        console.log(dim('AI-generated review. Check it before you rely on it.'));
+    }
+}
+
 export function printHumanResult(scanResult: ScanResult): void {
+    // Before the zero-files guard: a deterministic-only scan reviewed 0 files
+    // with a model by definition, but the pre-scanner did run.
+    if (scanResult.outcome === 'deterministic_only') {
+        printDeterministicOnly(scanResult);
+        return;
+    }
+
     if (scanResult.outcome === 'nothing_reviewed' || scanResult.filesReviewed === 0) {
         printNothingReviewed(scanResult);
         return;
@@ -78,54 +168,17 @@ export function printHumanResult(scanResult: ScanResult): void {
     if (!scanResult.hasSlop || scanResult.issues.length === 0) {
         console.log(green('✔ No AI slop found.') + dim(` (${scanResult.filesReviewed} file(s) reviewed)`));
         console.log(integrityScoreLine(scanResult));
+        printAiDisclosure(scanResult);
         return;
     }
 
-    const issuesByFile = groupByFile(scanResult.issues);
-
-    for (const [filePath, fileIssues] of issuesByFile) {
-        console.log('\n' + bold(sanitizeModelText(filePath)));
-        for (const issue of fileIssues) {
-            // path:line is Ctrl+Click-able in terminals (opens the file in the editor).
-            // rule/path/critique/fixedCodeSnippet are model-authored — strip
-            // ANSI/OSC escapes before they reach the terminal (ROADMAP §12).
-            console.log(
-                `  ${severityBadge(issue.severity)} ${bold(sanitizeModelText(issue.rule))} ` +
-                cyan(`${sanitizeModelText(issue.path)}:${issue.line}`),
-            );
-            if (issue.occurrences && issue.occurrences.length >= 2) {
-                // Aggregated finding (one rule, many hits in this file): the
-                // anchor line above is the first occurrence, list the rest.
-                console.log(dim(
-                    `    ${issue.occurrences.length} occurrences: ` +
-                    `lines ${formatOccurrenceLineRefs(issue.occurrences)}`,
-                ));
-            }
-            console.log(`    ${sanitizeModelText(issue.critique).replace(/\n/g, '\n    ')}`);
-            if (issue.fixedCodeSnippet) {
-                console.log(dim('    Suggested fix:'));
-                console.log(dim('      ' + sanitizeModelText(issue.fixedCodeSnippet).replace(/\n/g, '\n      ')));
-            }
-        }
-    }
-
-    const criticalCount = scanResult.issues.filter((issue) => issue.severity === 'CRITICAL').length;
-    const warningCount = scanResult.issues.length - criticalCount;
-
-    console.log(
-        '\n' + bold('Result: ') +
-        `${scanResult.issues.length} issue(s) — ` +
-        `${red(String(criticalCount) + ' critical')}, ${yellow(String(warningCount) + ' warning')}`,
-    );
+    printIssuesByFile(scanResult.issues);
+    const criticalCount = printResultCounts(scanResult.issues);
     console.log(dim(`Summary: ${sanitizeModelText(scanResult.summary)}`));
     console.log(integrityScoreLine(scanResult));
+    printAiDisclosure(scanResult);
 
-    if (criticalCount > 0) {
-        console.log(
-            '\n' + dim('Hint: open this folder in VS Code (with the Gatekeeper extension) to see these ' +
-            'issues inline, or re-run with ') + bold('unslop scan --fix') + dim(' to apply the suggested fixes.'),
-        );
-    }
+    if (criticalCount > 0) printFixHint();
 }
 
 /**

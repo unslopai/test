@@ -1,6 +1,6 @@
 # Sprachabdeckung: wie unslop Nicht-JS/TS-Code prüft
 
-**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. Kein Produktionscode in diesem PR.
+**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
 
 Code-Stand aller Belege und Messungen: `main` bei `17ee7ec` (2026-09-30). Rohdaten: `fixtures/rule-recall/results/2026-09-30-langcov-*.json`. Die Benchmark-Jobs liegen mit `--keep` in `review_jobs` und `review_job_llm_calls`. Modelle laut `src/lib/pipeline/models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (in keiner Messung gerufen).
 
@@ -73,7 +73,8 @@ Sprache aus der Endung (`packages/prescan/src/language.ts:26-59`). Sieben Regeln
 | Go | 12 | keine Security-AST-Regeln, kein `go.mod`-Check |
 | Terraform | 10 | SEC-032 bis 034 nur mit Lambda/Serverless-Bezug |
 | PowerShell | 9 | |
-| Dockerfile, Markdown, Shell, SQL, Kotlin, C#, Ruby, PHP | 7 | nur die universellen Regeln |
+| Dockerfile, Shell, SQL, Kotlin, C#, Ruby, PHP | 7 | nur die universellen Regeln |
+| Markdown, Übersetzungskataloge | 2 | seit Stufe 0 nur SEC-005 in Provider-Format und SEC-036 (§4.4) |
 
 Quelle: `packages/prescan/src/rules/registry.ts`, `engines/regex-engine.ts:97-138`, `engines/config/index.ts:39-63`, `engines/tree-sitter-engine.ts:24-34`. Im Patch-only-Modus bleiben 13 Regex-Regeln plus SEC-035/036 (`packages/prescan/src/index.ts:124-145`).
 
@@ -244,6 +245,24 @@ Rohdaten: `results/2026-09-30-langcov-corpus-*.json`. Latenz: 83 ms bis 2,9 s je
 - Die Kubernetes-Findings sind nach Regeltext korrekt. Die Menge ist das Problem: 128 von 242 Manifesten mit Finding, im Mittel fünf je betroffener Datei.
 - Go und Terraform sind deterministisch ruhig, finden aber auch wenig (12 und 10 Regel-IDs).
 
+**Stand nach Stufe 0 (2026-09-30).** Derselbe Lauf mit `scripts/prescan-corpus.ts`, Rohdaten `results/2026-09-30-langcov-stufe0-corpus-*.json`:
+
+| Korpus | Findings vorher → nachher | CRITICAL vorher → nachher | SEC-035 CRITICAL | CRITICAL auf `.md` |
+|---|---|---|---|---|
+| `pallets/flask` | 335 → 293 | 72 → 22 | 50 → 0 | 0 |
+| `spf13/cobra` | 21 → 21 | 0 → 0 | 0 | 0 |
+| `kubernetes/examples` | 688 → 683 | 47 → 46 | 1 → 0 | 0 |
+| `terraform-aws-modules/terraform-aws-vpc` | 3 → 0 | 0 → 0 | 0 | 0 |
+| dieses Repo, ohne JS/TS | 27 → 3 | 23 → 1 | 17 → 0 | 3 → 0 |
+
+Die Entscheidungen dahinter:
+
+- **Python-Importe.** Standardbibliothek (CPython 3.13, dazu entfernte Module und Python-2-Namen), Namen mit führendem Unterstrich, Fließtext und Zeilen in dreifach gequoteten Strings sind keine Kandidaten. Ein 404 auf einen verbleibenden Import-Namen ist **WARNING**, nicht CRITICAL. Grund: Ein Import-Name ist kein Distributionsname (`import yaml` kommt aus `PyYAML`), und ein lokales Modul außerhalb des Diffs ist für den Pre-Scanner unsichtbar. Das Urteil „existiert nicht“ ist für Importe deshalb kein Fakt. Deklarationen in `requirements.txt` und `pyproject.toml` bleiben CRITICAL. Auf Flask bleiben 8 WARNINGs, alle auf lokalen Test-Modulen.
+- **`package.json`.** Eine Zeile ist nur in `dependencies`, `devDependencies`, `peerDependencies` oder `optionalDependencies` ein Kandidat. Zeigt ein Patch den Abschnittskopf nicht (CLI/MCP), entscheidet die Form des Werts: nur eine Versionsangabe macht die Zeile zum Kandidaten. Specs mit `workspace:`, `file:`, `link:`, `npm:` oder Git-Quelle werden nicht über den Namen aufgelöst und sind keine Kandidaten.
+- **Workspace-Pakete.** Der Webhook-Pfad lädt die Manifeste der npm-Workspaces als Begleitdateien, sobald der Diff eine `package.json` ändert (`src/lib/prescan/companion-loader.ts`). Deren `name` ist kein Registry-Kandidat. Im CLI/MCP-Pfad gibt es diese Manifeste nicht (ROADMAP To-Do).
+- **Prosa-Dateien.** Auf Markdown (`.md .mdx .markdown .rst .adoc`) und Übersetzungskatalogen (`messages/`, `locales/`, `i18n/`, `l10n/`, `lang/`, `translations/`, `_locales/` mit `.json .yaml .yml .properties`, dazu `.po .pot .arb .xlf`) läuft von den Regex-Regeln nur SEC-005 in Provider-Format. Gewählt wurde „nicht prüfen“ statt „nur WARNING“: SEC-017, SEC-024, SEC-050 und MAINT-006 beschreiben Code-Verhalten, in Prosa treffen sie Zitate und UI-Sätze, und eine WARNING je zitiertem Muster wäre auf jeder Sicherheits-Doku Rauschen. Ein Schlüssel in Provider-Format (`AKIA…`, `ghp_…`, PEM) ist dagegen auch in einer README ein Leck und bleibt CRITICAL. Die Entropie-Heuristik entfällt dort, sie traf den UI-Satz in `messages/en.json:294`.
+- **Rest.** Ein CRITICAL bleibt im eigenen Repo: SEC-017 auf `docs/research/asta_queries.json:97`, ein Suchbegriff in einer JSON-Datendatei. Die 22 CRITICALs auf Flask stammen aus MAINT-001, SEC-014 und TEST-001 und sind nicht gesichtet.
+
 ### 4.5 Live-Daten aus `review_jobs`
 
 Stand 2026-09-30, 09:00 UTC, 179 Jobs mit `status = done`.
@@ -276,7 +295,8 @@ Befund (b) aus dem Landing-Faktencheck: Job `3f26b2da` speichert `summary: "No A
 - **Ursache:** `result-persister-step.ts:47` schreibt `context.reviewSummary || 'No AI slop found.'`. Die Summary kommt vom Draft, der die Pre-Scan-Findings nicht kennt. Meldet der Draft nichts, bleibt sie leer.
 - **Verbreitung live:** 30 Jobs tragen diese Summary bei mindestens einem Finding (Webhook 20, MCP 10). 11 davon mit CRITICAL (Webhook 1, MCP 10). Beleg: SQL vom 2026-09-30.
 - **Zusammenhang mit A:** Unter Option A gibt es bei Nicht-JS/TS-PRs nie einen Draft. Jeder Pre-Scan-only-Job mit Findings trüge den Widerspruch. Ohne Findings käme der Kommentar „No AI slop found. This code meets the quality standards.“ (`github-reporter-step.ts:252-264`) und ein Check `success` mit „No AI slop found“ (`check-run.ts:190-194`), obwohl kein Modell die Dateien gelesen hat.
-- **Folge für die Spec:** Der Fix von (b) ist Voraussetzung für Stufe 1, nicht Beifang. Gefixt wird er in diesem PR nicht.
+- **Folge für die Spec:** Der Fix von (b) ist Voraussetzung für Stufe 1, nicht Beifang.
+- **Gebaut in Stufe 0:** `resolvePublishedSummary` (`src/lib/pipeline/final-summary.ts`) ist die einzige Quelle der Summary für Persister und Reporter. Ohne Findings bleibt der Modell-Text. Mit deterministischen Findings kommt ein eigener Satz dazu („The deterministic pre-scanner found 1 critical and 0 warning findings.“); hat das Modell nichts gemeldet, ersetzt er den Clean-Text. Die Short-Circuit-Summary und die Template-Summary aus A12a zählen beide Lanes schon und bleiben unverändert. Beleg: `result-persister-step.test.ts` „Replay Job 3f26b2da“. Gespeicherte Alt-Jobs werden nicht umgeschrieben.
 
 ## 6. Empfehlung
 
@@ -316,6 +336,19 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 - PR-Kommentar nennt, dass kein Modell-Review lief und warum.
 - CLI/MCP: gleicher Zustand, mit dem Hinweis, dass lokal nur Regex- und Registry-Regeln laufen (7/69).
 
+**Stand nach Stufe 1 (2026-09-30), mit den Entscheidungen beim Bau:**
+
+- **Wer entscheidet.** `planUnreviewableDiff` (`src/lib/pipeline/review-scope.ts`) für beide Diff-Loader. `resolveReviewOutcome` liefert das Urteil für Persister, Reporter, Check Run und Summary.
+- **Deterministische Lane.** `isDeterministicLaneFile` (`packages/prescan/src/language.ts`): Python, Java, Go, C/C++, PowerShell, Terraform, YAML, JSON, dazu `requirements.txt` und `pyproject.toml`. Nicht dabei: Prosa-Dateien (§4.4), generierte Pfade und Lockfiles (die zwölf gängigen Namen von `package-lock.json` bis `Gemfile.lock`, `review-scope.ts: LOCKFILE_NAMES`; sie fallen auch aus dem Pre-Scan-Pfadfilter), entfernte Dateien, Dateien mit nur den universellen Regeln. **Abweichung von §6.1:** Rust hat Regeln, ist aber nicht in der Lane, weil es keinen Korpus gibt (Kriterium 2 ungemessen). JSON ist in der Lane trotz eines bekannten CRITICAL-Fehlalarms auf einer Datendatei (§4.4 „Rest“), weil `package.json`, CloudFormation und Agent-Settings der Zweck der Lane sind.
+- **Pre-Scanner läuft nicht oder scheitert.** Ist der Step für das Repo abgeschaltet, endet er degradiert oder prüft er keine Datei (`filesScanned` 0, z. B. einzige Lane-Datei über `maxFileBytes`), heißt das Ergebnis `nothing_reviewed`. `deterministic_only` gibt es nur nach einem tatsächlich gelaufenen Pre-Scan mit mindestens einer geprüften Datei. Den Grund liefert `describeNothingReviewed` für Kommentar, Check und Summary: abgeschaltet ⇒ „No reviewable code files …“ wie vor Stufe 1; degradiert ⇒ ⚠️ „Not reviewed: the deterministic pre-scanner failed …“ (`formatPrescanFailedNotice`), Check-Titel „Not reviewed“; keine Datei geprüft ⇒ „Nothing to review“ mit den übersprungenen Dateien und ihrem Grund (Nachtrag 2026-09-30, Review-Befunde (e)/(f)).
+- **Persistenz.** `result.deterministic_only: true`, `nothing_reviewed: false`, `files_reviewed: 0`. Kein Schema-Wechsel. Die Poll-Route liefert `outcome: deterministic_only` und `filesScanned`.
+- **Check Run (E2).** CRITICAL ⇒ `failure` mit dem üblichen Titel. Nur WARNINGs ⇒ `neutral`. Keine Findings ⇒ `neutral`, Titel „Deterministic checks only“. Die Summary nennt in allen drei Fällen, dass kein Modell gelesen hat. Das Score-Gate greift nicht, es gibt keinen Score.
+- **PR-Kommentar.** Ohne Findings: „ℹ️ Anti-Slop Gatekeeper: Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it. The pre-scanner checked N files and found nothing.“ Mit Findings steht derselbe Satz in der Summary des Reviews. Der Integrity-Score-Block entfällt.
+- **CLI, Extension, MCP.** CLI: gelbe Zeile „Deterministic checks only — no model reviewed this diff.“, Findings wie sonst, nie der grüne Haken. Extension: Statusleiste „Deterministic only“ mit Warnfarbe. MCP: `unslop_scan` liefert bei einem fertigen Scan `outcome`, `filesReviewed` und einen `nextStep`, der „NOT a clean verdict“ sagt. Das war nötig, weil ein solcher Scan in unter 10 s fertig ist und sonst wie ein sauberes Review aussähe; es schließt auch den größten Teil der Lücke aus §2.3. Der Text für lokale Diffs nennt, dass ohne Dateiinhalt nur Regex- und Registry-Regeln laufen.
+- **Dashboard.** Ein Lauf ohne Modell-Review ohne Findings ist „neutral“, nicht „clean“.
+- **Deckel E4.** `capRepeatedRuleHits` (`src/lib/pipeline/prescan-hit-cap.ts`): je Regel und Severity bleiben die ersten drei Treffer einzelne Findings, ab dem vierten steht ein Sammelfinding am vierten Treffer und nennt jede weitere Fundstelle. Das gilt für jeden Review, auch den gemischten PR. `prescan.findingsCount` und `criticalCount` zählen weiter jeden Treffer. Das Sammelfinding trägt seine Fundstellen als `cappedHits`: die Dedupe gegen die LLM-Lane vergleicht mit jeder Fundstelle, Summary, Check-Run-Titel und Review-Body zählen Treffer statt Einträge (Nachtrag 2026-09-30, Review-Befunde (a)/(b)).
+- **Belege.** G3: `--prescan-only` 68/177 auf beiden Pfaden, 0 Fehlalarme auf 7 Kontrollen, neu `r26-clean-config.diff` (Kubernetes, Terraform, `package.json`, Markdown). G4: `review-scope.test.ts`. G5: Tests je Oberfläche; die Sicht-Belege an einem echten PR und G10 stehen aus (ROADMAP).
+
 **Stufe 2, Python, Go, Java in der LLM-Lane:**
 
 - `REVIEWABLE_EXTENSIONS` um `.py`, `.go`, `.java`. Zuerst nur für `unslopai/test` per Repo-Config, dann als Default.
@@ -331,7 +364,7 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 
 | Stufe | Schalter | Wirkung |
 |---|---|---|
-| 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute |
+| 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute. Gebaut: `isPrescanOnlyReviewEnabled`, zur Laufzeit gelesen, greift mit dem nächsten Job |
 | 1, je Repo | `pipeline_config.enabledStepIds` ohne `pre-scanner` | besteht schon (`worker.ts:100-107`) |
 | 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS |
 | 2 und 3, global | Env `UNSLOP_LLM_LANE_JSTS_ONLY=1` | übersteuert die Config, Rollback ohne Deploy |
@@ -359,13 +392,14 @@ Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
 
 - Der Runner baut `reviewableFiles` künftig mit `isReviewableFile` und bildet den Abbruch nach. Das ist der **Produktionspfad**.
 - Der bisherige Modus bleibt als `--bypass-filter` und heißt im Report **Modell-Potenzial**.
-- Jeder Report nennt beide Zahlen getrennt und je Fixture, welche Lane die Datei in Produktion erreicht.
-- Fixtures für C, Kubernetes, Terraform, PowerShell bekommen zusätzlich eine Variante mit polyglotten `detectedEcosystems`. Die Variante mit `null` bleibt als „Repo ohne erkanntes Ökosystem“.
+- Jeder Report nennt seinen Pfad (`pathMode` im JSON) und zählt die Treffer getrennt nach der Lane, die die Datei in Produktion erreicht: Modell und Pre-Scan, nur Pre-Scan, keine Lane. Beide Gesamtzahlen brauchen zwei Läufe, einen je Pfad; ein Lauf rechnet den anderen Pfad nicht hoch.
+- Fixtures für C, Kubernetes, Terraform, PowerShell tragen im Manifest zusätzlich `polyglotEcosystems`. `--ecosystems polyglot` fährt sie mit dem Law-Filter eines polyglotten Repos. Die Variante mit `null` bleibt als „Repo ohne erkanntes Ökosystem“.
+- **Gebaut in Stufe 0** (`scripts/lib/rule-recall-benchmark.ts`, `src/lib/benchmark/production-path.ts`). Gefahren: Prescan-only Modell-Potenzial 68/177, Produktionspfad 43/177, davon 0 von 59 auf Dateien ohne Lane; Produktionspfad mit Modell auf r03 (Abbruch) und r16 (2/2 auf den JS/TS-Dateien, 0/5 auf den Python-Dateien).
 - Der Benchmark-Log bekommt einen Nachtrag zum 2026-09-16-Lauf: 125/126 ist Modell-Potenzial, der Produktionspfad lag rechnerisch bei 59/126.
 
 ### 7.2 Welche Aussage nach welcher Option stimmt
 
-Claim-Policy `MARKETING_CLAIMS.md` §00: eigene Messungen nur mit Methode, Datum, Modell und Grenze an derselben Stelle. Texte werden in diesem PR nicht geändert.
+Claim-Policy `MARKETING_CLAIMS.md` §00: eigene Messungen nur mit Methode, Datum, Modell und Grenze an derselben Stelle. Mit Stufe 1 geändert (EN und DE): der FAQ-Satz zum PR ohne TypeScript/JavaScript, der Onboarding-Satz `honestyFileTypes` und die Extension-README. Die übrigen Zeilen der Spalte „nach Stufe 1“ stimmen ohne Änderung.
 
 | Aussage | heute | nach Stufe 1 | nach Stufe 2 |
 |---|---|---|---|

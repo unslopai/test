@@ -12,7 +12,9 @@
  * jeden Stilhinweis zum Merge-Blocker macht, wird abgeschaltet.
  */
 import { createCheckRun, updateCheckRun } from '@/lib/github';
+import { appendAiDisclosure } from '@/lib/ai-disclosure';
 import { extractErrorMessage } from '@/lib/errors';
+import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
 import type { CheckRunConclusion } from '@/lib/github';
 import type { PipelineIssue } from '@/lib/pipeline/types';
 
@@ -156,14 +158,15 @@ export function deriveReviewConclusion(
     issues: readonly PipelineIssue[],
     integrityGate?: IntegrityGate,
 ): CheckRunResult {
-    const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length;
+    // Tatsächliche Treffer, nicht Einträge: ein Sammelfinding des E4-Deckels zählt jede Fundstelle.
+    const { criticalCount, warningCount } = countHitsBySeverity(issues);
 
     if (criticalCount > 0) {
         return {
             conclusion: 'failure',
             title: `${criticalCount} critical slop finding${criticalCount === 1 ? '' : 's'}`,
             summary: `The Anti-Slop Gatekeeper found ${criticalCount} critical and `
-                + `${issues.length - criticalCount} non-critical finding(s). See the review comments.`,
+                + `${warningCount} non-critical finding(s). See the review comments.`,
         };
     }
 
@@ -178,10 +181,10 @@ export function deriveReviewConclusion(
         };
     }
 
-    if (issues.length > 0) {
+    if (warningCount > 0) {
         return {
             conclusion: 'neutral',
-            title: `${issues.length} non-critical finding${issues.length === 1 ? '' : 's'}`,
+            title: `${warningCount} non-critical finding${warningCount === 1 ? '' : 's'}`,
             summary: 'The Anti-Slop Gatekeeper found no critical slop. '
                 + 'The remaining findings are advisory and do not block the merge.',
         };
@@ -192,4 +195,32 @@ export function deriveReviewConclusion(
         title: 'No AI slop found',
         summary: 'This code meets the quality standards of the Anti-Slop Gatekeeper.',
     };
+}
+
+/**
+ * KI-Kennzeichnung der Check-Summary (Art. 50 Abs. 2 KI-VO, LEGAL_PAGES_SPEC
+ * §4a.3). Der Aufrufer wendet sie nur auf das Urteil eines Laufs mit
+ * Modell-Review an; „Deterministic checks only“, „Nothing to review“, der
+ * laufende, der blockierende und der gescheiterte Check bleiben ohne Label.
+ */
+export function markCheckRunAiGenerated(checkRunResult: CheckRunResult): CheckRunResult {
+    return { ...checkRunResult, summary: appendAiDisclosure(checkRunResult.summary) };
+}
+
+/**
+ * Urteil für einen Lauf ohne Modell-Review (LANGUAGE_COVERAGE_SPEC §6.2, E2).
+ * CRITICAL bleibt `failure` wie im vollen Review. Ohne Findings gibt es kein
+ * `success`: kein Modell hat die Dateien gelesen, der Check ist `neutral` und
+ * heißt „Deterministic checks only“. Das Score-Gate greift nicht, es gibt
+ * keinen Score.
+ */
+export function deriveDeterministicOnlyConclusion(
+    issues: readonly PipelineIssue[],
+    deterministicOnlySummary: string,
+): CheckRunResult {
+    if (issues.length === 0) {
+        return { conclusion: 'neutral', title: 'Deterministic checks only', summary: deterministicOnlySummary };
+    }
+    const findingsResult = deriveReviewConclusion(issues);
+    return { ...findingsResult, summary: `${findingsResult.summary}\n\n${deterministicOnlySummary}` };
 }

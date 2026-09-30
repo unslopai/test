@@ -119,6 +119,41 @@ describe('printHumanResult — nothing-reviewed honesty (ROADMAP §3)', () => {
         expect(terminalOutput).toContain('src/lib/huge-b.ts');
     });
 
+    it('zeigt einen Lauf ohne Modell-Review als „Deterministic checks only“, mit Findings und ohne Clean-Haken', () => {
+        const deterministicOnlyOutput = capturedOutput({
+            hasSlop: true,
+            issues: [{
+                id: 'd'.repeat(16),
+                rule: 'SEC-035 (Package does not exist on its registry)',
+                severity: 'CRITICAL',
+                path: 'requirements.txt',
+                line: 3,
+                endLine: 3,
+                exactQuote: 'hallucinated-http-kit==1.2.0',
+                critique: 'This declared package does not exist on the public registry.',
+            }],
+            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            filesReviewed: 0,
+            filesScanned: 2,
+            outcome: 'deterministic_only',
+            omittedFiles: [],
+            cognitiveIntegrityScore: null,
+        });
+        const withoutFindingsOutput = capturedOutput({
+            ...NOTHING_REVIEWED_RESULT,
+            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            outcome: 'deterministic_only',
+            omittedFiles: [],
+        });
+
+        expect(deterministicOnlyOutput).toContain('Deterministic checks only — no model reviewed this diff.');
+        expect(deterministicOnlyOutput).toContain('requirements.txt:3');
+        expect(deterministicOnlyOutput).not.toContain('Nothing was reviewed');
+        expect(deterministicOnlyOutput).not.toContain('Cognitive Integrity Score');
+        expect(withoutFindingsOutput).toContain('No deterministic findings. This is NOT a clean verdict.');
+        expect(withoutFindingsOutput).not.toContain('No AI slop found');
+    });
+
     it('behandelt Legacy-Ergebnisse ohne outcome-Feld über filesReviewed === 0 gleich', () => {
         // So kommt ein Alt-Ergebnis wirklich an: als Wire-JSON ohne die neuen
         // Felder — derselbe Parse-Cast wie im echten Poll-Pfad.
@@ -347,5 +382,68 @@ describe('printHumanResult — aggregierte Findings (ROADMAP §7)', () => {
 
         expect(terminalOutput).not.toContain('occurrences:');
         expect(terminalOutput).toContain('src/lib/example.ts:12');
+    });
+});
+
+describe('printHumanResult — KI-Kennzeichnung (LEGAL_PAGES_SPEC §4a.3)', () => {
+    const AI_LABEL_LINE = 'AI-generated review. Check it before you rely on it.';
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function capturedOutput(scanResult: ScanResult): string {
+        const loggedLines: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((printedLine: string) => {
+            loggedLines.push(printedLine);
+        });
+        printHumanResult(scanResult);
+        return loggedLines.join('\n');
+    }
+
+    const CLEAN_MODEL_REVIEW: ScanResult = {
+        hasSlop: false,
+        issues: [],
+        summary: 'No AI slop found.',
+        filesReviewed: 3,
+        outcome: 'reviewed',
+        aiGenerated: true,
+        omittedFiles: [],
+        cognitiveIntegrityScore: 97,
+    };
+
+    it('druckt das Label unter einem Modell-Review, mit und ohne Findings', () => {
+        const cleanOutput = capturedOutput(CLEAN_MODEL_REVIEW);
+        const findingsOutput = capturedOutput({ ...buildInfectedScanResult(), aiGenerated: true });
+
+        expect(cleanOutput).toContain(AI_LABEL_LINE);
+        expect(findingsOutput).toContain(AI_LABEL_LINE);
+    });
+
+    it('kennzeichnet im Zweifel: ein Modell-Review von einem Server ohne das Feld bekommt das Label', () => {
+        const legacyServerOutput = capturedOutput({ ...CLEAN_MODEL_REVIEW, aiGenerated: undefined });
+
+        expect(legacyServerOutput).toContain(AI_LABEL_LINE);
+    });
+
+    it('druckt kein Label, wenn kein Modell beteiligt war', () => {
+        const deterministicOnlyOutput = capturedOutput({
+            ...CLEAN_MODEL_REVIEW,
+            summary: 'Deterministic checks only: no model reviewed it.',
+            filesReviewed: 0,
+            outcome: 'deterministic_only',
+            aiGenerated: false,
+            cognitiveIntegrityScore: null,
+        });
+        const nothingReviewedOutput = capturedOutput({
+            ...CLEAN_MODEL_REVIEW,
+            filesReviewed: 0,
+            outcome: 'nothing_reviewed',
+            aiGenerated: false,
+            cognitiveIntegrityScore: null,
+        });
+
+        expect(deterministicOnlyOutput).not.toContain('AI-generated');
+        expect(nothingReviewedOutput).not.toContain('AI-generated');
     });
 });

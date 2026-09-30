@@ -4,9 +4,11 @@
  *  - Stufen, die der Deadline Guard aus Zeitgründen übersprungen oder
  *    abgebrochen hat (DEADLINE_GUARD_SPEC.md §3.4);
  *  - Dateien, deren Draft-Batch gescheitert ist (LARGE_DIFF_RECALL_SPEC
- *    Option A, Degradation `draft_partial`).
- * Weder ein Zeit-Skip noch ein halber Draft darf auf irgendeiner Fläche wie
- * ein vollständiger Lauf aussehen.
+ *    Option A, Degradation `draft_partial`);
+ *  - ein ausgefallener Pre-Scan in einem Lauf ohne Modell-Review
+ *    (LANGUAGE_COVERAGE_SPEC §6.2).
+ * Weder ein Zeit-Skip noch ein halber Draft noch ein ausgefallener Pre-Scan
+ * darf auf irgendeiner Fläche wie ein vollständiger Lauf aussehen.
  */
 import type { SkippedStage } from './index.js';
 
@@ -35,4 +37,36 @@ export function formatDraftPartialNotice(unreviewedFiles: readonly string[] | un
     const fileNoun = unreviewedFiles.length === 1 ? 'file' : 'files';
     return `Reduced coverage: the AI review failed on ${unreviewedFiles.length} ${fileNoun} — `
         + `not reviewed: ${unreviewedFiles.join(', ')}.`;
+}
+
+/** Wo ein Lauf ohne Modell-Review stattfand: im PR (voller Dateiinhalt) oder auf einem hochgeladenen Diff. */
+export type DeterministicOnlySurface = 'pull_request' | 'local_diff';
+
+const DETERMINISTIC_ONLY_NOTICES: Readonly<Record<DeterministicOnlySurface, string>> = {
+    pull_request: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, '
+        + 'so no model reviewed it.',
+    // CLI, Extension und MCP laden nur den Diff hoch: ohne Dateiinhalt laufen
+    // keine AST- und Config-Regeln (LANGUAGE_COVERAGE_SPEC §4.2: 7 statt 27 von 69).
+    local_diff: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, '
+        + 'so no model reviewed it. Without file contents only the regex and registry rules ran; '
+        + 'the AST and config rules need a pull request.',
+};
+
+/**
+ * EINE Formulierung dafür, dass kein Modell gelesen hat und warum
+ * (LANGUAGE_COVERAGE_SPEC §6.2) — für Check Run, PR-Kommentar und die
+ * gespeicherte Summary, die CLI, Extension und MCP anzeigen.
+ */
+export function formatDeterministicOnlyNotice(surface: DeterministicOnlySurface): string {
+    return DETERMINISTIC_ONLY_NOTICES[surface];
+}
+
+/**
+ * Der Pre-Scan war die einzige Prüfung eines Laufs ohne Modell-Review und ist
+ * ausgefallen (Fail-Safe-Pfad des Steps). Das ist kein „nichts zu prüfen“: es
+ * gab prüfbare Dateien, geprüft wurde keine.
+ */
+export function formatPrescanFailedNotice(): string {
+    return 'Not reviewed: the deterministic pre-scanner failed on this change, and no model reviews it '
+        + 'because it changes no TypeScript or JavaScript file. Nothing was checked; re-run the review to try again.';
 }

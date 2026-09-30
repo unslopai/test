@@ -1,0 +1,101 @@
+# Veröffentlicht die VS-Code-Extension im Marketplace — nur von Hand
+# (Actions → Publish VS Code extension → Run workflow). Ablauf am Launch-Tag:
+# docs/release.md. Default ist der Dry-Run: .vsix als Artefakt, kein Publish.
+name: Publish VS Code extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Nur packen (.vsix als Artefakt), nichts veröffentlichen
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-extension
+  cancel-in-progress: false
+
+env:
+  # Exakte Version statt `latest`. Installiert wird vsce in beiden Jobs mit
+  # --ignore-scripts in einem eigenen Schritt ohne Secret: seine Abhängigkeit
+  # @vscode/vsce-sign hat ein postinstall-Skript, das weder `package` noch ein
+  # unsigniertes `publish --packagePath` braucht.
+  VSCE_PACKAGE: '@vscode/vsce@4.0.0'
+
+jobs:
+  package:
+    name: Build, Test, Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/vscode-extension
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Kein npm-Cache im Release-Pfad (siehe publish-npm.yml).
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Tests (Extension)
+        run: npx vitest run packages/vscode-extension
+        working-directory: .
+
+      - run: npm run build
+
+      - name: vsce installieren
+        run: npm install --no-save --no-audit --no-fund --ignore-scripts --prefix "$RUNNER_TEMP/vsce" "$VSCE_PACKAGE"
+
+      # --no-dependencies: die Extension hat keine Laufzeit-Abhängigkeiten
+      # (@unslop/shared nur als `import type`). Ohne den Schalter fragt vsce
+      # `npm list` und packt im Workspace die Nachbarpakete ../shared und
+      # ../prescan mit ein — deren Test-Fixtures lösen dann den Secret-Scan
+      # von vsce aus.
+      - name: vsce package
+        run: '"$RUNNER_TEMP/vsce/node_modules/.bin/vsce" package --no-dependencies --out "$RUNNER_TEMP/unslop-vscode.vsix"'
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vsix
+          path: ${{ runner.temp }}/unslop-vscode.vsix
+          if-no-files-found: error
+          retention-days: 14
+
+  # Eigener Job ohne Checkout und ohne `npm ci`: der Token existiert nur im
+  # letzten Schritt. Veröffentlicht wird genau die .vsix, die `package` gebaut
+  # hat. Environment `release` und ref-Prüfung wie in publish-npm.yml.
+  publish:
+    name: vsce publish
+    needs: package
+    if: ${{ !inputs.dry-run && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: vsix
+          path: ${{ runner.temp }}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: vsce installieren
+        run: npm install --no-save --no-audit --no-fund --ignore-scripts --prefix "$RUNNER_TEMP/vsce" "$VSCE_PACKAGE"
+
+      - name: vsce publish
+        run: '"$RUNNER_TEMP/vsce/node_modules/.bin/vsce" publish --packagePath "$RUNNER_TEMP/unslop-vscode.vsix"'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}

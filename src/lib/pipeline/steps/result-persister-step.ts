@@ -10,7 +10,9 @@
 import { createHash } from 'node:crypto';
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
+import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
 /**
@@ -35,16 +37,17 @@ export const resultPersisterStep: PipelineStep = {
         // vereinigte Issue-Liste aus Prescan- und LLM-Lane — ab hier mit
         // stabilen Finding-IDs (MCP_SPEC.md §4.2).
         const reportableIssues = collectReportableIssues(context);
-        const reviewResult = context.shouldAbort
+        const reviewOutcome = resolveReviewOutcome(context);
+        const reviewResult = reviewOutcome === 'nothing_reviewed'
             ? {
                 has_slop: false,
                 issues: [],
-                summary: context.abortReason ?? 'Pipeline aborted.',
+                summary: describeNothingReviewed(context).reason,
             }
             : {
                 has_slop: reportableIssues.length > 0,
                 issues: reportableIssues,
-                summary: context.reviewSummary || 'No AI slop found.',
+                summary: resolvePublishedSummary(context, reportableIssues),
             };
 
         const rerollBookkeeping = await resolveRerollBookkeeping(context, reviewResult.issues);
@@ -59,7 +62,11 @@ export const resultPersisterStep: PipelineStep = {
                     // Ehrlichkeits-Marker (ROADMAP §3): ein Abort-Lauf hat NICHTS
                     // geprüft — Clients dürfen has_slop:false dann nie als
                     // Clean-Urteil rendern. omitted_files nennt die Size-Cap-Opfer.
-                    nothing_reviewed: context.shouldAbort,
+                    nothing_reviewed: reviewOutcome === 'nothing_reviewed',
+                    // LANGUAGE_COVERAGE_SPEC §6.2: kein Modell hat gelesen, der
+                    // Pre-Scanner lief. files_reviewed bleibt 0 — ohne diesen
+                    // Marker läse jeder Client das als „nichts geprüft“.
+                    deterministic_only: reviewOutcome === 'deterministic_only',
                     omitted_files: context.omittedFiles,
                     // Für CLI-/Dashboard-Rendering ohne zweiten Query (SPEC.md §6):
                     cognitive_integrity_score: context.cascade.integrityScore,

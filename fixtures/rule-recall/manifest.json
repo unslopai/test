@@ -2,6 +2,10 @@
   "r01-c-memory.diff": {
     "description": "C memory-safety rules (allocation, bounds, secure erase, unsafe libc, embedded hallucination) under the unfiltered Law block (c is not a detectable ecosystem)",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
     "negativeControl": false,
     "expected": [
       {
@@ -41,6 +45,10 @@
   "r02-c-concurrency.diff": {
     "description": "C/embedded concurrency rules plus magic-number maintainability under the unfiltered Law block (c is not a detectable ecosystem)",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
     "negativeControl": false,
     "expected": [
       {
@@ -393,6 +401,10 @@
   "r11-kubernetes.diff": {
     "description": "Kubernetes securityContext/manifest rules (unfiltered Law, detectedEcosystems null)",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
     "negativeControl": false,
     "expected": [
       {
@@ -444,6 +456,10 @@
   "r12-terraform-aws.diff": {
     "description": "Terraform/AWS IaC rules (unfiltered Law, detectedEcosystems null)",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
     "negativeControl": false,
     "expected": [
       {
@@ -467,6 +483,10 @@
   "r13-powershell.diff": {
     "description": "PowerShell malware-shaped rules (unfiltered Law, detectedEcosystems null)",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
     "negativeControl": false,
     "expected": [
       {
@@ -919,6 +939,12 @@
       "typescript",
       "nodejs"
     ],
+    "negativeControl": true,
+    "expected": []
+  },
+  "r26-clean-config.diff": {
+    "description": "Negative control for the deterministic lane: clean Kubernetes, Terraform, package.json and a Markdown runbook that quotes insecure patterns (no JS/TS file, so production runs the pre-scanner only)",
+    "detectedEcosystems": null,
     "negativeControl": true,
     "expected": []
   }

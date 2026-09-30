@@ -8,17 +8,25 @@
  */
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
+import { isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { FAILED_CHECK_RUN_COPY, buildJobErrorMessage, classifyJobFailure } from '@/lib/job-failure';
 import { resolveRepoAccessToken } from '@/lib/repo-auth';
 import { getInstallationToken } from '@/lib/github-app';
-import { completeGatekeeperCheckRun, deriveReviewConclusion } from '@/lib/check-run';
+import {
+    completeGatekeeperCheckRun,
+    deriveDeterministicOnlyConclusion,
+    deriveReviewConclusion,
+    markCheckRunAiGenerated,
+} from '@/lib/check-run';
 import { runPipelineUnderWatchdog } from '@/lib/job-watchdog';
 import { buildJobClock, resolveJobBudgetMs } from '@/lib/pipeline/deadline';
 import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } from '@/lib/pipeline/defaults';
 // Subpath-Import mit Absicht: der Index zieht alle Scan-Engines (tree-sitter,
 // ESLint) in den Worker-Modulgraphen — genau der OOM-Pfad aus ROADMAP §1b.
 import { resolvePrescanConfig } from '@unslop/prescan/config';
+import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
@@ -463,19 +471,7 @@ async function closeCheckRun(
         return;
     }
 
-    const checkRunResult: CheckRunResult = finalContext.shouldAbort
-        ? {
-            conclusion: 'neutral',
-            title: 'Nothing to review',
-            summary: finalContext.abortReason ?? 'No reviewable files in this pull request.',
-        }
-        : appendDegradationNotices(
-            deriveReviewConclusion(collectReportableIssues(finalContext), {
-                integrityScore: finalContext.cascade.integrityScore,
-                minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
-            }),
-            finalContext.cascade,
-        );
+    const checkRunResult = resolveCheckRunResult(finalContext);
 
     try {
         const installationToken = await getInstallationToken(installationId);
@@ -492,6 +488,39 @@ async function closeCheckRun(
             + extractErrorMessage(checkRunError),
         );
     }
+}
+
+/** Check-Urteil je Review-Outcome: nichts geprüft, nur deterministisch geprüft, voller Review. */
+function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
+    const reviewOutcome = resolveReviewOutcome(finalContext);
+    if (reviewOutcome === 'nothing_reviewed') {
+        const nothingReviewedNotice = describeNothingReviewed(finalContext);
+        return {
+            conclusion: 'neutral',
+            // Ein ausgefallener Pre-Scan heißt nicht „nichts zu prüfen“ (LANGUAGE_COVERAGE_SPEC §6.2).
+            title: nothingReviewedNotice.kind === 'check_failed' ? 'Not reviewed' : 'Nothing to review',
+            summary: nothingReviewedNotice.reason,
+        };
+    }
+
+    const reportableIssues = collectReportableIssues(finalContext);
+    if (reviewOutcome === 'deterministic_only') {
+        return deriveDeterministicOnlyConclusion(
+            reportableIssues,
+            buildDeterministicOnlySummary(finalContext, reportableIssues),
+        );
+    }
+    const reviewedResult = appendDegradationNotices(
+        deriveReviewConclusion(reportableIssues, {
+            integrityScore: finalContext.cascade.integrityScore,
+            minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
+        }),
+        finalContext.cascade,
+    );
+    // Short-Circuit des Pre-Scanners: Outcome 'reviewed', aber kein Modell lief (LEGAL_PAGES_SPEC §4a.3).
+    return isAiGeneratedRun(reviewOutcome, finalContext.llmSkipped)
+        ? markCheckRunAiGenerated(reviewedResult)
+        : reviewedResult;
 }
 
 /**

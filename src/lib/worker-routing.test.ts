@@ -13,6 +13,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelUnavailableError } from '@/lib/pipeline/vertex-retry';
+import { buildPrescanStats } from '@/lib/pipeline/testing/context-fixture';
 import type { PipelineRunHooks } from '@/lib/pipeline/runner';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
@@ -318,6 +319,57 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
             summary: expect.stringContaining(
                 'Reduced coverage: the AI review failed on 2 files — not reviewed: src/lib/alpha.ts, src/lib/beta.ts.',
             ),
+        });
+    });
+
+    it('kennzeichnet die Check-Summary eines Modell-Reviews als KI-generiert (LEGAL_PAGES_SPEC §4a.3)', async () => {
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => initialContext);
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunResult).toMatchObject({
+            conclusion: 'success',
+            summary: expect.stringMatching(/_AI-generated\. Check it before you rely on it\._\n<!-- unslop:ai-generated -->$/),
+        });
+    });
+
+    it('kennzeichnet die Check-Summary ohne Modell-Review nicht: deterministic_only, nothing_reviewed, Short-Circuit', async () => {
+        runPipelineMock.mockImplementationOnce(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+            prescanStats: buildPrescanStats({ llmSkipped: true }),
+        }));
+        runPipelineMock.mockImplementationOnce(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            shouldAbort: true,
+            abortReason: 'No reviewable code files in this pull request.',
+        }));
+        // Short-Circuit des Pre-Scanners: Outcome 'reviewed', aber kein Modell lief.
+        runPipelineMock.mockImplementationOnce(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            llmSkipped: true,
+            prescanStats: buildPrescanStats({ llmSkipped: true }),
+        }));
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [deterministicOnlyResult, nothingReviewedResult, shortCircuitResult] = completeCheckRunMock.mock.calls
+            .map((completeCall) => (completeCall as unknown[])[3]);
+        expect(deterministicOnlyResult).toMatchObject({
+            title: 'Deterministic checks only',
+            summary: expect.not.stringContaining('AI-generated'),
+        });
+        expect(nothingReviewedResult).toMatchObject({
+            title: 'Nothing to review',
+            summary: expect.not.stringContaining('AI-generated'),
+        });
+        expect(shortCircuitResult).toMatchObject({
+            conclusion: 'success',
+            summary: expect.not.stringContaining('AI-generated'),
         });
     });
 

@@ -112,16 +112,23 @@ export function parseScanIssues(rawIssues: unknown): ScanIssueView[] {
 // Verdict
 // =============================================================================
 
+/**
+ * `deterministicOnly` (LANGUAGE_COVERAGE_SPEC §6.2): kein Modell hat gelesen.
+ * Findings des Pre-Scanners sind echt und bleiben 'slop'; ohne Findings ist
+ * der Lauf aber kein 'clean', sondern 'neutral'.
+ */
 export function deriveScanVerdict(input: {
     readonly status: string;
     readonly nothingReviewed: boolean;
+    readonly deterministicOnly?: boolean;
     readonly hasSlop: boolean;
     readonly issueCount: number;
 }): ScanVerdict {
     if (input.status !== 'done' || input.nothingReviewed) {
         return 'neutral';
     }
-    return input.hasSlop || input.issueCount > 0 ? 'slop' : 'clean';
+    if (input.hasSlop || input.issueCount > 0) return 'slop';
+    return input.deterministicOnly ? 'neutral' : 'clean';
 }
 
 // =============================================================================
@@ -132,12 +139,13 @@ export function deriveScanVerdict(input: {
 interface ParsedResultBlob {
     readonly hasSlop: boolean;
     readonly nothingReviewed: boolean;
+    readonly deterministicOnly: boolean;
     readonly issues: readonly ScanIssueView[];
 }
 
 function parseResultBlob(rawResult: unknown): ParsedResultBlob {
     if (typeof rawResult !== 'object' || rawResult === null) {
-        return { hasSlop: false, nothingReviewed: false, issues: [] };
+        return { hasSlop: false, nothingReviewed: false, deterministicOnly: false, issues: [] };
     }
 
     const review = readField(rawResult, 'review');
@@ -146,6 +154,7 @@ function parseResultBlob(rawResult: unknown): ParsedResultBlob {
     return {
         hasSlop: readField(reviewObject, 'has_slop') === true,
         nothingReviewed: readField(rawResult, 'nothing_reviewed') === true,
+        deterministicOnly: readField(rawResult, 'deterministic_only') === true,
         issues: parseScanIssues(readField(reviewObject, 'issues')),
     };
 }
@@ -162,6 +171,7 @@ export function mapReviewJobToScanView(jobRow: ReviewJobRow): ScanView {
         verdict: deriveScanVerdict({
             status: jobRow.status,
             nothingReviewed: parsedResult.nothingReviewed,
+            deterministicOnly: parsedResult.deterministicOnly,
             hasSlop: parsedResult.hasSlop,
             issueCount: parsedResult.issues.length,
         }),
@@ -207,6 +217,7 @@ export function mapLastScan(embeddedJobRows: unknown): LastScanView | null {
         verdict: deriveScanVerdict({
             status,
             nothingReviewed: readField(latestJob, 'nothing_reviewed') === true,
+            deterministicOnly: readField(latestJob, 'deterministic_only') === true,
             hasSlop: readField(reviewObject, 'has_slop') === true,
             issueCount,
         }),

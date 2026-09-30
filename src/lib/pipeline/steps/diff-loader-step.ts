@@ -1,8 +1,9 @@
 /**
  * DiffLoaderStep — Lädt PR-Dateien von GitHub und baut den Diff zusammen.
  *
- * Deterministischer Step (kein AI-Call). Setzt shouldAbort wenn keine
- * reviewbaren Dateien im PR enthalten sind.
+ * Deterministischer Step (kein AI-Call). Erreicht keine Datei die LLM-Lane,
+ * entscheidet `planUnreviewableDiff`: Pre-Scan ohne Modell oder Abbruch
+ * (LANGUAGE_COVERAGE_SPEC §6.2).
  */
 import {
     fetchPullRequestFiles,
@@ -10,6 +11,7 @@ import {
 } from '@/lib/github';
 import { isReviewableFile, buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { trimReviewableFiles } from '@/lib/pipeline/diff-utils';
+import { planUnreviewableDiff } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
 export const diffLoaderStep: PipelineStep = {
@@ -37,7 +39,13 @@ export const diffLoaderStep: PipelineStep = {
         const { trimmedFiles: reviewableFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
 
         if (reviewableFiles.length === 0) {
-            console.log(`[DiffLoader] Keine reviewbaren Dateien in PR #${context.prNumber}.`);
+            const unreviewablePlan = planUnreviewableDiff({
+                changedFiles: prFiles, omittedFilePaths, surface: 'pull_request',
+            });
+            console.log(
+                `[DiffLoader] Keine reviewbaren Dateien in PR #${context.prNumber} — `
+                + `${unreviewablePlan.shouldAbort ? 'Abbruch' : 'nur deterministischer Pre-Scan'}.`,
+            );
             return {
                 ...context,
                 prFiles,
@@ -45,10 +53,7 @@ export const diffLoaderStep: PipelineStep = {
                 reviewableFiles: [],
                 combinedDiff: '',
                 omittedFiles: omittedFilePaths,
-                shouldAbort: true,
-                abortReason: omittedFilePaths.length > 0
-                    ? 'All changed code files exceed the review size cap.'
-                    : 'No reviewable code files in this pull request.',
+                ...unreviewablePlan,
             };
         }
 

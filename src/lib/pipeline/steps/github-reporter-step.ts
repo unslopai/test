@@ -19,6 +19,9 @@ import {
 import { supabase } from '@/lib/supabase';
 import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
+import { appendAiDisclosure, isAiGeneratedRun } from '@/lib/ai-disclosure';
+import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
@@ -30,13 +33,16 @@ export const githubReporterStep: PipelineStep = {
     displayName: 'GitHub Reporter',
 
     async execute(context: PipelineContext): Promise<PipelineContext> {
-        if (context.shouldAbort) {
+        const reviewOutcome = resolveReviewOutcome(context);
+        if (reviewOutcome === 'nothing_reviewed') {
             await postAbortComment(context);
             return context;
         }
 
         if (collectReportableIssues(context).length > 0) {
             await postReviewWithIssues(context);
+        } else if (reviewOutcome === 'deterministic_only') {
+            await postDeterministicOnlyComment(context);
         } else {
             await postApprovalComment(context);
         }
@@ -49,15 +55,18 @@ export const githubReporterStep: PipelineStep = {
 // Report Handlers
 // =============================================================================
 
+/** Ein ausgefallener Pre-Scan ist kein erledigter Lauf: kein grünes Häkchen (LANGUAGE_COVERAGE_SPEC §6.2). */
 async function postAbortComment(context: PipelineContext): Promise<void> {
+    const nothingReviewedNotice = describeNothingReviewed(context);
+    const statusIcon = nothingReviewedNotice.kind === 'check_failed' ? '⚠️' : '✅';
     await postPRComment(
         context.githubToken,
         context.repoFullName,
         context.prNumber,
-        `✅ **Anti-Slop Gatekeeper**: ${context.abortReason ?? 'No reviewable files in this pull request.'}`,
+        `${statusIcon} **Anti-Slop Gatekeeper**: ${nothingReviewedNotice.reason}`,
     );
 
-    console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${context.abortReason}`);
+    console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${nothingReviewedNotice.reason}`);
 }
 
 async function postReviewWithIssues(context: PipelineContext): Promise<void> {
@@ -75,10 +84,10 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
     const inlineComments = buildInlineComments(anchoredIssues);
     const reviewBody = formatReviewSummary(
         reportableIssues,
-        context.reviewSummary,
+        resolvePublishedSummary(context, reportableIssues),
         unanchoredIssues,
         context.omittedFiles,
-    ) + buildIntegrityScoreBlock(context.cascade, reportableIssues);
+    ) + buildModelReviewFooter(context, reportableIssues);
 
     const postedReviewId = await createGatekeeperReview(context, reviewBody, inlineComments);
 
@@ -249,6 +258,37 @@ async function loadPostedCommentIds(
     return commentIdByFindingId;
 }
 
+/**
+ * Kein Modell hat gelesen und der Pre-Scanner fand nichts (LANGUAGE_COVERAGE_SPEC
+ * §6.2, E2): kein grünes Häkchen, kein „meets the quality standards“ — der
+ * Kommentar nennt, was geprüft wurde und was nicht.
+ */
+async function postDeterministicOnlyComment(context: PipelineContext): Promise<void> {
+    await postReviewIdempotently(
+        context,
+        `ℹ️ **Anti-Slop Gatekeeper**: ${buildDeterministicOnlySummary(context, [])}`,
+        [],
+        'COMMENT',
+    );
+
+    console.log('[GitHubReporter] Nur deterministisch geprüft, keine Findings — Hinweis-Kommentar gepostet.');
+}
+
+/**
+ * Der Integrity Score misst, wie LLM-Claims die Verifikation überstehen. Ohne
+ * Modell-Review gibt es keine Claims: der Block entfiele sonst auf „Confidence
+ * verification was unavailable“, was nach einem Ausfall klingt. Die
+ * KI-Kennzeichnung folgt ihrer eigenen Regel: nur wenn ein Modell lief, also
+ * auch nicht beim Short-Circuit des Pre-Scanners (LEGAL_PAGES_SPEC §4a.3).
+ */
+function buildModelReviewFooter(context: PipelineContext, reportableIssues: readonly PipelineIssue[]): string {
+    const reviewOutcome = resolveReviewOutcome(context);
+    const scoreBlock = reviewOutcome === 'deterministic_only'
+        ? ''
+        : buildIntegrityScoreBlock(context.cascade, reportableIssues);
+    return isAiGeneratedRun(reviewOutcome, context.llmSkipped) ? appendAiDisclosure(scoreBlock) : scoreBlock;
+}
+
 async function postApprovalComment(context: PipelineContext): Promise<void> {
     const omittedNote = context.omittedFiles.length > 0
         ? `\n\n_Not reviewed (size cap exceeded): ${context.omittedFiles.map((filePath) => `\`${filePath}\``).join(', ')}_`
@@ -258,7 +298,8 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
         context,
         '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.'
             + omittedNote
-            + buildIntegrityScoreBlock(context.cascade, []),
+            // Der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt.
+            + appendAiDisclosure(buildIntegrityScoreBlock(context.cascade, [])),
         [],
         'COMMENT',
     );

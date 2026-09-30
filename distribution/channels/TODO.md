@@ -64,7 +64,8 @@
 - [x] Galerie 7 × 1270×760 (PR-Check, Terminal, VS Code, How it decides, Evidenz, Grenzen, Roadmap-Konzept) + Thumbnail 240×240
 - [x] LAUNCH.md
 - [x] CHECK.md
-- [ ] Offen beim Gründer: PH-Accounts mit Vorlauf, Slug prüfen, echte Screenshots für Galerie 1 und 3, YouTube-Upload
+- [x] PH-Account angelegt (https://www.producthunt.com/@unslopcodes, 2026-09-30)
+- [ ] Offen beim Gründer: Produkt-Slug `unslop-codes` prüfen, echte Screenshots für Galerie 1 und 3, YouTube-Upload
 
 ## Abschluss
 - [x] README.md (Übersicht: Kanal, Status, Assets, nächster Schritt)

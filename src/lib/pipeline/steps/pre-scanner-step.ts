@@ -15,14 +15,13 @@
 import { extractErrorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { assignFindingIds } from '@/lib/pipeline/helpers';
+import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
+import { isPrescanScannable } from '@/lib/pipeline/review-scope';
 import { loadCompanionFiles } from '@/lib/prescan/companion-loader';
 import { loadPrescanFiles } from '@/lib/prescan/file-content-loader';
 import { requestInternalPrescan } from '@/lib/prescan/internal-client';
 import type { PrescanFinding } from '@unslop/prescan';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
-
-/** Generierte/vendored Pfade, die nie deterministisch gescannt werden. */
-const PRESCAN_IGNORED_PATH_PATTERN = /(^|\/)(node_modules|dist|build|\.next|\.git)\/|package-lock\.json$|\.min\.(js|css)$/;
 
 export const preScannerStep: PipelineStep = {
     id: 'pre-scanner',
@@ -43,7 +42,10 @@ export const preScannerStep: PipelineStep = {
             return {
                 ...context,
                 prescanIssues: [],
-                llmSkipped: false,
+                // Ohne reviewbare Datei gibt es nichts, was die LLM-Steps lesen
+                // könnten: der Skip bleibt, und `resolveReviewOutcome` macht aus
+                // dem degradierten Lauf ein ehrliches „nichts geprüft“.
+                llmSkipped: isDeterministicOnly(context),
                 prescanStats: {
                     degraded: true,
                     degradedReason: extractErrorMessage(prescanError),
@@ -64,9 +66,7 @@ export const preScannerStep: PipelineStep = {
 };
 
 async function runPrescanStep(context: PipelineContext): Promise<PipelineContext> {
-    const scannableFiles = context.prFiles.filter(
-        (file) => file.patch !== undefined && !PRESCAN_IGNORED_PATH_PATTERN.test(file.filename),
-    );
+    const scannableFiles = context.prFiles.filter(isPrescanScannable);
 
     const prescanFiles = await loadPrescanFiles({
         githubToken: context.githubToken,
@@ -93,13 +93,16 @@ async function runPrescanStep(context: PipelineContext): Promise<PipelineContext
         headSha: context.headSha,
     });
 
-    const prescanIssues = prescanResult.findings.map(mapFindingToIssue);
-    const criticalCount = prescanIssues.filter((issue) => issue.severity === 'CRITICAL').length;
+    const uncappedIssues = prescanResult.findings.map(mapFindingToIssue);
+    const criticalCount = uncappedIssues.filter((issue) => issue.severity === 'CRITICAL').length;
+    // E4: ab dem vierten Treffer derselben Regel ein Sammelfinding. Die Stats
+    // zählen weiter jeden Treffer, der Short-Circuit rechnet mit allen CRITICALs.
+    const prescanIssues = capRepeatedRuleHits(uncappedIssues);
 
     const prescanStats = {
         degraded: false,
         degradedReason: null,
-        findingsCount: prescanIssues.length,
+        findingsCount: uncappedIssues.length,
         criticalCount,
         rulesEvaluated: prescanResult.rulesEvaluated,
         rulesDisabled: prescanResult.rulesDisabled,
@@ -114,27 +117,30 @@ async function runPrescanStep(context: PipelineContext): Promise<PipelineContext
     // Early Partial Result (MCP_SPEC.md §4.1, D4): die deterministischen
     // Findings werden SOFORT sichtbar gemacht — der Poll-Endpoint serviert sie
     // als phase 'deterministic', während die LLM-Kaskade noch läuft.
-    await writePartialResult(context.jobId, prescanIssues, prescanStats);
+    await writePartialResult(context.jobId, prescanIssues, prescanStats, isDeterministicOnly(context));
 
     // Short-Circuit (§5.3, config-gated, default off): genug deterministische
     // CRITICALs ⇒ Zero-Token-Pfad. Nur FINDINGS dürfen den LLM-Review skippen —
     // eine Degradation (Fail-Safe-Pfad oben) erzwingt immer llmSkipped: false.
     const shortCircuitConfig = context.prescanConfig.shortCircuit;
-    const llmSkipped = shortCircuitConfig.mode === 'critical'
+    const shortCircuited = shortCircuitConfig.mode === 'critical'
         && criticalCount >= shortCircuitConfig.minCriticalFindings;
+    // Ohne reviewbare Datei (LANGUAGE_COVERAGE_SPEC §6.2) hat der Diff-Loader
+    // den Skip schon gesetzt; er gilt unabhängig vom Short-Circuit weiter.
+    const llmSkipped = shortCircuited || isDeterministicOnly(context);
 
     console.log(
-        `[PreScanner] Job ${context.jobId}: ${prescanIssues.length} deterministische Findings `
+        `[PreScanner] Job ${context.jobId}: ${uncappedIssues.length} deterministische Findings `
         + `(${criticalCount} CRITICAL) in ${prescanResult.filesScanned} Dateien, `
         + `${prescanResult.durationMs}ms, ${prescanResult.skippedChecks.length} skipped checks`
-        + `${llmSkipped ? ' — SHORT-CIRCUIT: LLM-Steps werden übersprungen.' : '.'}`,
+        + `${shortCircuited ? ' — SHORT-CIRCUIT: LLM-Steps werden übersprungen.' : '.'}`,
     );
 
     return {
         ...context,
         prescanIssues,
         llmSkipped,
-        reviewSummary: llmSkipped
+        reviewSummary: shortCircuited && !isDeterministicOnly(context)
             ? `LLM review skipped: ${criticalCount} critical structural violations found `
                 + 'by the deterministic pre-scanner. Fix these first.'
             : context.reviewSummary,
@@ -157,6 +163,7 @@ async function writePartialResult(
     jobId: string,
     prescanIssues: readonly PipelineIssue[],
     prescanStats: NonNullable<PipelineContext['prescanStats']>,
+    deterministicOnly: boolean,
 ): Promise<void> {
     try {
         const issuesWithIds = assignFindingIds(prescanIssues);
@@ -168,7 +175,9 @@ async function writePartialResult(
                     review: {
                         has_slop: issuesWithIds.length > 0,
                         issues: issuesWithIds,
-                        summary: `${issuesWithIds.length} deterministic findings; LLM analysis running.`,
+                        summary: deterministicOnly
+                            ? `${issuesWithIds.length} deterministic findings; no model review for this change.`
+                            : `${issuesWithIds.length} deterministic findings; LLM analysis running.`,
                     },
                     prescan: prescanStats,
                 },
@@ -183,6 +192,11 @@ async function writePartialResult(
             + `Review läuft weiter): ${extractErrorMessage(partialWriteError)}`,
         );
     }
+}
+
+/** Der Diff-Loader hat den Lauf als „nur deterministisch“ geplant (keine reviewbare Datei). */
+function isDeterministicOnly(context: PipelineContext): boolean {
+    return context.deterministicOnlyReason !== undefined;
 }
 
 /** Mapping-Tabelle aus pre_scanner_design.md §4. */

@@ -1,5 +1,46 @@
 # Rule-Recall Benchmark
 
+## Sprachabdeckung Stufe 1 (2026-09-30): Produktionspfad Prescan-only wieder 68/177, neue Config-Kontrolle r26, 0 FP auf 7 Kontrollen
+
+Bau-Nachweis für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.2 Stufe 1, Gate G3 (Branch `feat/langcov-stufe1`, setzt auf Stufe 0 auf). 0 Token.
+
+| Messung | Wert |
+|---|---|
+| Prescan-only, Produktionspfad | **68/177** (Stufe 0: 43/177). r01–r04, r09–r13 laufen jetzt als Route `deterministic` statt `aborted`; nach Produktions-Lane: Modell + Pre-Scan 41/108, nur Pre-Scan 27/69, keine Lane 0/0 |
+| Prescan-only, Modell-Potenzial (`--bypass-filter`) | **68/177**, unverändert |
+| Negativ-Kontrollen | 7 Fixtures, **0 CRITICAL, 0 WARNING**; neu `r26-clean-config.diff`: gehärtetes Kubernetes-Manifest, Terraform-Bucket, `package.json` mit vier echten Paketen, Markdown-Runbook, das `verify=False` und `Access-Control-Allow-Origin: *` zitiert |
+| Reports | `results/2026-09-30-langcov-stufe1-prescan-only-production.json`, `-prescan-only-bypass.json` |
+
+**Lesart:** 27/69 auf den Nicht-JS/TS-Dateien ist die Zahl aus Spec §4.2, jetzt auf dem Produktionspfad gefahren statt gerechnet. Der Deckel E4 sitzt im Pipeline-Step, nicht im Runner: der Benchmark zählt weiter jeden Treffer einzeln. r26 erreicht im Modell-Potenzial-Lauf auch das Modell und ist dort noch nicht gefahren.
+
+## Sprachabdeckung Stufe 0 (2026-09-30): Runner auf dem Produktionspfad, Prescan-only 43/177 dort und weiter 68/177 als Modell-Potenzial; Korpus-Gate G1 mit 0 CRITICAL aus SEC-035
+
+Bau-Nachweis für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.2 Stufe 0 (Branch `feat/langcov-stufe0` auf `main` `b8ac78e`).
+
+**Runner.** Der Default ist jetzt der Produktionspfad: `reviewableFiles` entsteht über `isReviewableFile`, der Diff aus diesen Dateien, und eine Fixture ohne reviewbare Datei bricht ab wie der Webhook, auch der Pre-Scan läuft dann nicht. `--bypass-filter` fährt den bisherigen Modus und heißt im Report Modell-Potenzial. Jeder Report trägt `pathMode` und zählt die Treffer nach der Lane, die die Datei in Produktion erreicht.
+
+| Messung | Wert |
+|---|---|
+| Prescan-only, Modell-Potenzial (`--prescan-only --bypass-filter`), 25 Fixtures | **68/177**, 0 CRITICAL und 0 WARNING auf 6 Kontrollen: unverändert gegenüber 2026-09-29 |
+| Prescan-only, Produktionspfad (`--prescan-only`) | **43/177**; nach Produktions-Lane: Modell + Pre-Scan 41/108, nur Pre-Scan 2/10, keine Lane 0/59 (r01–r04, r09–r13 brechen ab) |
+| Produktionspfad mit Modell, `--only r16,r03 --keep` | r03 Abbruch, kein Call; r16 `flash-cascade` über 2 von 7 Dateien, Draft 2/2 auf den JS/TS-Dateien, Verifier 2 CONFIRMED, Score 95, Job `95245b00`; die 5 Python-Verstöße erreichen nur den Pre-Scan (0/5) |
+| Kosten (`scripts/benchmark-cost.ts`) | **$0,022** (Draft 3.8 $0,013, Verifier 3.6 $0,008) von 2 USD Budget, geschätzt vorher ≤ $0,04 |
+| Reports | `results/2026-09-30-langcov-stufe0-prescan-only-bypass.json`, `-prescan-only-production.json`, `-production-r03-r16.json` |
+
+**Korpus-Gate G1** (`scripts/prescan-corpus.ts`, 0 Token, Registry-Lookups live, jede Datei als neu hinzugefügt):
+
+| Korpus (Commit) | Findings vorher → nachher | CRITICAL vorher → nachher | SEC-035 CRITICAL | CRITICAL auf `.md` |
+|---|---|---|---|---|
+| `pallets/flask` (`d73fa1c`) | 335 → 293 | 72 → 22 | 50 → **0** (8 WARNING auf lokalen Test-Modulen) | 0 |
+| `spf13/cobra` (`adbc881`) | 21 → 21 | 0 → 0 | 0 | 0 |
+| `kubernetes/examples` (`d6b8cd2`) | 688 → 683 | 47 → 46 | 1 → **0** | 0 |
+| `terraform-aws-modules/terraform-aws-vpc` (`b3abd6d`) | 3 → 0 | 0 → 0 | 0 | 0 |
+| dieses Repo ohne JS/TS (Branch-Stand) | 27 → 3 | 23 → 1 | 17 → **0** | 3 → **0** |
+
+Reports: `results/2026-09-30-langcov-stufe0-corpus-*.json`, vorher `results/2026-09-30-langcov-corpus-*.json`. Verbliebenes CRITICAL im eigenen Repo: SEC-017 auf `docs/research/asta_queries.json:97` (Suchbegriff in einer JSON-Datendatei, ROADMAP To-Do).
+
+**Lesart:** Der Produktionspfad ist bisher nur für Prescan-only und zwei Fixtures gefahren. Die Zahl 59/126 aus der Spec bleibt gerechnet, bis ein Volllauf auf beiden Pfaden vorliegt. Die Korpus-Zahlen gelten für „jede Datei neu hinzugefügt“ in 25er-Scans; lokale Python-Module außerhalb eines Scans sind weiter nicht erkennbar und erscheinen als WARNING.
+
 ## Sprachabdeckung (2026-09-30): Nicht-JS/TS-Fixtures 258/258 combined über vier Läufe, 0 FP; Law-Filter im polyglotten Repo 1/26; Produktionspfad rechnerisch 59/126
 
 Messungen für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` (Entwurf), `main` bei `17ee7ec`, volle Kaskade mit `--keep`. Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation nicht gerufen.
@@ -150,6 +191,8 @@ Draft-Lane in diesem Lauf (unverändert 3.8): 106/108 auf den Flash-Routen wie a
 **Lesart:** Qualitativ ist 3.8 als Verifier mindestens gleichwertig (0 vs. 1 False Refutation — bei N=1 kein Signal, beide Läufe liefern volles Surviving). Der Preis dafür ist messbar: +5 s Ø und +15 s max pro Scan auf einem Call, der sequenziell hinter dem Draft läuft, bei gleichen Kosten (Intro-Gutschrift für 3.8 am 17.09. belegt). Kein Gewinn, der die Latenz rechtfertigt. **Entscheidung 2026-09-17: Verifier bleibt 3.6.** Wiedervorlage, falls (a) Prod-Telemetrie ein False-Refutation-Muster des 3.6-Verifiers zeigt oder (b) 3.6 ein Shutdown-Datum bekommt. Beifang: der `fetch failed`-Fall deckte auf, dass ein Verbindungsabbruch auf dem DRAFT-Call den Job gekillt hätte (kein HTTP-Status → kein Backoff) — gefixt, ROADMAP §3t.
 
 ## Gemini-3.8-Flash Cutover-Lauf (2026-09-16): Draft 124/126, combined 125/126, 0 FP, max Draft-Latenz 49 s — ENTSCHEIDUNG: Draft → 3.8
+
+**Nachtrag 2026-09-30 (LANGUAGE_COVERAGE_SPEC §7.1):** 125/126 ist **Modell-Potenzial**. Der Runner gab in diesem Lauf jede Fixture-Datei an das Modell und umging `isReviewableFile`. 69 der 126 Verstöße liegen in Dateien, die das Modell in Produktion nicht liest; auf dem Produktionspfad dieses Tages lag der Wert rechnerisch bei 59/126. Seit 2026-09-30 fährt der Runner den Produktionspfad als Default, dieser Lauf entspricht `--bypass-filter`.
 
 Zweiter Volllauf mit `UNSLOP_DRAFT_MODEL_OVERRIDE=gemini-3.8-flash` (Thinking-Default medium), Verifier 3.6, Eskalation 3.1-pro, `--keep`; Rohdaten `results/2026-09-16-flash38-full-run2.json`. Zweck: die N=1-Frage vom 03.09. klären (Qualitätsgewinn real oder Tagesschwankung?) und die Latenz ein zweites Mal sehen.
 
