@@ -1,0 +1,10 @@
+diff --git a/client.py b/client.py
+--- a/client.py
++++ b/client.py
+@@ -1,4 +1,6 @@
+ import requests
++
++API_TOKEN = "hardcoded-token-for-the-old-client"
+ def fetch(url):
+-    return requests.get(url, timeout=10)
++    return requests.get(url, verify=False)
