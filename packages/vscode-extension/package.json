@@ -1,0 +1,80 @@
+{
+  "name": "unslop-vscode",
+  "displayName": "Anti-AI-Slop Gatekeeper",
+  "description": "Scan your local changes for AI slop and apply approved fixes — powered by the unslop CLI.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "publisher": "unslop",
+  "icon": "icon.png",
+  "homepage": "https://unslop.codes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unslopai/unslop.git",
+    "directory": "packages/vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/unslopai/unslop/issues"
+  },
+  "galleryBanner": {
+    "color": "#0a0a0b",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "keywords": [
+    "ai",
+    "code review",
+    "code quality",
+    "ai slop",
+    "llm"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "unslop.scanChanges",
+        "title": "Unslop: Scan Current Changes"
+      }
+    ],
+    "configuration": {
+      "title": "Anti-AI-Slop Gatekeeper",
+      "properties": {
+        "unslop.cliPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Path to the unslop CLI binary. Leave empty to use 'unslop' from PATH."
+        },
+        "unslop.apiKey": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Gatekeeper API key (usk_…). Prefer `unslop login` — this setting is stored in plain text and overrides the CLI config."
+        },
+        "unslop.baseUrl": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Gatekeeper backend URL. Leave empty for the CLI default."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@unslop/shared": "0.1.0",
+    "typescript": "^5"
+  }
+}
