@@ -1,4 +1,4 @@
-"""Generated lookup tables, module 9. base"""
+"""Generated lookup tables, module 9. head revision"""
 
 def scale_reading_9_0(reading: float, factor: float = 1.0) -> float:
     """Scale one sensor reading by a fixed calibration factor."""
