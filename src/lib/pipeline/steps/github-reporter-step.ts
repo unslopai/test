@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
-import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
@@ -54,15 +54,18 @@ export const githubReporterStep: PipelineStep = {
 // Report Handlers
 // =============================================================================
 
+/** Ein ausgefallener Pre-Scan ist kein erledigter Lauf: kein grünes Häkchen (LANGUAGE_COVERAGE_SPEC §6.2). */
 async function postAbortComment(context: PipelineContext): Promise<void> {
+    const nothingReviewedNotice = describeNothingReviewed(context);
+    const statusIcon = nothingReviewedNotice.kind === 'check_failed' ? '⚠️' : '✅';
     await postPRComment(
         context.githubToken,
         context.repoFullName,
         context.prNumber,
-        `✅ **Anti-Slop Gatekeeper**: ${context.abortReason ?? 'No reviewable files in this pull request.'}`,
+        `${statusIcon} **Anti-Slop Gatekeeper**: ${nothingReviewedNotice.reason}`,
     );
 
-    console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${context.abortReason}`);
+    console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${nothingReviewedNotice.reason}`);
 }
 
 async function postReviewWithIssues(context: PipelineContext): Promise<void> {

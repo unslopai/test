@@ -9,6 +9,7 @@ import { formatOccurrenceLineRefs } from '@unslop/shared/occurrence-format';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildHunkRangesByFile, isLineWithinHunks } from '@/lib/pipeline/diff-utils';
 import { normalizeBareRuleId, subtractPrescanOverlaps } from '@/lib/pipeline/finding-aggregation';
+import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
 import type { PullRequestFile, PullRequestReviewComment } from '@/lib/github';
 import type { PipelineContext, PipelineIssue, TokenUsage } from '@/lib/pipeline/types';
 
@@ -540,13 +541,13 @@ export function formatReviewSummary(
     unanchoredIssues: readonly PipelineIssue[] = [],
     omittedFiles: readonly string[] = [],
 ): string {
-    const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length;
-    const warningCount = issues.filter((issue) => issue.severity === 'WARNING').length;
+    // Tats\u00E4chliche Treffer wie Summary und Check Run, nicht die Eintr\u00E4ge nach dem E4-Deckel.
+    const { criticalCount, warningCount, totalCount } = countHitsBySeverity(issues);
 
     const markdownLines = [
         '## \uD83D\uDEE1\uFE0F Anti-Slop Gatekeeper Review',
         '',
-        `**Result:** ${issues.length} issue(s) found`,
+        `**Result:** ${totalCount} issue(s) found`,
         '',
     ];
 

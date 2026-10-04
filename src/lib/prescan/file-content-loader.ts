@@ -6,6 +6,7 @@
  * des diff-loaders (App- und OAuth-Token funktionieren identisch).
  * CLI-Jobs haben kein GitHub-Token: content bleibt null (Degraded Mode).
  */
+import { mapWithConcurrency } from '@/lib/concurrency';
 import { fetchFileContent } from '@/lib/github';
 import type { PullRequestFile } from '@/lib/github';
 import type { PrescanFile } from '@unslop/prescan';
@@ -31,25 +32,11 @@ export async function loadPrescanFiles(params: FileContentLoaderParams): Promise
         (file) => file.patch !== undefined && file.status !== 'removed',
     );
 
-    const loadedFiles: PrescanFile[] = new Array(scannableFiles.length);
-    let nextFileIndex = 0;
-
-    const runFetchWorker = async (): Promise<void> => {
-        for (let fileIndex = nextFileIndex++; fileIndex < scannableFiles.length; fileIndex = nextFileIndex++) {
-            const file = scannableFiles[fileIndex];
-            loadedFiles[fileIndex] = {
-                path: file.filename,
-                content: await fetchContentOrNull(params, file),
-                patch: file.patch ?? '',
-            };
-        }
-    };
-
-    await Promise.all(
-        Array.from({ length: FETCH_CONCURRENCY }, () => runFetchWorker()),
-    );
-
-    return loadedFiles;
+    return await mapWithConcurrency(scannableFiles, FETCH_CONCURRENCY, async (file) => ({
+        path: file.filename,
+        content: await fetchContentOrNull(params, file),
+        patch: file.patch ?? '',
+    }));
 }
 
 async function fetchContentOrNull(

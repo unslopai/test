@@ -361,6 +361,62 @@ function resolveRoute(cascadeLane: CascadeLaneResult | null, pathPlan: Productio
     return cascadeLane?.route ?? 'prescan-only';
 }
 
+/** Wie im Webhook: ohne reviewbare Datei (oder mit --prescan-only) laeuft keine Kaskade. */
+async function runCascadeForPlan(
+    fixtureName: string,
+    manifestEntry: ManifestEntry,
+    runOptions: BenchmarkRunOptions,
+    fixturePlan: { readonly fixtureFiles: readonly PullRequestFile[]; readonly pathPlan: ProductionPathPlan },
+): Promise<CascadeLaneResult | null> {
+    if (runOptions.ownerUserId === null || fixturePlan.pathPlan.reviewableFiles.length === 0) return null;
+    return await runCascadeLane(
+        fixtureName,
+        {
+            fixtureFiles: fixturePlan.fixtureFiles,
+            reviewableFiles: fixturePlan.pathPlan.reviewableFiles,
+            detectedEcosystems: resolveFixtureEcosystems(manifestEntry, runOptions.usePolyglotEcosystems),
+        },
+        runOptions.ownerUserId,
+        runOptions.cascadeConfig,
+    );
+}
+
+function evaluatePlantedRules(
+    fixtureName: string,
+    manifestEntry: ManifestEntry,
+    laneIssues: { readonly prescanLane: PrescanLaneResult; readonly cascadeLane: CascadeLaneResult | null },
+    productionPlan: ProductionPathPlan,
+): PlantedRuleResult[] {
+    const { prescanLane, cascadeLane } = laneIssues;
+    return manifestEntry.expected.map((expected) => ({
+        bundle: fixtureName,
+        path: expected.path,
+        ruleContains: expected.ruleContains,
+        caughtByDraft: matchesAnyIssue(expected, cascadeLane?.draftIssues ?? []),
+        caughtByPrescan: matchesAnyIssue(expected, prescanLane.issues),
+        caughtBySecondOpinion: matchesAnyIssue(expected, cascadeLane?.secondOpinionIssues ?? []),
+        survivedVerifier: matchesAnyIssue(expected, cascadeLane?.survivingIssues ?? []),
+        productionLane: resolveProductionLane(expected.path, productionPlan),
+    }));
+}
+
+/** Auf Negativ-Kontrollen ist JEDES Finding ein False Positive — aus beiden Lanes. */
+function collectFalsePositives(
+    manifestEntry: ManifestEntry,
+    survivingIssues: readonly IssueLike[],
+    prescanIssues: readonly IssueLike[],
+): FixtureResult['falsePositives'] {
+    if (!manifestEntry.negativeControl) return [];
+    return [
+        ...survivingIssues.map((issue) => ({
+            rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'llm' as const,
+        })),
+        ...prescanIssues.map((issue) => ({
+            rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'prescan' as const,
+        })),
+    ];
+}
+
 async function runFixture(
     fixtureName: string,
     manifestEntry: ManifestEntry,
@@ -372,45 +428,12 @@ async function runFixture(
     const pathPlan = runOptions.pathMode === 'production' ? productionPlan : planModelPotentialPath(fixtureFiles);
 
     const prescanLane = await runPrescanLane(pathPlan.prescanFiles);
-    // Wie im Webhook: ohne reviewbare Datei laeuft keine Kaskade.
-    const cascadeLane = runOptions.ownerUserId === null || pathPlan.reviewableFiles.length === 0
-        ? null
-        : await runCascadeLane(
-            fixtureName,
-            {
-                fixtureFiles,
-                reviewableFiles: pathPlan.reviewableFiles,
-                detectedEcosystems: resolveFixtureEcosystems(manifestEntry, runOptions.usePolyglotEcosystems),
-            },
-            runOptions.ownerUserId,
-            runOptions.cascadeConfig,
-        );
+    const cascadeLane = await runCascadeForPlan(fixtureName, manifestEntry, runOptions, { fixtureFiles, pathPlan });
 
     const draftIssues = cascadeLane?.draftIssues ?? [];
     const survivingIssues = cascadeLane?.survivingIssues ?? [];
-
-    const planted: PlantedRuleResult[] = manifestEntry.expected.map((expected) => ({
-        bundle: fixtureName,
-        path: expected.path,
-        ruleContains: expected.ruleContains,
-        caughtByDraft: matchesAnyIssue(expected, draftIssues),
-        caughtByPrescan: matchesAnyIssue(expected, prescanLane.issues),
-        caughtBySecondOpinion: matchesAnyIssue(expected, cascadeLane?.secondOpinionIssues ?? []),
-        survivedVerifier: matchesAnyIssue(expected, survivingIssues),
-        productionLane: resolveProductionLane(expected.path, productionPlan),
-    }));
-
-    // Auf Negativ-Kontrollen ist JEDES Finding ein False Positive — aus beiden Lanes.
-    const falsePositives = manifestEntry.negativeControl
-        ? [
-            ...survivingIssues.map((issue) => ({
-                rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'llm' as const,
-            })),
-            ...prescanLane.issues.map((issue) => ({
-                rule: issue.rule, path: issue.path, severity: issue.severity, lane: 'prescan' as const,
-            })),
-        ]
-        : [];
+    const planted = evaluatePlantedRules(fixtureName, manifestEntry, { prescanLane, cascadeLane }, productionPlan);
+    const falsePositives = collectFalsePositives(manifestEntry, survivingIssues, prescanLane.issues);
 
     return {
         fixture: fixtureName,
@@ -543,76 +566,89 @@ function printRecallByProductionLane(allPlanted: readonly PlantedRuleResult[]): 
     }
 }
 
-function printReport(results: readonly FixtureResult[], prescanOnly: boolean, pathMode: BenchmarkPathMode): boolean {
+function buildAggregateNumbers(results: readonly FixtureResult[], prescanOnly: boolean): AggregateNumbers {
     const allPlanted = results.flatMap((result) => result.planted);
-    const caught = allPlanted.filter((planted) => planted.caughtByDraft);
-    const prescanCaught = allPlanted.filter((planted) => planted.caughtByPrescan);
-    const secondOpinionCaught = allPlanted.filter((planted) => planted.caughtBySecondOpinion);
-    // Kombiniert: Draft ODER deterministische Lane ODER Pro-Zweitmeinung
-    // (Prescan-Findings sind verifier-exempt, Second-Opinion-Findings verdict-los).
-    const combinedCaught = allPlanted.filter(
-        (planted) => planted.caughtByDraft || planted.caughtByPrescan || planted.caughtBySecondOpinion,
-    );
-    const survivedCombined = allPlanted.filter((planted) => planted.survivedVerifier || planted.caughtByPrescan);
     const negativeControls = results.filter((result) => result.negativeControl);
-    const criticalFps = negativeControls.flatMap((result) =>
-        result.falsePositives.filter((fp) => fp.severity === 'CRITICAL'),
-    );
-    const warningFps = negativeControls.flatMap((result) =>
-        result.falsePositives.filter((fp) => fp.severity !== 'CRITICAL'),
-    );
+    const negativeControlFps = negativeControls.flatMap((result) => result.falsePositives);
+    return {
+        allPlanted,
+        caught: allPlanted.filter((planted) => planted.caughtByDraft),
+        prescanCaught: allPlanted.filter((planted) => planted.caughtByPrescan),
+        secondOpinionCaught: allPlanted.filter((planted) => planted.caughtBySecondOpinion),
+        // Kombiniert: Draft ODER deterministische Lane ODER Pro-Zweitmeinung
+        // (Prescan-Findings sind verifier-exempt, Second-Opinion-Findings verdict-los).
+        combinedCaught: allPlanted.filter(isCaughtByAnyLane),
+        survivedCombined: allPlanted.filter((planted) => planted.survivedVerifier || planted.caughtByPrescan),
+        negativeControls,
+        criticalFps: negativeControlFps.filter((fp) => fp.severity === 'CRITICAL'),
+        warningFps: negativeControlFps.filter((fp) => fp.severity !== 'CRITICAL'),
+        prescanOnly,
+    };
+}
 
+function printReportHeader(prescanOnly: boolean, pathMode: BenchmarkPathMode): void {
     console.log(`\n=== Rule-Recall Benchmark (${new Date().toISOString()})${prescanOnly ? ' — PRESCAN-ONLY' : ''} ===`);
     console.log(`Pfad: ${PATH_MODE_LABELS[pathMode]}`);
     if (!prescanOnly) {
         console.log(`Draft/Verify: ${MODEL_DRAFT} / ${MODEL_VERIFIER} | Escalation: ${MODEL_ESCALATION}`);
     }
     console.log('');
+}
 
-    printFixtureTable(results);
-    printAggregates({
-        allPlanted, caught, prescanCaught, secondOpinionCaught, combinedCaught, survivedCombined,
-        negativeControls, criticalFps, warningFps, prescanOnly,
-    });
-    printRecallByProductionLane(allPlanted);
+/** Ein Befund-Block des Reports; ohne Eintraege keine Ausgabe. */
+function printReportSection(sectionHeading: string, sectionLines: readonly string[]): void {
+    if (sectionLines.length === 0) return;
+    console.log(`\n${sectionHeading}`);
+    for (const sectionLine of sectionLines) {
+        console.log(`   - ${sectionLine}`);
+    }
+}
 
-    // Gating: prescan-only misst nur die deterministische Lane — Misses der
-    // LLM-Regeln sind dort erwartbar und gaten nicht.
-    // Im Produktionspfad liest das Modell nur reviewbare Dateien: ein Miss auf
-    // einer Datei ohne Modell-Lane ist dort der gemessene Ist-Zustand, kein Fehler.
-    const combinedMisses = allPlanted.filter(
+/**
+ * Gating: prescan-only misst nur die deterministische Lane — Misses der
+ * LLM-Regeln sind dort erwartbar und gaten nicht (der Aufrufer prueft das).
+ * Im Produktionspfad liest das Modell nur reviewbare Dateien: ein Miss auf
+ * einer Datei ohne Modell-Lane ist dort der gemessene Ist-Zustand, kein Fehler.
+ */
+function collectCombinedMisses(
+    allPlanted: readonly PlantedRuleResult[],
+    pathMode: BenchmarkPathMode,
+): PlantedRuleResult[] {
+    return allPlanted.filter(
         (planted) => !isCaughtByAnyLane(planted)
             && (pathMode === 'model-potential' || planted.productionLane === 'model-and-prescan'),
     );
-    if (!prescanOnly && combinedMisses.length > 0) {
-        console.log(`\n[MISS] Weder Draft noch Prescan fanden diese gepflanzten Regeln:`);
-        for (const miss of combinedMisses) {
-            console.log(`   - ${miss.ruleContains} @ ${miss.path} (${miss.bundle})`);
-        }
-    }
+}
 
+function describePlanted(planted: PlantedRuleResult): string {
+    return `${planted.ruleContains} @ ${planted.path} (${planted.bundle})`;
+}
+
+function printReport(results: readonly FixtureResult[], prescanOnly: boolean, pathMode: BenchmarkPathMode): boolean {
+    const aggregateNumbers = buildAggregateNumbers(results, prescanOnly);
+    const { allPlanted, criticalFps } = aggregateNumbers;
+
+    printReportHeader(prescanOnly, pathMode);
+    printFixtureTable(results);
+    printAggregates(aggregateNumbers);
+    printRecallByProductionLane(allPlanted);
+
+    const combinedMisses = collectCombinedMisses(allPlanted, pathMode);
     const falseRefutations = allPlanted.filter((planted) => planted.caughtByDraft && !planted.survivedVerifier);
-    if (falseRefutations.length > 0) {
-        console.log(`\n[FALSE REFUTATION] Draft fand es, Verifier verwarf es:`);
-        for (const refuted of falseRefutations) {
-            console.log(`   - ${refuted.ruleContains} @ ${refuted.path} (${refuted.bundle})`);
-        }
-    }
-
-    if (criticalFps.length > 0) {
-        console.log(`\n[FALSE POSITIVE] CRITICAL-Findings auf Negativ-Kontrollen:`);
-        for (const fp of criticalFps) {
-            console.log(`   - [${fp.lane}] ${fp.rule} @ ${fp.path}`);
-        }
-    }
-
     const errored = results.filter((result) => result.error);
-    if (errored.length > 0) {
-        console.log(`\n[ERRORED] Fixtures mit Infra-/Modellfehler (Recall unbekannt, nicht bewertet):`);
-        for (const result of errored) {
-            console.log(`   - ${result.fixture}: ${(result.error ?? '').split('\n')[0]}`);
-        }
-    }
+    printReportSection(
+        '[MISS] Weder Draft noch Prescan fanden diese gepflanzten Regeln:',
+        prescanOnly ? [] : combinedMisses.map(describePlanted),
+    );
+    printReportSection('[FALSE REFUTATION] Draft fand es, Verifier verwarf es:', falseRefutations.map(describePlanted));
+    printReportSection(
+        '[FALSE POSITIVE] CRITICAL-Findings auf Negativ-Kontrollen:',
+        criticalFps.map((fp) => `[${fp.lane}] ${fp.rule} @ ${fp.path}`),
+    );
+    printReportSection(
+        '[ERRORED] Fixtures mit Infra-/Modellfehler (Recall unbekannt, nicht bewertet):',
+        errored.map((result) => `${result.fixture}: ${(result.error ?? '').split('\n')[0]}`),
+    );
 
     const clean = (prescanOnly || (combinedMisses.length === 0 && falseRefutations.length === 0))
         && criticalFps.length === 0 && errored.length === 0;
@@ -654,8 +690,8 @@ interface AggregateNumbers {
     readonly combinedCaught: readonly PlantedRuleResult[];
     readonly survivedCombined: readonly PlantedRuleResult[];
     readonly negativeControls: readonly FixtureResult[];
-    readonly criticalFps: readonly { severity: string }[];
-    readonly warningFps: readonly { severity: string }[];
+    readonly criticalFps: FixtureResult['falsePositives'];
+    readonly warningFps: FixtureResult['falsePositives'];
     readonly prescanOnly: boolean;
 }
 

@@ -13,6 +13,7 @@
  */
 import { createCheckRun, updateCheckRun } from '@/lib/github';
 import { extractErrorMessage } from '@/lib/errors';
+import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
 import type { CheckRunConclusion } from '@/lib/github';
 import type { PipelineIssue } from '@/lib/pipeline/types';
 
@@ -156,14 +157,15 @@ export function deriveReviewConclusion(
     issues: readonly PipelineIssue[],
     integrityGate?: IntegrityGate,
 ): CheckRunResult {
-    const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length;
+    // Tatsächliche Treffer, nicht Einträge: ein Sammelfinding des E4-Deckels zählt jede Fundstelle.
+    const { criticalCount, warningCount } = countHitsBySeverity(issues);
 
     if (criticalCount > 0) {
         return {
             conclusion: 'failure',
             title: `${criticalCount} critical slop finding${criticalCount === 1 ? '' : 's'}`,
             summary: `The Anti-Slop Gatekeeper found ${criticalCount} critical and `
-                + `${issues.length - criticalCount} non-critical finding(s). See the review comments.`,
+                + `${warningCount} non-critical finding(s). See the review comments.`,
         };
     }
 
@@ -178,10 +180,10 @@ export function deriveReviewConclusion(
         };
     }
 
-    if (issues.length > 0) {
+    if (warningCount > 0) {
         return {
             conclusion: 'neutral',
-            title: `${issues.length} non-critical finding${issues.length === 1 ? '' : 's'}`,
+            title: `${warningCount} non-critical finding${warningCount === 1 ? '' : 's'}`,
             summary: 'The Anti-Slop Gatekeeper found no critical slop. '
                 + 'The remaining findings are advisory and do not block the merge.',
         };

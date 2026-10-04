@@ -10,6 +10,7 @@ import {
     buildPullRequestFile,
     buildReviewIssue,
 } from '@/lib/pipeline/testing/context-fixture';
+import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
 
 const {
     terminalUpdateMock,
@@ -322,6 +323,37 @@ describe('resultPersisterStep — Summary aus den tatsächlichen Findings (LANGU
 
         expect(capturedUpdatePayload().result.review.summary).toBe(
             'Found 1 critical naming issue. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+        );
+    });
+
+    it('sagt nie "reported no further findings", wenn Modell-Findings veröffentlicht werden (leere Draft-Summary)', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: '',
+            issues: [buildReviewIssue()],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        const persistedSummary = capturedUpdatePayload().result.review.summary;
+        expect(persistedSummary).not.toContain('reported no further findings');
+        expect(persistedSummary).toBe('Final result: 2 critical and 0 warning findings.');
+    });
+
+    it('zählt nach dem E4-Deckel jeden Treffer: 10 CRITICAL bleiben 10, auch bei 4 veröffentlichten Einträgen', async () => {
+        const tenCriticalHits = Array.from({ length: 10 }, (_, hitIndex) => ({
+            ...sqlInterpolationFinding, path: `src/lib/queries/lookup-${hitIndex}.ts`,
+        }));
+
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'No AI slop found.',
+            issues: [],
+            prescanIssues: capRepeatedRuleHits(tenCriticalHits),
+        }));
+
+        const persistedReview = capturedUpdatePayload().result.review;
+        expect(persistedReview.issues).toHaveLength(4);
+        expect(persistedReview.summary).toBe(
+            'The deterministic pre-scanner found 10 critical and 0 warning findings. '
+            + 'The model review reported no further findings.',
         );
     });
 

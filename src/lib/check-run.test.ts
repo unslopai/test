@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { deriveDeterministicOnlyConclusion, deriveReviewConclusion } from '@/lib/check-run';
+import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
 import { buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
 
 describe('deriveReviewConclusion', () => {
@@ -39,6 +40,23 @@ describe('deriveReviewConclusion', () => {
         ];
 
         expect(deriveReviewConclusion(criticalFindings).title).toContain('2 critical');
+    });
+
+    it('counts every hit behind a capped pre-scanner finding (E4): 10 critical stay 10', () => {
+        const tenCriticalHits = Array.from({ length: 10 }, (_, hitIndex) => buildReviewIssue({
+            rule: 'SEC-004 (SQL built by string interpolation)',
+            path: `src/lib/queries/lookup-${hitIndex}.ts`,
+            source: 'pre-scanner',
+        }));
+        const cappedFindings = capRepeatedRuleHits(tenCriticalHits);
+        const advisoryHits = capRepeatedRuleHits(tenCriticalHits.map((hit) => ({ ...hit, severity: 'WARNING' as const })));
+
+        expect(cappedFindings).toHaveLength(4);
+        expect(deriveReviewConclusion(cappedFindings)).toMatchObject({
+            title: '10 critical slop findings',
+            summary: 'The Anti-Slop Gatekeeper found 10 critical and 0 non-critical finding(s). See the review comments.',
+        });
+        expect(deriveReviewConclusion(advisoryHits).title).toBe('10 non-critical findings');
     });
 });
 

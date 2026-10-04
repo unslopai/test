@@ -14,6 +14,7 @@
  * `resolvePublishedSummary` ist deshalb die einzige Stelle, aus der Persister
  * und Reporter ihre Summary beziehen.
  */
+import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
 import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
 
@@ -59,8 +60,7 @@ export function buildFinalStateSummary(
 ): string {
     if (reportableIssues.length === 0) return ALL_REFUTED_SUMMARY;
 
-    const criticalCount = reportableIssues.filter((reportableIssue) => reportableIssue.severity === 'CRITICAL').length;
-    const warningCount = reportableIssues.length - criticalCount;
+    const { criticalCount, warningCount } = countHitsBySeverity(reportableIssues);
     const summarySentences = [
         `${FINAL_STATE_PREFIX} ${criticalCount} critical and ${warningCount} warning ${pluralizeFinding(warningCount)}.`,
     ];
@@ -91,7 +91,9 @@ export function buildFinalStateSummary(
  *  - Template-Summary (A12a): zählt bereits beide Lanes.
  *  - Sonst: der Modell-Text gilt nur für Findings der LLM-Lane. Die
  *    deterministischen Findings kommen als eigener Satz dazu; hat das Modell
- *    nichts gemeldet, ersetzt dieser Satz den Clean-Text.
+ *    nichts gemeldet, ersetzt dieser Satz den Clean-Text. Hat das Modell
+ *    Findings, aber keinen Text, zählt die Template-Summary beide Lanes —
+ *    „reported no further findings“ stünde dann neben Modell-Findings.
  */
 export function resolvePublishedSummary(
     context: SummaryContext,
@@ -109,9 +111,10 @@ export function resolvePublishedSummary(
     if (deterministicIssues.length === 0) return modelSummary || buildFinalStateSummary(reportableIssues, NO_VERDICT_CHANGES);
 
     const deterministicSentence = describeDeterministicFindings(deterministicIssues);
-    return modelFindingCount > 0 && modelSummary.length > 0
+    if (modelFindingCount === 0) return `${deterministicSentence} The model review reported no further findings.`;
+    return modelSummary.length > 0
         ? `${modelSummary} ${deterministicSentence}`
-        : `${deterministicSentence} The model review reported no further findings.`;
+        : buildFinalStateSummary(reportableIssues, NO_VERDICT_CHANGES);
 }
 
 type SummaryContext = Pick<
@@ -135,8 +138,7 @@ const NO_VERDICT_CHANGES: VerdictOutcomeCounts = { refutedCount: 0, downgradedCo
 
 /** "The deterministic pre-scanner found 1 critical and 2 warning findings." */
 function describeDeterministicFindings(deterministicIssues: readonly PipelineIssue[]): string {
-    const criticalCount = deterministicIssues.filter((deterministicIssue) => deterministicIssue.severity === 'CRITICAL').length;
-    const warningCount = deterministicIssues.length - criticalCount;
+    const { criticalCount, warningCount } = countHitsBySeverity(deterministicIssues);
     return `The deterministic pre-scanner found ${criticalCount} critical and ${warningCount} warning `
         + `${pluralizeFinding(warningCount)}.`;
 }

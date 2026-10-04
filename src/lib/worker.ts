@@ -24,7 +24,7 @@ import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } 
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
-import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
@@ -492,10 +492,12 @@ async function closeCheckRun(
 function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
     const reviewOutcome = resolveReviewOutcome(finalContext);
     if (reviewOutcome === 'nothing_reviewed') {
+        const nothingReviewedNotice = describeNothingReviewed(finalContext);
         return {
             conclusion: 'neutral',
-            title: 'Nothing to review',
-            summary: finalContext.abortReason ?? 'No reviewable files in this pull request.',
+            // Ein ausgefallener Pre-Scan heißt nicht „nichts zu prüfen“ (LANGUAGE_COVERAGE_SPEC §6.2).
+            title: nothingReviewedNotice.kind === 'check_failed' ? 'Not reviewed' : 'Nothing to review',
+            summary: nothingReviewedNotice.reason,
         };
     }
 
