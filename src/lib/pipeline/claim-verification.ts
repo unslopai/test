@@ -1,0 +1,363 @@
+/**
+ * Blind-Claim-Verifikation — geteilte Logik für claim-verifier-step und
+ * escalation-reviewer-step (SPEC.md §4.4).
+ *
+ * Blindheits-Contract (D5): Ein Claim enthält NUR Regel, Fundort und Code-Zitat.
+ * Kritik-Text, Fix-Snippet und Severity des Drafts bleiben draußen — der
+ * Verifier darf nicht durch die Begründung des Draft-Modells geankert werden.
+ */
+import { runEnvelopeGenerateContent } from '@/lib/pipeline/context-cache';
+import { extractTokenUsage, parseModelJson } from '@/lib/pipeline/helpers';
+import { ModelUnavailableError, isCallDeadlineFailure, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
+import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
+import type { EnvelopeCallResult, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
+import type { PullRequestFile } from '@/lib/github';
+import type { IssueOccurrence } from '@unslop/shared';
+import type { ClaimVerdict, PipelineContext, PipelineIssue, TokenUsage } from '@/lib/pipeline/types';
+
+// =============================================================================
+// Claim Building
+// =============================================================================
+
+/** Blinder Claim: die Behauptung des Drafts ohne dessen Begründung. */
+export interface BlindClaim {
+    readonly claimId: string;
+    readonly rule: string;
+    readonly path: string;
+    readonly line: number;
+    readonly endLine: number;
+    readonly exactQuote: string;
+    /**
+     * Aggregierte Findings (ROADMAP §7): ALLE Vorkommen der Regel in der
+     * Datei — der Verifier prüft sie in EINEM Durchgang statt N Einzel-Claims.
+     * Fehlt bei Einzel-Findings (Alt-Contract, keine Prompt-Änderung).
+     */
+    readonly occurrences?: readonly IssueOccurrence[];
+}
+
+/**
+ * Stabile Claim-ID für einen Issue-Index. Die Zuordnung Issue <-> Claim läuft
+ * ausschließlich über den Index im UNGEFILTERTEN context.issues-Array —
+ * Issues werden erst im integrity-scorer verworfen, damit die IDs über
+ * claim-verifier und escalation-reviewer hinweg stabil bleiben.
+ */
+export function claimIdForIssueIndex(issueIndex: number): string {
+    return `c${issueIndex + 1}`;
+}
+
+export function buildBlindClaims(issues: readonly PipelineIssue[]): BlindClaim[] {
+    return issues.map((draftIssue, issueIndex) => ({
+        claimId: claimIdForIssueIndex(issueIndex),
+        rule: draftIssue.rule,
+        path: draftIssue.path,
+        line: draftIssue.line,
+        endLine: draftIssue.endLine,
+        exactQuote: draftIssue.exactQuote,
+        ...(draftIssue.occurrences ? { occurrences: draftIssue.occurrences } : {}),
+    }));
+}
+
+/** Teilt Claims in Batches à batchCap (Batch-Cap gegen "Verschlucken", D7). */
+export function chunkClaims(
+    claims: readonly BlindClaim[],
+    batchCap: number,
+): BlindClaim[][] {
+    const safeBatchCap = Math.max(1, batchCap);
+    const claimBatches: BlindClaim[][] = [];
+
+    for (let batchOffset = 0; batchOffset < claims.length; batchOffset += safeBatchCap) {
+        claimBatches.push(claims.slice(batchOffset, batchOffset + safeBatchCap));
+    }
+
+    return claimBatches;
+}
+
+// =============================================================================
+// Verifier User Prompt
+// =============================================================================
+
+/**
+ * Baut den User-Prompt eines Verifier-Calls: erst die Diff-Hunks der
+ * referenzierten Dateien (einmal pro Datei, nicht pro Claim — Token-Ökonomie),
+ * dann die Claims als JSON-Array.
+ */
+export function buildVerifierUserPrompt(
+    claimBatch: readonly BlindClaim[],
+    prFiles: readonly PullRequestFile[],
+): string {
+    const referencedPaths = [...new Set(claimBatch.map((claim) => claim.path))];
+    const patchByPath = new Map(prFiles.map((prFile) => [prFile.filename, prFile.patch ?? '']));
+
+    const diffExcerpts = referencedPaths
+        .map((filePath) => `--- FILE: ${filePath} ---\n${patchByPath.get(filePath) ?? '(patch unavailable)'}`)
+        .join('\n\n');
+
+    const claimsJson = JSON.stringify(
+        claimBatch.map((claim) => ({
+            claim_id: claim.claimId,
+            rule: claim.rule,
+            path: claim.path,
+            line: claim.line,
+            end_line: claim.endLine,
+            exact_quote: claim.exactQuote,
+            // Aggregierte Claims (ROADMAP §7): das Verdict gilt für ALLE
+            // gelisteten Vorkommen — ein Durchgang statt N Einzel-Claims.
+            ...(claim.occurrences
+                ? {
+                    occurrences: claim.occurrences.map((occurrence) => ({
+                        line: occurrence.line,
+                        end_line: occurrence.endLine,
+                        exact_quote: occurrence.exactQuote,
+                    })),
+                }
+                : {}),
+        })),
+        null,
+        2,
+    );
+
+    return `=== DIFF EXCERPTS (context only) ===\n\n${diffExcerpts}\n\n=== CLAIMS TO VERIFY ===\n\n${claimsJson}`;
+}
+
+// =============================================================================
+// Verdict Parsing & Validation (ARCH-002: Strict Validation Boundary)
+// =============================================================================
+
+const VALID_VERDICTS = new Set(['CONFIRMED', 'REFUTED', 'UNCERTAIN']);
+
+interface RawVerdictBatch {
+    verdicts?: unknown;
+}
+
+/**
+ * Parst und validiert eine Verifier-Antwort. Jede erwartete claim_id kommt
+ * genau einmal zurück; fehlende oder unbrauchbare Einträge werden fail-safe
+ * als UNCERTAIN (confidence 0) gewertet — Richtung Eskalation, nie Richtung
+ * stillem Vertrauen.
+ */
+export function parseVerdictBatch(
+    rawResponseText: string,
+    expectedClaimIds: readonly string[],
+    phase: ClaimVerdict['phase'],
+): ClaimVerdict[] {
+    const parsedBatch = parseModelJson<RawVerdictBatch>(rawResponseText, 'ClaimVerifier');
+    assertVerdictBatchShape(parsedBatch);
+    const rawVerdictEntries = parsedBatch.verdicts;
+
+    const verdictByClaimId = new Map<string, ClaimVerdict>();
+    for (const rawEntry of rawVerdictEntries) {
+        const normalizedVerdict = normalizeVerdictEntry(rawEntry, phase);
+        if (normalizedVerdict && !verdictByClaimId.has(normalizedVerdict.claimId)) {
+            verdictByClaimId.set(normalizedVerdict.claimId, normalizedVerdict);
+        }
+    }
+
+    return expectedClaimIds.map(
+        (claimId) => verdictByClaimId.get(claimId) ?? buildUncertainFallback(claimId, phase),
+    );
+}
+
+function normalizeVerdictEntry(rawEntry: unknown, phase: ClaimVerdict['phase']): ClaimVerdict | null {
+    if (!rawEntry || typeof rawEntry !== 'object') return null;
+    const verdictCandidate = rawEntry as Record<string, unknown>;
+
+    if (typeof verdictCandidate.claim_id !== 'string') return null;
+
+    const verdictLabel = typeof verdictCandidate.verdict === 'string'
+        && VALID_VERDICTS.has(verdictCandidate.verdict)
+        ? verdictCandidate.verdict as ClaimVerdict['verdict']
+        : 'UNCERTAIN';
+
+    return {
+        claimId: verdictCandidate.claim_id,
+        verificationQuestion: typeof verdictCandidate.verification_question === 'string'
+            ? verdictCandidate.verification_question : '',
+        blindAnswer: typeof verdictCandidate.blind_answer === 'string'
+            ? verdictCandidate.blind_answer : '',
+        verdict: verdictLabel,
+        confidence: clampConfidence(verdictCandidate.confidence),
+        phase,
+    };
+}
+
+/**
+ * Validation-Boundary hinter parseModelJson [ARCH-002] — Gegenstück zum
+ * Reviewer-Guard (reviewer-call.ts): die 3.x-Flash-Modelle liefern selten
+ * syntaktisch valides JSON OHNE das erwartete Array (Familien-Degeneration).
+ * Ohne diesen Guard maskierte sich eine degenerierte Antwort als "alle
+ * Claims UNCERTAIN" mit Telemetrie-Status ok — kein Retry, stattdessen
+ * eskalierte JEDER Claim zur Pro-Stufe (Quota + Kosten). Als Fehler geworfen
+ * greift der bestehende Batch-Retry (SPEC §8), der zweite Fehlschlag
+ * degradiert per D10. Der Fail-safe für PARTIELLE Antworten (Array
+ * vorhanden, einzelne Claims fehlen → UNCERTAIN) bleibt unberührt.
+ */
+function assertVerdictBatchShape(
+    parsedBatch: RawVerdictBatch,
+): asserts parsedBatch is { verdicts: unknown[] } {
+    if (!Array.isArray(parsedBatch.verdicts)) {
+        throw new Error('ClaimVerifier: Modell-JSON ohne verdicts-Array (degenerierte Antwort).');
+    }
+}
+
+function buildUncertainFallback(claimId: string, phase: ClaimVerdict['phase']): ClaimVerdict {
+    return {
+        claimId,
+        verificationQuestion: '',
+        blindAnswer: 'Verifier returned no usable verdict for this claim.',
+        verdict: 'UNCERTAIN',
+        confidence: 0,
+        phase,
+    };
+}
+
+export function clampConfidence(rawConfidence: unknown): number {
+    if (typeof rawConfidence !== 'number' || Number.isNaN(rawConfidence)) return 0;
+    return Math.min(100, Math.max(0, Math.round(rawConfidence)));
+}
+
+// =============================================================================
+// Verdict LLM Call (geteilt von claim-verifier und escalation-reviewer)
+// =============================================================================
+
+/** Typisierter Fehler eines Verdict-Calls — Steps mappen ihn auf ihre Degradation. */
+export class VerdictCallError extends Error {
+    constructor(
+        readonly failureKind: 'parse_error' | 'api_error',
+        failureMessage: string,
+        underlyingFailure?: unknown,
+    ) {
+        // cause trägt den SDK-Fehler weiter — vertex-retry.ts liest daraus den
+        // HTTP-Status für den Kapazitäts-Backoff.
+        super(failureMessage, { cause: underlyingFailure });
+        this.name = 'VerdictCallError';
+    }
+}
+
+export interface VerdictCallConfig {
+    readonly model: string;
+    readonly verdictPhase: ClaimVerdict['phase'];
+    readonly telemetryPhase: 'verify' | 'escalate_targeted';
+}
+
+export interface VerdictCallResult {
+    readonly verdicts: ClaimVerdict[];
+    readonly callUsage: TokenUsage;
+    /** true ⇒ der Explicit-Cache-Pfad fiel per D8 auf inline zurück. */
+    readonly cacheFallbackOccurred: boolean;
+}
+
+/**
+ * Führt einen Verdict-Batch-Call aus. Die Telemetrie-Zeile wird IMMER
+ * geschrieben (ok / parse_error / api_error), bevor Fehler propagieren.
+ * Der Prompt kommt als FlashPromptEnvelope (PROMPT_CACHING_SPEC §6):
+ * der Executor entscheidet cached vs. inline, inkl. D8-Fallback.
+ */
+export async function runVerdictCall(
+    context: PipelineContext,
+    promptEnvelope: FlashPromptEnvelope,
+    claimBatch: readonly BlindClaim[],
+    callConfig: VerdictCallConfig,
+): Promise<VerdictCallResult> {
+    const callStartedAt = Date.now();
+    const writeTelemetry = (
+        callStatus: 'ok' | 'parse_error' | 'api_error',
+        cacheStatus: FlashPromptEnvelope['plan']['cacheStatus'],
+        callUsage?: TokenUsage,
+        verdicts?: readonly ClaimVerdict[],
+    ) => recordLlmCall({
+        jobId: context.jobId,
+        repoId: context.repositoryId,
+        phase: callConfig.telemetryPhase,
+        model: callConfig.model,
+        status: callStatus,
+        tokenUsage: callUsage,
+        latencyMs: Date.now() - callStartedAt,
+        cacheStatus,
+        ...(verdicts ? countVerdicts(verdicts) : {}),
+        verdictDetails: verdicts,
+    });
+
+    let envelopeResult: EnvelopeCallResult;
+    try {
+        envelopeResult = await runEnvelopeGenerateContent(
+            promptEnvelope,
+            buildVerifierUserPrompt(claimBatch, context.reviewableFiles),
+        );
+    } catch (verdictApiError: unknown) {
+        await writeTelemetry('api_error', promptEnvelope.plan.cacheStatus);
+        throw new VerdictCallError('api_error', extractFailureMessage(verdictApiError), verdictApiError);
+    }
+
+    const { generateResponse, effectiveCacheStatus } = envelopeResult;
+    const callUsage = extractTokenUsage(generateResponse.usageMetadata, callConfig.model);
+    const expectedClaimIds = claimBatch.map((blindClaim) => blindClaim.claimId);
+    const cacheFallbackOccurred = effectiveCacheStatus === 'inline_fallback';
+
+    try {
+        const verdicts = parseVerdictBatch(
+            generateResponse.text ?? '', expectedClaimIds, callConfig.verdictPhase,
+        );
+        await writeTelemetry('ok', effectiveCacheStatus, callUsage, verdicts);
+        return { verdicts, callUsage, cacheFallbackOccurred };
+    } catch (verdictParseError: unknown) {
+        await writeTelemetry('parse_error', effectiveCacheStatus, callUsage);
+        throw new VerdictCallError('parse_error', extractFailureMessage(verdictParseError));
+    }
+}
+
+/**
+ * Ein Retry pro Batch (SPEC.md §8) — der zweite Fehlschlag propagiert.
+ * Transiente Kapazitätsfehler (429/5xx) laufen vorher durch den eigenen
+ * Backoff (vertex-retry.ts); sind dessen Retries erschöpft, verbraucht der
+ * Sofort-Retry keinen weiteren Call gegen ein erschöpftes Kontingent. Ein
+ * Deadline-Abbruch (Latenz-Guard der Eskalation) wird ebenfalls nie
+ * wiederholt — der Retry würde das Routen-Budget verbrauchen, das die
+ * Deadline schützt.
+ */
+export async function runVerdictCallWithRetry(
+    context: PipelineContext,
+    promptEnvelope: FlashPromptEnvelope,
+    claimBatch: readonly BlindClaim[],
+    callConfig: VerdictCallConfig,
+): Promise<VerdictCallResult> {
+    const runAttemptWithBackoff = () => runWithTransientRetry(
+        () => runVerdictCall(context, promptEnvelope, claimBatch, callConfig),
+        `VerdictCall/${callConfig.telemetryPhase}/${callConfig.model}`,
+    );
+    try {
+        return await runAttemptWithBackoff();
+    } catch (firstAttemptFailure: unknown) {
+        if (firstAttemptFailure instanceof ModelUnavailableError) throw firstAttemptFailure;
+        if (isCallDeadlineFailure(firstAttemptFailure)) throw firstAttemptFailure;
+        console.warn(
+            `[ClaimVerification] Verdict-Batch fehlgeschlagen, ein Retry ` +
+            `(Job ${context.jobId}, Phase ${callConfig.telemetryPhase}):`,
+            extractFailureMessage(firstAttemptFailure),
+        );
+        return runAttemptWithBackoff();
+    }
+}
+
+function extractFailureMessage(failure: unknown): string {
+    return failure instanceof Error ? failure.message : String(failure);
+}
+
+// =============================================================================
+// Verdict Counting (Telemetrie)
+// =============================================================================
+
+export interface VerdictCounts {
+    readonly claimsTotal: number;
+    readonly claimsConfirmed: number;
+    readonly claimsRefuted: number;
+    readonly claimsUncertain: number;
+}
+
+export function countVerdicts(verdicts: readonly ClaimVerdict[]): VerdictCounts {
+    return {
+        claimsTotal: verdicts.length,
+        claimsConfirmed: verdicts.filter((verdictEntry) => verdictEntry.verdict === 'CONFIRMED').length,
+        claimsRefuted: verdicts.filter((verdictEntry) => verdictEntry.verdict === 'REFUTED').length,
+        claimsUncertain: verdicts.filter((verdictEntry) => verdictEntry.verdict === 'UNCERTAIN').length,
+    };
+}
