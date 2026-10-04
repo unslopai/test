@@ -20,7 +20,7 @@ import germanCatalog from '../../../../messages/de.json';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'Unslop — Deterministic AI Code Review';
+export const alt = 'Unslop — Review gate for AI-generated code';
 
 const CATALOGS: Record<SupportedLocale, typeof englishCatalog> = {
   en: englishCatalog,

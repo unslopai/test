@@ -6,6 +6,7 @@ export type FaqItemKey =
   | 'ciSpeed'
   | 'adoption'
   | 'determinism'
+  | 'languages'
   | 'outage';
 
 /** Shared with the FAQPage JSON-LD in page.tsx — keep both in sync via this list. */
@@ -14,6 +15,7 @@ export const FAQ_ITEM_KEYS: readonly FaqItemKey[] = [
   'ciSpeed',
   'adoption',
   'determinism',
+  'languages',
   'outage',
 ];
 

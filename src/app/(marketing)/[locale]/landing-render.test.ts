@@ -18,6 +18,11 @@ import enMessages from '../../../../messages/en.json';
 import deMessages from '../../../../messages/de.json';
 import MarketingLayout from './layout';
 import MarketingLandingPage, { generateMetadata } from './page';
+import {
+    CONFIRMED_MODEL_FINDING,
+    DOWNGRADED_MODEL_FINDING,
+    PULL_REQUEST_EXHIBIT,
+} from '../real-findings';
 
 /** Vom Test kontrollierter Ersatz für den Proxy-/Cookie-Request-Kontext. */
 const requestScope = vi.hoisted(() => ({ locale: 'en' as 'en' | 'de' }));
@@ -119,6 +124,29 @@ async function renderLandingPage(locale: SupportedLocale): Promise<string[]> {
     return renderedTexts;
 }
 
+/**
+ * Kennzeichen der früheren, auf Drittstudien gebauten Landing (CONTEXT.md §6,
+ * W1/W10/W11): taucht eines davon wieder auf, ist die Claim-Policy vom
+ * 2026-09-30 verletzt.
+ */
+const FORBIDDEN_STUDY_FRAGMENTS = [
+    'arXiv',
+    '44×',
+    '44 to 1',
+    '44 zu 1',
+    '1.80×',
+    '1,80×',
+    '2.1 →',
+    '2,1 →',
+    '34.4%',
+    '34,4 %',
+    '87.1%',
+    '77%',
+    '205,474',
+    '205.474',
+    'Precision',
+] as const;
+
 const LOCALE_CASES = [
     { locale: 'en', ownCatalog: enMessages, otherCatalog: deMessages },
     { locale: 'de', ownCatalog: deMessages, otherCatalog: enMessages },
@@ -144,7 +172,7 @@ describe('marketing landing page SSR smoke (ROADMAP §2)', () => {
             expect(renderedTexts).not.toContain(otherCatalog.marketing.closingCta.heading);
         });
 
-        it('keeps the login CTAs and no waitlist form while NEXT_PUBLIC_WAITLIST_LIVE is unset', async () => {
+        it('shows the neutral anchor CTAs and no waitlist form while NEXT_PUBLIC_WAITLIST_LIVE is unset (W8)', async () => {
             const renderedTexts = await renderLandingPage(locale);
 
             expect(renderedTexts).toContain(ownCatalog.marketing.hero.ctaPrimary);
@@ -152,7 +180,7 @@ describe('marketing landing page SSR smoke (ROADMAP §2)', () => {
             expect(renderedTexts).not.toContain(WAITLIST_FORM_MARKER);
         });
 
-        it('swaps hero + closing login CTAs for the waitlist form when NEXT_PUBLIC_WAITLIST_LIVE=true (WAITLIST_SPEC §4.1)', async () => {
+        it('swaps hero + closing anchor CTAs for the waitlist form when NEXT_PUBLIC_WAITLIST_LIVE=true (WAITLIST_SPEC §4.1)', async () => {
             vi.stubEnv('NEXT_PUBLIC_WAITLIST_LIVE', 'true');
             const renderedTexts = await renderLandingPage(locale);
 
@@ -161,8 +189,34 @@ describe('marketing landing page SSR smoke (ROADMAP §2)', () => {
             expect(renderedTexts).not.toContain(ownCatalog.marketing.closingCta.button);
             // closingCta.secondary („Log in") ist bewusst NICHT geprüft: die Nav
             // behält ihren Login-Link mit demselben Wortlaut (Entscheidung 4).
-            // Der Evidenz-Link bleibt auch im Pre-Launch-Hero erreichbar.
+            // Der Mechanismus-Link bleibt auch im Pre-Launch-Hero erreichbar.
             expect(renderedTexts).toContain(ownCatalog.marketing.hero.ctaSecondary);
+        });
+
+        it('renders no third-party study figure and no footnote to a paper (MARKETING_CLAIMS §00)', async () => {
+            const renderedPage = (await renderLandingPage(locale)).join(' ');
+
+            for (const forbiddenFragment of FORBIDDEN_STUDY_FRAGMENTS) {
+                expect(renderedPage, `forbidden fragment: ${forbiddenFragment}`).not.toContain(forbiddenFragment);
+            }
+        });
+
+        it('renders the own measurement only together with method, run and limits (MARKETING_CLAIMS §00.3)', async () => {
+            const renderedTexts = await renderLandingPage(locale);
+            const measurementCopy = ownCatalog.marketing.findings.measurement;
+
+            expect(renderedTexts.join('')).toContain('126');
+            expect(renderedTexts).toContain(measurementCopy.method);
+            expect(renderedTexts).toContain(measurementCopy.run);
+            expect(renderedTexts).toContain(measurementCopy.limits);
+        });
+
+        it('renders the stored product output of the three real findings verbatim', async () => {
+            const renderedTexts = await renderLandingPage(locale);
+
+            expect(renderedTexts).toContain(PULL_REQUEST_EXHIBIT.critique);
+            expect(renderedTexts).toContain(CONFIRMED_MODEL_FINDING.rule);
+            expect(renderedTexts).toContain(DOWNGRADED_MODEL_FINDING.critiqueParagraphs[1]);
         });
 
         it('resolves localized metadata with canonical + alternate URLs from APP_BASE_URL', async () => {

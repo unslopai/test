@@ -43,9 +43,9 @@ Bekannte Nachteile von Brevo, bewusst akzeptiert: Marketing-Tool-Oberfläche sta
 
 | Phase | Flag | Landing-CTA | `POST /api/waitlist` |
 |---|---|---|---|
-| jetzt bis HR-Eintrag | unset | unverändert (heutige CTAs auf `/login`) | 404 (fail-closed) |
+| jetzt bis HR-Eintrag | unset | neutrale CTAs auf Seitenanker (`#exhibit`, `#findings`), kein Install-Versprechen; `/login` nur als „Log in“ für Bestandskonten (geändert 2026-09-30, CONTEXT.md §6 W8: Registrierung ist gesperrt) | 404 (fail-closed) |
 | HR-Eintrag bis Launch | `true` | Waitlist-Formular in Hero + Closing-CTA | aktiv |
-| Launch | unset | heutige CTAs zurück | 404 |
+| Launch | unset | Install-CTA auf `/login` — **braucht einen eigenen Schalter**, weil das Waitlist-Flag „vor HR-Eintrag“ und „Launch“ nicht unterscheidet (ROADMAP §10, Landing-Folgepunkte a) | 404 |
 
 ### 4.2 Datenfluss
 1. Client `WaitlistForm` → `POST /api/waitlist` mit `{ email, locale, website }` (`website` = Honeypot, muss leer sein).
@@ -110,7 +110,7 @@ Fehlt bei Flag `true` eine der Brevo-Variablen ⇒ Route 503 `waitlist_misconfig
 |---|---|
 | `waitlist/route.test.ts` | Flag unset ⇒ 404; ungültige E-Mail ⇒ 400; Honeypot gefüllt ⇒ 202 ohne DB/Brevo-Call; 6. Eintrag derselben IP in 60 min ⇒ 429; Brevo 5xx ⇒ 502 `waitlist_provider_error` + Log; Unique-Verstoß ⇒ 202 ohne zweiten Brevo-Call; fehlende Env bei Flag `true` ⇒ 503 |
 | `brevo.test.ts` | Request-Shape (Pfad, Header, Body-Felder), Timeout-Signal, Duplicate-Code ⇒ ok, anderer Fehler ⇒ wirft |
-| `landing-render.test.ts` (erweitert) | Flag `true` ⇒ Formular in Hero und Closing, keine `/login`-CTA-Buttons; Flag unset ⇒ heutiger Stand (Regressionsschutz) |
+| `landing-render.test.ts` (erweitert) | Flag `true` ⇒ Formular in Hero und Closing, keine Anker-CTA-Buttons; Flag unset ⇒ Anker-CTAs, kein Formular (seit 2026-09-30, W8) |
 | `catalog-parity.test.ts` | EN/DE-Schlüssel identisch (bestehend) |
 
 Live-Receipt vor dem Flag-Tag (ohne Öffentlichkeit): Formular in Preview-Deployment mit Vercel-Passwortschutz oder lokal gegen den echten Brevo-Account ausfüllen, DOI-Mail empfangen, Klick, Kontakt in der Brevo-Liste, Zeile in `waitlist_signups` via `npx tsx scripts/db-query.ts waitlist_signups --columns email,status,created_at --limit 5`.

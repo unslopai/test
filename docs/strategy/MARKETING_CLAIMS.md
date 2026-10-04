@@ -27,6 +27,8 @@
 
 **Status of the rest of this file:** §0–§8 below are an archive of the study-based approach (2026-07). They are no longer a source for new headlines, stat bands or posts. The paper references remain useful background for long-form writing under the rules above.
 
+**Applied to the landing page on 2026-09-30.** Numbers in use there, all our own: 119 rules in the catalogue (`golden_standards`, live count), 55 rule IDs with a detector (`packages/prescan/src/rules/registry.ts`), the 300-second budget (`src/lib/pipeline/deadline.ts`), and one measurement with its context in the same block (125 of 126, 0 false positives on 4 controls, run 2026-09-16; plus 46 of 48 on the large fixture, 2026-09-29). The three findings shown are stored product output (`src/app/(marketing)/real-findings.ts`). `landing-render.test.ts` fails if a study figure returns or if the measurement renders without method, run and limits.
+
 **Where this must be applied (ROADMAP §10, "Landing, Distribution und Motion auf Claim-Policy 2026-09-30"):** the landing page (`messages/{en,de}.json`, marketing components), the distribution channel packages (`distribution/channels/`), the motion films (`distribution/motion/`), `docs/seo/` guidance.
 
 ---

@@ -1,23 +1,16 @@
 import { getTranslations } from 'next-intl/server';
 import { SectionIntro } from './SectionIntro';
-import { SourceSup } from './SourceSup';
-import type { MarketingSourceKey } from '../marketing-sources';
 
-type VerdictRowKey = 'apiHallucination' | 'swallowedErrors' | 'verdictStability' | 'fixGuidance';
+type VerdictRowKey = 'rules' | 'production' | 'files' | 'gate' | 'label';
 
-interface VerdictRowDefinition {
-  readonly rowKey: VerdictRowKey;
-  readonly sourceKeys: readonly MarketingSourceKey[];
-}
+const VERDICT_ROW_KEYS: readonly VerdictRowKey[] = ['rules', 'production', 'files', 'gate', 'label'];
 
-const VERDICT_ROWS: readonly VerdictRowDefinition[] = [
-  { rowKey: 'apiHallucination', sourceKeys: ['apiOracle'] },
-  { rowKey: 'swallowedErrors', sourceKeys: ['aira'] },
-  { rowKey: 'verdictStability', sourceKeys: ['smartContracts'] },
-  { rowKey: 'fixGuidance', sourceKeys: ['erosion', 'copilotSmells'] },
-];
-
-/** Machine-readable comparison table (UNSLOP_SEO_RULES §2: tables over prose). */
+/**
+ * Welcher Teil des Urteils deterministisch ist und welcher vom Modell kommt
+ * (MARKETING_CLAIMS.md §00 Punkt 2), als maschinenlesbare Tabelle
+ * (UNSLOP_SEO_RULES §2: tables over prose). Ersetzt den früheren Vergleich
+ * „LLM judge vs. deterministic gate" mit Studienwerten.
+ */
 export async function VerdictTable() {
   const tableText = await getTranslations('marketing.verdictTable');
 
@@ -40,8 +33,8 @@ async function ComparisonTable() {
         <caption className="sr-only">{tableText('heading')}</caption>
         <ComparisonTableHead />
         <tbody className="divide-y divide-white/10">
-          {VERDICT_ROWS.map((verdictRow) => (
-            <ComparisonTableRow key={verdictRow.rowKey} verdictRow={verdictRow} />
+          {VERDICT_ROW_KEYS.map((verdictRowKey) => (
+            <ComparisonTableRow key={verdictRowKey} verdictRowKey={verdictRowKey} />
           ))}
         </tbody>
       </table>
@@ -58,32 +51,27 @@ async function ComparisonTableHead() {
         <th scope="col" className="px-5 py-4 font-medium text-zinc-400">
           {tableText('columnCheck')}
         </th>
-        <th scope="col" className="px-5 py-4 font-medium text-rose-300">
-          {tableText('columnLlmJudge')}
-        </th>
         <th scope="col" className="px-5 py-4 font-medium text-lime-300">
-          {tableText('columnGate')}
+          {tableText('columnPrescan')}
+        </th>
+        <th scope="col" className="px-5 py-4 font-medium text-zinc-200">
+          {tableText('columnModel')}
         </th>
       </tr>
     </thead>
   );
 }
 
-async function ComparisonTableRow({
-  verdictRow,
-}: {
-  readonly verdictRow: VerdictRowDefinition;
-}) {
+async function ComparisonTableRow({ verdictRowKey }: { readonly verdictRowKey: VerdictRowKey }) {
   const tableText = await getTranslations('marketing.verdictTable');
 
   return (
     <tr className="transition-colors hover:bg-white/[0.03]">
-      <th scope="row" className="px-5 py-4 font-medium text-zinc-200">
-        {tableText(`rows.${verdictRow.rowKey}.check`)}
-        <SourceSup sourceKeys={verdictRow.sourceKeys} />
+      <th scope="row" className="px-5 py-4 align-top font-medium text-zinc-200">
+        {tableText(`rows.${verdictRowKey}.check`)}
       </th>
-      <td className="px-5 py-4 text-zinc-400">{tableText(`rows.${verdictRow.rowKey}.llmJudge`)}</td>
-      <td className="px-5 py-4 text-zinc-200">{tableText(`rows.${verdictRow.rowKey}.gate`)}</td>
+      <td className="px-5 py-4 text-zinc-300">{tableText(`rows.${verdictRowKey}.prescan`)}</td>
+      <td className="px-5 py-4 text-zinc-300">{tableText(`rows.${verdictRowKey}.model`)}</td>
     </tr>
   );
 }

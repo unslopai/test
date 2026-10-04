@@ -1,62 +1,68 @@
 import { getTranslations } from 'next-intl/server';
 import { marketingRichTags } from './marketing-rich-tags';
-import { SourceSup } from './SourceSup';
-import type { MarketingSourceKey } from '../marketing-sources';
 
 type PillarParagraphKey =
-  | 'pillarJudge.paragraphOracle'
-  | 'pillarJudge.paragraphSilent'
-  | 'pillarErosion.paragraphRefinement'
-  | 'pillarErosion.paragraphSlopsquatting'
-  | 'pillarArchitecture.paragraphDeterministic'
-  | 'pillarArchitecture.paragraphGatedRag';
+  | 'pillarDeterministic.paragraphDetectors'
+  | 'pillarDeterministic.paragraphNoRejudge'
+  | 'pillarModel.paragraphDraft'
+  | 'pillarModel.paragraphBlind'
+  | 'pillarModel.paragraphHonest'
+  | 'pillarDegradation.paragraphBudget'
+  | 'pillarDegradation.paragraphNotice';
 
-type PillarSectionKey = 'pillarJudge' | 'pillarErosion' | 'pillarArchitecture';
+type PillarSectionKey = 'pillarDeterministic' | 'pillarModel' | 'pillarDegradation';
 
 interface PillarPunchlineKeys {
-  readonly labelKey: 'pillarJudge.punchlineLabel' | 'pillarErosion.punchlineLabel';
-  readonly textKey: 'pillarJudge.punchline' | 'pillarErosion.punchline';
+  readonly labelKey: 'pillarDegradation.punchlineLabel';
+  readonly textKey: 'pillarDegradation.punchline';
 }
 
 interface PillarDefinition {
   readonly sectionKey: PillarSectionKey;
   readonly ordinal: string;
   readonly paragraphKeys: readonly PillarParagraphKey[];
-  readonly sourceKeys: readonly MarketingSourceKey[];
   readonly punchline?: PillarPunchlineKeys;
 }
 
-/** The three messaging pillars of MARKETING_CLAIMS.md §4–§6, in order. */
+/**
+ * Der Mechanismus in drei Schritten (MARKETING_CLAIMS.md §00 Punkt 2): was
+ * deterministisch ist, was vom Modell kommt und blind gegengeprüft wird, und
+ * was passiert, wenn eine Stufe ausfällt. Jeder Satz ist im PR der Umstellung
+ * gegen Code belegt (Tabelle Claim → Beleg).
+ */
 const PILLAR_DEFINITIONS: readonly PillarDefinition[] = [
   {
-    sectionKey: 'pillarJudge',
+    sectionKey: 'pillarDeterministic',
     ordinal: '01',
-    paragraphKeys: ['pillarJudge.paragraphOracle', 'pillarJudge.paragraphSilent'],
-    sourceKeys: ['aira', 'apiOracle', 'smartContracts'],
-    punchline: { labelKey: 'pillarJudge.punchlineLabel', textKey: 'pillarJudge.punchline' },
-  },
-  {
-    sectionKey: 'pillarErosion',
-    ordinal: '02',
-    paragraphKeys: ['pillarErosion.paragraphRefinement', 'pillarErosion.paragraphSlopsquatting'],
-    sourceKeys: ['erosion', 'selfFixing', 'slopsquatting'],
-    punchline: { labelKey: 'pillarErosion.punchlineLabel', textKey: 'pillarErosion.punchline' },
-  },
-  {
-    sectionKey: 'pillarArchitecture',
-    ordinal: '03',
     paragraphKeys: [
-      'pillarArchitecture.paragraphDeterministic',
-      'pillarArchitecture.paragraphGatedRag',
+      'pillarDeterministic.paragraphDetectors',
+      'pillarDeterministic.paragraphNoRejudge',
     ],
-    sourceKeys: ['apiOracle', 'copilotSmells', 'ragDegradation'],
+  },
+  {
+    sectionKey: 'pillarModel',
+    ordinal: '02',
+    paragraphKeys: [
+      'pillarModel.paragraphDraft',
+      'pillarModel.paragraphBlind',
+      'pillarModel.paragraphHonest',
+    ],
+  },
+  {
+    sectionKey: 'pillarDegradation',
+    ordinal: '03',
+    paragraphKeys: ['pillarDegradation.paragraphBudget', 'pillarDegradation.paragraphNotice'],
+    punchline: {
+      labelKey: 'pillarDegradation.punchlineLabel',
+      textKey: 'pillarDegradation.punchline',
+    },
   },
 ];
 
-/** The research case, section by section (anchor target of "Read the evidence"). */
-export function EvidencePillars() {
+/** Anchor target of the hero link "How the verdict is made". */
+export function MechanismPillars() {
   return (
-    <section id="evidence" className="mx-auto max-w-6xl scroll-mt-20 space-y-28 px-6 py-28">
+    <section id="mechanism" className="mx-auto max-w-6xl scroll-mt-20 space-y-28 px-6 py-28">
       {PILLAR_DEFINITIONS.map((pillar) => (
         <PillarArticle key={pillar.sectionKey} pillar={pillar} />
       ))}
@@ -76,10 +82,6 @@ async function PillarArticle({ pillar }: { readonly pillar: PillarDefinition }) 
             {marketingText.rich(paragraphKey, marketingRichTags)}
           </p>
         ))}
-        <p className="text-sm text-zinc-500">
-          {marketingText('footer.sourcesEyebrow')}
-          <SourceSup sourceKeys={pillar.sourceKeys} />
-        </p>
         {pillar.punchline !== undefined && <PillarPunchline punchline={pillar.punchline} />}
       </div>
     </article>
@@ -110,7 +112,9 @@ async function PillarPunchline({ punchline }: { readonly punchline: PillarPunchl
       <p className="font-pixel text-[0.65rem] uppercase tracking-[0.2em] text-lime-300">
         {marketingText(punchline.labelKey)}
       </p>
-      <p className="mt-3 leading-relaxed text-zinc-100">{marketingText(punchline.textKey)}</p>
+      <p lang="en" className="mt-3 font-mono text-sm leading-relaxed text-zinc-100">
+        {marketingText(punchline.textKey)}
+      </p>
     </aside>
   );
 }
