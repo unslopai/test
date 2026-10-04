@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "types": ["node", "vscode"]
+  },
+  "include": ["src/**/*.ts"],
+  // Tests laufen über das Root-vitest (eigene ESM-Transform-Pipeline) und
+  // gehören nicht in den CommonJS-dist/-Build — manifest-scope.test.ts nutzt
+  // import.meta, was unter module:CommonJS ein TS1343-Buildfehler ist.
+  "exclude": ["src/**/*.test.ts"]
+}
