@@ -1,5 +1,23 @@
 # Rule-Recall Benchmark
 
+## Option A gebaut (2026-09-29): Draft-Datei-Batching ≤ 20k im echten Runner — r24 2× 42/48 Draft, 46/48 combined, 0 FP, max Batch 70 s
+
+Bau-Nachweis für LARGE_DIFF_RECALL_SPEC §9 (Branch `feat/draft-batch-chunking` auf `main` `3266235`): erstmals läuft das Chunking im Produktionscode (`draft-reviewer-step.ts`, `draft-batching.ts`) statt im Scratch-Harness — volle Kaskade über `npm run benchmark:rules`, `--keep`; Pro-Kontingent des Dogfooding-Kontos 36/50 vorher (15:03 UTC) und nachher (15:09 UTC).
+
+| Messung | Wert |
+|---|---|
+| r24, `--runs 2` (Jobs `5712a6dc`, `fa1c01d6`) | Draft **42/48** und **42/48** (erwartetes Band 41–45), combined (Draft ∪ Prescan) **46/48** beide, Surviving 46/48, Score 98 / 97; Verifier 43/43 CONFIRMED je Lauf, 0 Refutationen, 0 Eskalationen, 0 Second Opinion |
+| Batches | je Lauf 3 parallele Batches: 30 / 32 / 17 Dateien, ~19,2k / 19,2k / 13,3k geschätzte Tokens (Header mitgezählt, §9.1); Draft-Issues 23+16+4 bzw. 21+18+4 = 43; 0 Manifest-Verwerfungen, 0 Scope-Verwerfungen |
+| Batch-Latenz (`review_job_llm_calls`, drei `draft`-Zeilen je Job) | Lauf 1: 42,9 / 49,6 / **63,3 s**; Lauf 2: 36,4 / 36,3 / **69,6 s** — Gate 2 (≤ 90 s) gehalten, Draft-Wanduhr = langsamster Batch; Verify 3 Batches à 20–31 s |
+| Cache | Lauf 1 `explicit_created` (frischer Cache, 4.613 Tokens Prefix), Lauf 2 `explicit_hit` auf allen drei Batches und dem Verifier — ein Envelope, ein Cache |
+| Kosten (`scripts/benchmark-cost.ts`) | r24 ×2 **$0,465** (Draft 3.8: 6 Calls, 143k Prompt / 27,7k cached / 44,7k Output ⇒ $0,282, also $0,141 je Lauf — Gate-Messung: $0,147; Verifier 3.6: 6 Calls $0,183); Kontrollen $0,029; Runde gesamt **$0,49** von 2 USD Budget |
+| Negativ-Kontrollen r14/r15/r18/r21/r23 | **0 CRITICAL, 0 WARNING**, Score 100, Draft 0 Issues — kleine Diffs, Einzel-Call wie bisher (`results/2026-09-29-optionA-controls.json`) |
+| Misses über 2 Läufe | 0/2 Draft, aber 2/2 Prescan: Condition 11 `OrderSummary.tsx`, SEC-014 `password-hash.ts`, SEC-019 `middleware.ts`, SEC-035 `slugify.ts` (dieselben vier wie in jeder XL-Variante); je 1/2 Draft ohne Prescan-Deckung: MAINT-005 `channel-formatters.ts`, ARCH-002 `account-lifecycle.ts`, MAINT-003 `tax-calculator.ts`, SEC-013 `authorize.ts` |
+| Modelle | Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (nicht gerufen) |
+| Reports | `results/2026-09-29-optionA-r24-runs2.json`, `results/2026-09-29-optionA-controls.json` |
+
+**Lesart:** 42/48 liegt auf dem Mittel der 20k-Gate-Messung (42,7, Spec §3.5) und über den beiden Einzel-Call-Läufen desselben Runners (39 und 41/48); combined 46/48 ist der beste r24-Wert bisher (Einzel-Call im Runner 43 und 45/48). Der Runner meldet `FAILED` (Exit 1), weil er jeden Miss als Fehler zählt — kein Gate-Bruch: die vier stabilen Draft-Misses sind bekannte Kleindiff-Misses und prescan-gedeckt, die vier wandernden liegen in der N=2-Streuung. Nicht gemessen in dieser Runde: `draft_partial` live (kein Batch scheiterte; der Pfad ist per Unit- und Replay-Test belegt) und die Produktionsform mit `<already_flagged>` (Runner gibt `prescanIssues: []`, ROADMAP To-Do §1).
+
 ## Universum 129 seit 2026-09-28: r22 (+3, GATE-001) und r23 (Negativ-Kontrolle) — A12c-Abnahme BESTANDEN
 
 SPEC.md §12.4 A12c gibt der Injection-Direktive des Gatekeeper-Kerns die reservierte ID `GATE-001 (Instruction Override)` und eine feste Verifier-Frage. Zwei neue Fixtures, beide nur JS/TS, weil die Produktions-LLM-Lane nur diese Endungen liest (`helpers.ts: REVIEWABLE_EXTENSIONS`):

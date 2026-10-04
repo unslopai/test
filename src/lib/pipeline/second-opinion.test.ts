@@ -91,36 +91,37 @@ describe('evaluateSecondOpinionTrigger — T1 test-gap', () => {
     });
 });
 
-describe('evaluateSecondOpinionTrigger — T2 prescan-divergence', () => {
-    const divergencePrescanIssues = Array.from({ length: SECOND_OPINION_GATES.divergenceMinPrescanFindings },
-        (_, issueIndex) => buildReviewIssue({
-            path: `src/native/file-${issueIndex}.c`, source: 'pre-scanner',
-        }));
+describe('evaluateSecondOpinionTrigger — T2 prescan-divergence ist abgeschaltet (LARGE_DIFF_RECALL_SPEC §9)', () => {
+    // Der Prod-Fall von unslopai/test#16: 43 Prescan-Findings, Draft 0 — weil der
+    // Draft die Tupel per <already_flagged> NICHT erneut melden soll. Das ist
+    // Compliance, keine Divergenz, und darf keine Pro-Eskalation mehr kosten.
+    const manyPrescanIssues = Array.from({ length: 43 }, (_, issueIndex) => buildReviewIssue({
+        path: `src/lib/file-${issueIndex}.ts`, source: 'pre-scanner',
+    }));
 
-    it('feuert, wenn der Prescan Findings hat und der Draft keine', () => {
+    it('feuert NICHT mehr, wenn der Prescan viel findet und der Draft nichts', () => {
+        expect(evaluateSecondOpinionTrigger(buildPipelineContext({
+            reviewableFiles: manyPrescanIssues.map((issue) => buildPullRequestFile({ filename: issue.path })),
+            issues: [],
+            prescanIssues: manyPrescanIssues,
+        }))).toBeNull();
+    });
+
+    it('kennt keine Prescan-Schwelle mehr — die Gates tragen nur T1 und den Token-Deckel', () => {
+        expect(Object.keys(SECOND_OPINION_GATES).sort()).toEqual(['maxSubsetTokens', 'testFileShareThreshold']);
+    });
+
+    it('T1 bleibt unberührt: ein test-lastiger Diff mit Prescan-Findings feuert weiter nur als test-gap', () => {
         const trigger = evaluateSecondOpinionTrigger(buildPipelineContext({
-            reviewableFiles: [buildPullRequestFile({ filename: 'src/native/file-0.c' })],
+            reviewableFiles: [
+                buildPullRequestFile({ filename: 'tests/payments/iban.test.ts' }),
+                buildPullRequestFile({ filename: 'src/payments/iban.ts' }),
+            ],
             issues: [],
-            prescanIssues: divergencePrescanIssues,
+            prescanIssues: manyPrescanIssues,
         }));
-        expect(trigger?.reasons).toEqual(['prescan-divergence']);
-        expect(trigger?.targetFiles).toHaveLength(1);
-    });
-
-    it('feuert NICHT, sobald der Draft selbst etwas gefunden hat', () => {
-        expect(evaluateSecondOpinionTrigger(buildPipelineContext({
-            reviewableFiles: [buildPullRequestFile({ filename: 'src/native/file-0.c' })],
-            issues: [buildReviewIssue({ path: 'src/native/file-0.c' })],
-            prescanIssues: divergencePrescanIssues,
-        }))).toBeNull();
-    });
-
-    it('feuert NICHT unter der Prescan-Schwelle (0 Findings auf grossem Diff reicht bewusst nicht)', () => {
-        expect(evaluateSecondOpinionTrigger(buildPipelineContext({
-            reviewableFiles: [buildPullRequestFile({ filename: 'src/native/file-0.c' })],
-            issues: [],
-            prescanIssues: divergencePrescanIssues.slice(0, SECOND_OPINION_GATES.divergenceMinPrescanFindings - 1),
-        }))).toBeNull();
+        expect(trigger?.reasons).toEqual(['test-gap']);
+        expect(trigger?.targetFiles.map((file) => file.filename)).toEqual(['tests/payments/iban.test.ts']);
     });
 });
 

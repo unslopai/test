@@ -140,6 +140,39 @@ describe('githubReporterStep', () => {
         expect(postedBody).not.toContain('Reduced confidence mode');
     });
 
+    it('nennt die Dateien eines gescheiterten Draft-Batches im Review-Body (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', async () => {
+        const partialDraftContext = {
+            ...buildReportableContext(),
+            cascade: buildCascadeState({
+                integrityScore: null,
+                degradations: ['draft_partial'],
+                draftUnreviewedFiles: ['src/lib/alpha.ts', 'src/lib/__tests__/beta_helper.ts'],
+            }),
+        };
+
+        await githubReporterStep.execute(partialDraftContext);
+
+        const postedBody = String(createPullRequestReviewMock.mock.calls[0][4]);
+        expect(postedBody).toContain('Cognitive Integrity Score: n/a');
+        expect(postedBody).toContain(
+            '⚠️ Reduced coverage: the AI review failed on 2 files — not reviewed: src/lib/alpha.ts, src/lib/__tests__/beta_helper.ts.',
+        );
+        expect(postedBody).not.toContain('Reduced confidence mode');
+        // Beide Hinweise koexistieren, wenn Zeit-Skip UND halber Draft zusammenkommen.
+        await githubReporterStep.execute({
+            ...partialDraftContext,
+            cascade: buildCascadeState({
+                integrityScore: null,
+                degradations: ['draft_partial', 'time_budget_exhausted'],
+                skippedStages: ['verifier'],
+                draftUnreviewedFiles: ['src/lib/alpha.ts'],
+            }),
+        });
+        const combinedBody = String(createPullRequestReviewMock.mock.calls[1][4]);
+        expect(combinedBody).toContain('Reduced confidence: time budget exhausted');
+        expect(combinedBody).toContain('Reduced coverage: the AI review failed on 1 file — not reviewed: src/lib/alpha.ts.');
+    });
+
     it('behauptet keine Eskalation, wenn nur die Second Opinion ein stärkeres Modell gerufen hat', async () => {
         const secondOpinionContext = {
             ...buildReportableContext(),

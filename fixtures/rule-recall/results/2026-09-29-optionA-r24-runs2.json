@@ -1,0 +1,908 @@
+{
+  "capturedAt": "2026-09-29T15:08:41.825Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 2,
+  "results": [
+    {
+      "fixture": "r24-xl-flash-cascade.diff",
+      "jobId": "5712a6dc-b3fd-4215-a827-988adc3140c1",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 79,
+      "draftFindingCount": 43,
+      "survivingFindingCount": 43,
+      "prescanFindingCount": 26,
+      "prescanDurationMs": 4467,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/cache-warmer.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/invoicing/total-calculator.ts",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/alerts/channel-formatters.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/billing/seat-proration.ts",
+          "ruleContains": "MAINT-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/usage-summary.ts",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/shared/word-distance.ts",
+          "ruleContains": "MAINT-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scanner/finding-router.ts",
+          "ruleContains": "ARCH-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/onboarding/account-lifecycle.ts",
+          "ruleContains": "ARCH-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scheduling/scan-scheduler.ts",
+          "ruleContains": "ARCH-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/drafts/DraftSaveButton.tsx",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/api/webhook-parser.ts",
+          "ruleContains": "Condition 2",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/reports/ReportList.tsx",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/format/order-sorting.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/billing/InvoiceHeader.tsx",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/layout.tsx",
+          "ruleContains": "Condition 6",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/FullNameField.tsx",
+          "ruleContains": "Condition 7",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/ProfileCard.tsx",
+          "ruleContains": "Condition 8",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/newsletter/SignupForm.tsx",
+          "ruleContains": "Condition 9",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/session/IdleTracker.tsx",
+          "ruleContains": "Condition 10",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/orders/OrderSummary.tsx",
+          "ruleContains": "Condition 11|ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/cms/ArticleBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/api/auth/login/route.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/middleware.ts",
+          "ruleContains": "SEC-019",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/inventory/reservation-flow.ts",
+          "ruleContains": "CONC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r24-xl-flash-cascade.diff",
+      "jobId": "fa1c01d6-3dfd-445f-a355-674a7c481a27",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 79,
+      "draftFindingCount": 43,
+      "survivingFindingCount": 43,
+      "prescanFindingCount": 26,
+      "prescanDurationMs": 1023,
+      "integrityScore": 97,
+      "planted": [
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/cache-warmer.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/invoicing/total-calculator.ts",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/alerts/channel-formatters.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/billing/seat-proration.ts",
+          "ruleContains": "MAINT-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/usage-summary.ts",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/shared/word-distance.ts",
+          "ruleContains": "MAINT-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scanner/finding-router.ts",
+          "ruleContains": "ARCH-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/onboarding/account-lifecycle.ts",
+          "ruleContains": "ARCH-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scheduling/scan-scheduler.ts",
+          "ruleContains": "ARCH-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/drafts/DraftSaveButton.tsx",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/api/webhook-parser.ts",
+          "ruleContains": "Condition 2",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/reports/ReportList.tsx",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/format/order-sorting.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/billing/InvoiceHeader.tsx",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/layout.tsx",
+          "ruleContains": "Condition 6",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/FullNameField.tsx",
+          "ruleContains": "Condition 7",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/ProfileCard.tsx",
+          "ruleContains": "Condition 8",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/newsletter/SignupForm.tsx",
+          "ruleContains": "Condition 9",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/session/IdleTracker.tsx",
+          "ruleContains": "Condition 10",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/orders/OrderSummary.tsx",
+          "ruleContains": "Condition 11|ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/cms/ArticleBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/api/auth/login/route.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/middleware.ts",
+          "ruleContains": "SEC-019",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/inventory/reservation-flow.ts",
+          "ruleContains": "CONC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    }
+  ]
+}

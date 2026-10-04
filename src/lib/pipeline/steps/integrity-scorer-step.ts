@@ -264,9 +264,12 @@ function finalizeScore(
     verdictOutcome: VerdictOutcomeCounts = NO_VERDICT_OUTCOME,
 ): PipelineContext {
     // D7: ein nur teilweise gelaufener Verifier hätte nur die verifizierten
-    // Claims gezählt — die Zahl würde lügen. Ehrlich ist null.
-    const verifierCutShort = context.cascade.skippedStages.includes('verifier');
-    const integrityScore = verifierCutShort ? null : computeIntegrityScore(survivingIssues);
+    // Claims gezählt — die Zahl würde lügen. Ehrlich ist null. Dasselbe gilt
+    // für einen nur teilweise gelaufenen Draft (`draft_partial`, LARGE_DIFF_
+    // RECALL_SPEC Option A): Claims aus ungesehenen Dateien fehlen dem Score.
+    const coverageIncomplete = context.cascade.skippedStages.includes('verifier')
+        || context.cascade.degradations.includes('draft_partial');
+    const integrityScore = coverageIncomplete ? null : computeIntegrityScore(survivingIssues);
     console.log(
         `[IntegrityScorer] Cognitive Integrity Score: ${integrityScore ?? 'n/a'} ` +
         `(${survivingIssues.length} Issues, Job ${context.jobId}).`,

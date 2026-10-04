@@ -21,7 +21,7 @@ import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
-import { formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
+import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import type { PullRequestReviewComment } from '@/lib/github';
 import type { CascadeState, PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
@@ -283,18 +283,31 @@ function buildIntegrityScoreBlock(cascade: CascadeState, reportableIssues: reado
         scoreBlockLines.push('_Confidence verification was unavailable for this review._');
     }
 
-    // Ein Zeit-Skip nennt die Stufen (DEADLINE_GUARD_SPEC §3.4); alle übrigen
-    // Degradationen behalten den generischen Satz.
-    const timeBudgetNotice = formatTimeBudgetNotice(cascade.skippedStages);
-    if (timeBudgetNotice) {
+    for (const degradationNotice of collectDegradationNotices(cascade)) {
         scoreBlockLines.push('');
-        scoreBlockLines.push(`_⚠️ ${timeBudgetNotice}_`);
-    } else if (cascade.degradations.length > 0) {
-        scoreBlockLines.push('');
-        scoreBlockLines.push('_⚠️ Reduced confidence mode: parts of the verification cascade were unavailable._');
+        scoreBlockLines.push(degradationNotice);
     }
 
     return scoreBlockLines.join('\n');
+}
+
+/**
+ * Ein Zeit-Skip nennt die Stufen (DEADLINE_GUARD_SPEC §3.4), ein halber Draft
+ * die nicht geprüften Dateien (LARGE_DIFF_RECALL_SPEC Option A) — die
+ * Dateiliste bleibt bewusst ohne Kursiv-Markup, damit Unterstriche in Pfaden
+ * das Markdown nicht kippen. Alle übrigen Degradationen behalten den
+ * generischen Satz.
+ */
+function collectDegradationNotices(cascade: CascadeState): string[] {
+    const timeBudgetNotice = formatTimeBudgetNotice(cascade.skippedStages);
+    const draftPartialNotice = formatDraftPartialNotice(cascade.draftUnreviewedFiles);
+    const degradationNotices: string[] = [];
+    if (timeBudgetNotice) degradationNotices.push(`_⚠️ ${timeBudgetNotice}_`);
+    if (draftPartialNotice) degradationNotices.push(`⚠️ ${draftPartialNotice}`);
+    if (degradationNotices.length === 0 && cascade.degradations.length > 0) {
+        degradationNotices.push('_⚠️ Reduced confidence mode: parts of the verification cascade were unavailable._');
+    }
+    return degradationNotices;
 }
 
 /**

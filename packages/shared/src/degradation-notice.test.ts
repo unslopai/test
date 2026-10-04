@@ -3,7 +3,7 @@
  * Formulierung auf Check, GitHub-Review und CLI.
  */
 import { describe, expect, it } from 'vitest';
-import { formatTimeBudgetNotice } from './degradation-notice.js';
+import { formatDraftPartialNotice, formatTimeBudgetNotice } from './degradation-notice.js';
 
 describe('formatTimeBudgetNotice', () => {
     it('nennt die übersprungenen Stufen in Lauf-Reihenfolge', () => {
@@ -19,5 +19,24 @@ describe('formatTimeBudgetNotice', () => {
     it('schweigt, wenn nichts übersprungen wurde oder das Feld fehlt (Alt-Ergebnis)', () => {
         expect(formatTimeBudgetNotice([])).toBeNull();
         expect(formatTimeBudgetNotice(undefined)).toBeNull();
+    });
+});
+
+describe('formatDraftPartialNotice (LARGE_DIFF_RECALL_SPEC Option A)', () => {
+    it('nennt jede nicht geprüfte Datei in Diff-Reihenfolge — keine gekürzte Liste', () => {
+        expect(formatDraftPartialNotice(['src/lib/a.ts', 'src/lib/b.ts', 'src/lib/c.ts'])).toBe(
+            'Reduced coverage: the AI review failed on 3 files — not reviewed: src/lib/a.ts, src/lib/b.ts, src/lib/c.ts.',
+        );
+    });
+
+    it('bildet den Singular', () => {
+        expect(formatDraftPartialNotice(['src/lib/only.ts'])).toBe(
+            'Reduced coverage: the AI review failed on 1 file — not reviewed: src/lib/only.ts.',
+        );
+    });
+
+    it('schweigt bei vollständigem Draft oder fehlendem Feld (Ergebnis vor 2026-09-29)', () => {
+        expect(formatDraftPartialNotice([])).toBeNull();
+        expect(formatDraftPartialNotice(undefined)).toBeNull();
     });
 });

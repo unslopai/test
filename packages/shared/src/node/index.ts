@@ -76,5 +76,5 @@ export type { OccurrenceLineRange } from '../occurrence-format.js';
 // Dito: Verifikations-Bilanz der Score-Tagline (SPEC.md §6) — pure, wird
 // von CLI (Terminal-Tagline) und Backend (GitHub-Block) geteilt.
 export { countFindingVerifications, describeFindingVerification } from '../verification-format.js';
-export { formatTimeBudgetNotice } from '../degradation-notice.js';
+export { formatDraftPartialNotice, formatTimeBudgetNotice } from '../degradation-notice.js';
 export type { VerificationCounts, VerifiedFinding } from '../verification-format.js';

@@ -107,7 +107,37 @@ describe('integrityScorerStep', () => {
         expect(scoredContext.issues[0].verification).toBe('unverified');
     });
 
-    it('scores verdict-less second-opinion issues from their self-reported confidence (T2: draft found nothing)', async () => {
+    it('a partial draft yields a null score even when every verdict confirmed (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', async () => {
+        // Ein gescheiterter Draft-Batch hinterlässt ungesehene Dateien — ein Score
+        // über die gesehenen Claims würde Vollständigkeit behaupten, die es nicht gab.
+        const partialDraftContext = buildPipelineContext({
+            issues: [buildReviewIssue()],
+            cascade: buildCascadeState({
+                verdicts: [buildClaimVerdict({ claimId: 'c1', verdict: 'CONFIRMED', confidence: 95 })],
+                degradations: ['draft_partial'],
+                draftUnreviewedFiles: ['src/lib/unseen.ts'],
+            }),
+        });
+
+        const scoredContext = await integrityScorerStep.execute(partialDraftContext);
+
+        expect(scoredContext.cascade.integrityScore).toBeNull();
+        expect(scoredContext.issues).toHaveLength(1);
+        expect(scoredContext.issues[0].verification).toBe('confirmed');
+        expect(scoredContext.issues[0].confidence).toBe(95);
+    });
+
+    it('a partial draft without surviving issues is not a 100 either', async () => {
+        const partialCleanContext = buildPipelineContext({
+            cascade: buildCascadeState({ degradations: ['draft_partial'], draftUnreviewedFiles: ['src/lib/unseen.ts'] }),
+        });
+
+        const scoredContext = await integrityScorerStep.execute(partialCleanContext);
+
+        expect(scoredContext.cascade.integrityScore).toBeNull();
+    });
+
+    it('scores verdict-less second-opinion issues from their self-reported confidence (draft found nothing)', async () => {
         // LLM_LANE_QUALITY_SPEC §4.4: Draft 0 Issues ⇒ 0 Verdicts — die additive
         // Pro-Zweitmeinung darf davon nicht als "degradiert" (null) erfasst werden.
         const secondOpinionOnlyContext = buildPipelineContext({

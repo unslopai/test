@@ -1,8 +1,8 @@
-# Draft-Recall auf sehr großen Diffs — Diagnose und Lösungsoptionen (Spec-Entwurf)
+# Draft-Recall auf sehr großen Diffs — Diagnose, Optionen und Bau von Option A
 
-**Status: ENTWURF, nicht freigegeben, nichts implementiert.** Diagnose-Runde 2026-09-29 (PR #24) und Gate-Messung nach §6 am selben Tag als zweite Runde (auf `main` `3e51396`); Analyse, Fixture und Messläufe von Fable 5.1. Kein Umbau der Pipeline. Vertex-Kosten: Diagnose 1,15 USD (Budget 5), Gate-Messung 1,81 USD (Budget 3) — §7. **Ergebnis der Gate-Messung (§3.5, §6): Option A mit 20k-Batches besteht die Gates 1–4, 12k-Batches reißen Gate 4 (Kosten); Gate 5 (T2) ist offen. Empfehlung §5: A mit 20k bauen, falls +47 % Draft-Kosten auf PRs über 20k Tokens akzeptiert werden, sonst Option C.**
+**Status: FREIGEGEBEN und IMPLEMENTIERT (Option A, 20k-Batches).** Entscheidung des Gründers 2026-09-29: Option A mit 20k-Batches, 12k verworfen (Gate 4), Gate 5 durch Abschaltung von T2 entschieden. Bau am selben Tag auf `main` `3266235` durch Fable 5.1 — Umsetzung, Entscheidungen und Nachweise in **§9**; §1–§8 sind die unveränderte Diagnose- und Messhistorie (Diagnose-Runde PR #24, Gate-Messung PR #25). Vertex-Kosten der Messkampagne: Diagnose 1,15 USD (Budget 5), Gate-Messung 1,81 USD (Budget 3) — §7; Bau-Nachweis-Benchmark §9.6.
 
-Code-Stand: `main` bei `6f80d1b`. Rohdaten: `fixtures/rule-recall/results/2026-09-29-*.json` (Jobs mit `--keep` in `review_jobs` / `review_job_llm_calls` belassen), Replay-Jobs siehe §2.2.
+Code-Stand der Messungen: `main` bei `6f80d1b` bzw. `3e51396`. Rohdaten: `fixtures/rule-recall/results/2026-09-29-*.json` (Jobs mit `--keep` in `review_jobs` / `review_job_llm_calls` belassen), Replay-Jobs siehe §2.2.
 
 ---
 
@@ -185,7 +185,7 @@ Gemessen 2026-09-29 (zweite Runde), alle Varianten mit demselben Draft-only-Harn
 | 4 Kosten | Draft-Kosten je XL-Job ≤ +50 % vs. Einzel-Call ($0,100) | $0,176 = **+77 % — verfehlt** | $0,147 = **+47 % — bestanden**, 3 Punkte Marge |
 
 Ergänzende Feststellung zu Gate 1 („keine Regel dauerhaft neu verloren“): jede in den Batch-Varianten verpasste Regel wurde auch vom Einzel-Call in mindestens einem Lauf verpasst — mit einer Ausnahme: SEC-025 `workspace-rename.ts` fehlte 1× bei 20k (Lauf 3) und in keinem Einzel-Call-Lauf beider Runden. Ein einmaliger, kein dauerhafter Verlust (2 von 3 20k-Läufen fanden sie); bei der Bau-Entscheidung als N=3-Rauschen einordnen, in der Messregel für den Bau-Nachweis (3 weitere Läufe) mitführen.
-5. **T2 vor dem Bau von A entscheiden**: entweder T2 nur auf Prescan-Findings außerhalb der `<already_flagged>`-Menge (gibt es strukturell nicht) — also T2 streichen oder auf ein anderes Signal (z. B. `omitted_files`, `draft_partial`) umstellen. Sonst kostet jeder große saubere PR weiter eine Pro-Eskalation. **Stand: offen** — bewusst nicht Teil der Gate-Messung 2026-09-29.
+5. **T2 vor dem Bau von A entscheiden**: entweder T2 nur auf Prescan-Findings außerhalb der `<already_flagged>`-Menge (gibt es strukturell nicht) — also T2 streichen oder auf ein anderes Signal (z. B. `omitted_files`, `draft_partial`) umstellen. Sonst kostet jeder große saubere PR weiter eine Pro-Eskalation. **Entschieden 2026-09-29: T2 gestrichen** (§9.4), T1 bleibt.
 
 ## 7. Kosten der Messkampagne und Receipts
 
@@ -220,4 +220,51 @@ Pro-Eskalationskontingent des Dogfooding-Kontos: 36/50 vor und nach beiden Runde
 8. **Benchmark-Prompt ≠ Produktions-Prompt**: der Runner gibt dem Draft keine `<already_flagged>`-Tupel (`prescanIssues: []`); eine Option `--with-prescan-tuples` würde die Produktionsform messbar machen.
 9. **Halluzinationsmagnet `src/lib/prescan/companion-loader.ts`**: 2 von 4 Läufen auf #17 erzeugen dort einen unhaltbaren Claim (MAINT-007 „listError“, HAL-002 „argument signature“), die anderen beiden 0 — Kandidat für die A12b-Live-Labels.
 10. **Router-Frage** (außerhalb dieser Runde): seit Draft und Eskalation dasselbe Modell fahren, ist `pro-direct` derselbe Call unter 150-s-Deadline; der Nutzen der Route für 12–25k-Diffs ist ungemessen.
-11. **Vertex `500 INTERNAL` nach > 60 s wird nicht wiederholt** (A11: kein Retry, wenn der gescheiterte Versuch selbst > 60 s lief; `vertex-retry.ts`): 1 von 44 Batch-Calls der Gate-Runde (§3.5). Für einen Einzel-Draft heißt das `model_unavailable` und ein roter Check; für Option A ist `draft_partial` Pflicht. Ob die 60-s-Regel bei einem echten Server-500 (kein Timeout) einen einzelnen Retry erlauben sollte, ist eine eigene Entscheidung.
+11. **Vertex `500 INTERNAL` nach > 60 s wird nicht wiederholt** (A11: kein Retry, wenn der gescheiterte Versuch selbst > 60 s lief; `vertex-retry.ts`): 1 von 44 Batch-Calls der Gate-Runde (§3.5). Für einen Einzel-Draft heißt das `model_unavailable` und ein roter Check; für Option A ist `draft_partial` Pflicht (gebaut, §9.3). Ob die 60-s-Regel bei einem echten Server-500 (kein Timeout) einen einzelnen Retry erlauben sollte, ist eine eigene Entscheidung — bewusst NICHT Teil des Baus (ROADMAP To-Do §5).
+
+## 9. Bau von Option A (2026-09-29, Entscheidungen und Umsetzung)
+
+Freigabe des Gründers: **Option A mit 20k-Batches**, 12k verworfen (Gate 4: +77 %), Option B verworfen, Option C nicht nötig. Umsetzung auf `main` `3266235` (Branch `feat/draft-batch-chunking`), Code-Stellen: `src/lib/pipeline/draft-batching.ts` (pure: Schätzung, Packen, Tupel-Filter), `src/lib/pipeline/steps/draft-reviewer-step.ts` (Orchestrierung), `defaults.ts`/`types.ts` (Config und Zustand), `second-opinion.ts` (T2), `integrity-scorer-step.ts` (Score), Flächen `result-persister-step.ts` → Poll-Route → `@unslop/shared/degradation-notice` → CLI, `github-reporter-step.ts`, `worker.ts` (Check-Summary). Tests: `draft-batching.test.ts`, Batching-Block in `draft-reviewer-step.test.ts`, `draft_partial`-Replay in `cascade-degradation.test.ts`, je ein Fall in `integrity-scorer-step`, `result-persister-step`, `poll-route`, `degradation-notice`, `github-reporter-step`, `worker-routing`, `format` (CLI), `defaults`, T2-Abschaltung in `second-opinion.test.ts` und `second-opinion-reviewer-step.test.ts`.
+
+### 9.1 Batch-Grenze und Zuschnitt
+
+- **Eigener Config-Wert `cascadeConfig.draftBatchMaxTokens`** (Default 20000, per Repo über `pipeline_config.cascade` übersteuerbar wie jede andere Cascade-Schraube, Operator-Allowlist der Settings-Route ergänzt). `heuristicMaxDiffTokens` (12k, Routing-Frage) bleibt unangetastet — zwei Fragen, zwei Schrauben. Der Benchmark-Runner nimmt ihn per `--cascade draftBatchMaxTokens=…` entgegen.
+- **Auslöser**: `ceil(combinedDiff.length / 4) > draftBatchMaxTokens` — dieselbe Schätzung wie der Router. Auf der Route flash-cascade greift das damit erst über 25k (12–25k ist pro-direct, §5); ein Repo mit abgesenktem `proDirectMaxDiffTokens` chunkt entsprechend früher.
+- **Packen**: `reviewableFiles` in Diff-Reihenfolge greedy in Batches ≤ `draftBatchMaxTokens`; eine Datei über der Grenze steht allein, Dateien werden nie zerschnitten (exactQuote-Anker, Zeilennummern). Gezählt wird der Diff-Text **inklusive `=== FILE: … ===`-Header**, also das, was der Prompt trägt — die Gate-Messung (§3.5) zählte nur die Patches; auf r24 ergibt beides drei Batches, die Bau-Nachweis-Läufe (§9.6) sind die Referenz.
+- **Ein Batch = kein Chunking**: liegt der Diff über der Grenze, ergibt das Packen aber nur einen Batch (eine überlange Datei), läuft der heutige Einzel-Call. Unter der Grenze bleibt der Draft-Request **byte-identisch** zu vorher — bewiesen durch `draft-reviewer-step.test.ts` („byte-identisch zum Einzel-Call“: Protokoll, Evidence, Practices, alle Prescan-Tupel, NEW-CODE-Marker, ganzer `combinedDiff` als eine Zeichenkette verglichen).
+- **pro-direct chunkt nicht** (§5 Umsetzungshinweis): ein Call in der Eskalations-Rolle wie bisher. Scheitert er und fällt der Job auf die Flash-Kaskade zurück (D10), chunkt der Flash-Draft dann selbst.
+
+### 9.2 Der Batch-Pass
+
+- Ein `runReviewerPass` pro Batch, **alle parallel** (`Promise.allSettled`), mit demselben Prompt-Envelope (gleicher Layer-1-Prefix, gleicher Explicit Cache, gleiche Rolle) — der Envelope wird einmal pro Job aufgelöst.
+- User-Prompt je Batch: Evidence- und Practices-Sektion **job-weit** (wie bisher, Risiko a in §5), `<already_flagged>` **auf die Dateien des Batches gefiltert**, dann der Batch-Diff im Produktionsformat. Manifest der Validation-Boundary = nur die Batch-Dateien; ein Issue auf einem fremden Pfad ist halluziniert und fällt.
+- **Deadline Guard**: jeder Batch-Versuch löst sein Budget-Signal selbst aus dem Envelope auf (`resolveCallDeadlineMs` je Call, `deadline.ts`); Backoff- und Parse-Retries fragen wie bisher `hasBudgetForCall`. Test: „jeder Batch-Call trägt das Budget-Signal“.
+- **Vereinigung**: Issues in Diff-Reihenfolge konkateniert (die Batch-Dateien sind disjunkt, die Rule+File-Aggregation je Batch deshalb job-weit korrekt); Token-Verbrauch summiert; `cache_fallback`, sobald ein Batch inline zurückfiel. **Summary**: nur die Summaries der Batches mit Findings, in Diff-Reihenfolge mit Leerzeichen verbunden; ohne Findings der Standardtext „No AI slop found.“ — ein Batch-„No AI slop found.“ neben Findings anderer Batches wäre falsch. Verändert der Scorer später ein Draft-Finding, ersetzt A12a den Text ohnehin.
+- **Telemetrie**: eine `draft`-Zeile in `review_job_llm_calls` pro Batch-Versuch, wie heute pro Call. Keine Migration; ein `chunk_index` wäre nur für Per-Batch-Auswertungen nötig (ROADMAP To-Do §5).
+
+### 9.3 Degradation `draft_partial`
+
+- **Ein oder mehrere Batches scheitern, mindestens einer gelingt** (jeder Fehler: Vertex-500 ohne Retry nach A11, `ModelUnavailableError`, Parse-Doppelfehler, Abbruch am Job-Budget): Degradation `draft_partial` in `cascade.degradations`, die Dateien der gescheiterten Batches in Diff-Reihenfolge in `cascade.draftUnreviewedFiles`; die Issues der übrigen Batches laufen normal durch Verifier, Eskalation und Scorer; der Job endet `done`. Fehler werden geloggt (`[DraftReviewer] Batch i/N gescheitert … draft_partial`), die Telemetrie-Zeile (`api_error`/`parse_error`) ist geschrieben — kein Swallowing (MAINT-001).
+- **Score null** (`integrity-scorer-step.ts`): dieselbe Regel wie beim teilweise gelaufenen Verifier (D7) — ein Score über gesehene Claims behauptete eine Vollständigkeit, die es nicht gab. Gilt auch, wenn die gesehenen Batches nichts fanden (kein 100).
+- **Persistenz und Flächen**: `result.draft_unreviewed_files` (Persister), `ScanResult.draftUnreviewedFiles` (Shared-Contract, additiv), Poll-Route mappt strukturell validiert (Nicht-Liste ⇒ `[]`). Kanonischer Text `formatDraftPartialNotice` in `@unslop/shared/degradation-notice`: *„Reduced coverage: the AI review failed on N files — not reviewed: a, b, c.“* — **alle** Dateien, keine gekürzte Liste. Gerendert in Check-Summary (`worker.ts`), Review-Body und Approval-Comment (Score-Block, ohne Kursiv-Markup wegen Unterstrichen in Pfaden), CLI (sanitisiert). Zeit-Skip- und Partial-Hinweis koexistieren; der generische Satz „Reduced confidence mode“ erscheint nur, wenn keiner der beiden greift. **VS-Code-Extension nicht angefasst** (ROADMAP To-Do §3, zusammen mit dem offenen Zeit-Skip-Hinweis); **MCP `get-result`** reicht wie schon `degradations`/`skippedStages` auch dieses Feld nicht durch (To-Do §3).
+- **Alle Batches scheitern** ⇒ Verhalten des Einzel-Drafts: der Fehler propagiert in den `markJobError`-Pfad (`model_unavailable`/`server_error`). **Vorrang eines Deadline-Abbruchs**: hat mindestens ein Batch das Job-Budget gerissen, endet der Draft als `ReviewTimeoutError` (`review_timeout`, D5), denn dann ist die Restzeit weg; sonst zählt der erste Fehler in Diff-Reihenfolge. Ein Deadline-Abbruch nur **eines** Batches neben erfolgreichen ist dagegen `draft_partial`, kein Job-Timeout — Verifier und Folgestufen sehen dann ihre eigenen Schwellen.
+
+### 9.4 Second-Opinion-Trigger T2 gestrichen (Gate 5)
+
+T2 „prescan-divergence“ (Prescan ≥ 3, Draft 0; LLM_LANE_QUALITY_SPEC §4.2) ist entfernt: `SECOND_OPINION_GATES.divergenceMinPrescanFindings` und `hasPrescanDivergence` gelöscht, `SecondOpinionReason` nur noch `'test-gap'`. Begründung §3.3/§4: seit `<already_flagged>` misst T2 auf sauberem Code Compliance, nicht Divergenz, und kostete pro großem sauberen PR eine Pro-Eskalation (unslopai/test#16/#17: zwei Eskalationen für 1 bzw. 0 Findings). T1 bleibt unverändert (per Datei). Kein Ersatzsignal in dieser Runde — Kandidaten (`omitted_files`, `draft_partial`) sind ohne Messung nicht belegt.
+
+### 9.5 Nicht Teil dieses Baus
+
+Retry-Verhalten bei Vertex-500 nach > 60 s (§8.11, eigene Entscheidung), Verifier, Eskalation, Scorer-Logik jenseits des Null-Falls, `chunk_index`-Migration, Extension-Anzeige, MCP-Feld, Live-Receipt auf unslopai/test (folgt nach dem Merge als Chronik-Zeile).
+
+### 9.6 Bau-Nachweis (Benchmark über den Runner, echter Pipeline-Code, 2026-09-29)
+
+Erwartung: r24 im Band 41–45/48 Draft-Recall, Negativ-Kontrollen 0 CRITICAL, Budget ≤ 2 USD, Pro-Kontingent unverändert. Details im Benchmark-Log (`docs/benchmarks/RULE_RECALL_BENCHMARK.md`, Eintrag 2026-09-29 „Option A gebaut“).
+
+| Lauf | Job | Batches (Dateien / ~Tokens) | Batch-Latenzen | Draft | combined | Score | Cache |
+|---|---|---|---|---|---|---|---|
+| r24 #1 | `5712a6dc` | 30 / 32 / 17 — 19,2k / 19,2k / 13,3k | 42,9 / 49,6 / **63,3 s** | **42/48** | 46/48 | 98 | `explicit_created` |
+| r24 #2 | `fa1c01d6` | dito | 36,4 / 36,3 / **69,6 s** | **42/48** | 46/48 | 97 | `explicit_hit` |
+| r14/r15/r18/r21/r23 | 5 Jobs | Einzel-Call (unter der Grenze) | — | 0 Issues | — | 100 | — |
+
+Verifier 43/43 CONFIRMED je Lauf, 0 Refutationen, 0 Eskalationen. Kosten r24 ×2 $0,465 (Draft $0,141 je Lauf, Gate-Messung $0,147), Kontrollen $0,029, gesamt **$0,49**. Pro-Kontingent 36/50 vor (15:03 UTC) und nach (15:09 UTC) der Runde. Gate 1 (≥ 41,7): 42 ✓; Gate 2 (max Batch ≤ 90 s): 70 s ✓; Gate 3 (0 CRITICAL-FP): ✓; Gate 4 (Draft-Kosten ≤ +50 % vs. $0,100): $0,141 = +41 % ✓. `draft_partial` trat im Nachweis nicht auf (kein Batch scheiterte) und ist per Unit- und Replay-Test belegt; der Live-Receipt auf unslopai/test folgt nach dem Merge (ROADMAP To-Do §1).

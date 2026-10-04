@@ -9,8 +9,10 @@ import { ApiError } from '@google/genai';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { draftReviewerStep } from '@/lib/pipeline/steps/draft-reviewer-step';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
+import { DEFAULT_CASCADE_CONFIG } from '@/lib/pipeline/defaults';
+import { buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { MODEL_DRAFT, MODEL_ESCALATION } from '@/lib/pipeline/models';
-import { buildAlreadyFlaggedSection } from '@/lib/pipeline/prompt-builder';
+import { buildAlreadyFlaggedSection, buildProtocolBlock } from '@/lib/pipeline/prompt-builder';
 import { ModelUnavailableError } from '@/lib/pipeline/vertex-retry';
 import {
     buildCascadeState,
@@ -18,6 +20,7 @@ import {
     buildPullRequestFile,
     buildReviewIssue,
 } from '@/lib/pipeline/testing/context-fixture';
+import type { PipelineContext } from '@/lib/pipeline/types';
 
 const { generateContentMock, recordLlmCallMock } = vi.hoisted(() => ({
     generateContentMock: vi.fn(),
@@ -441,5 +444,249 @@ describe('buildAlreadyFlaggedSection', () => {
 
     it('returns an empty string for an empty lane — the user prompt stays untouched', () => {
         expect(buildAlreadyFlaggedSection([])).toBe('');
+    });
+});
+
+// =============================================================================
+// Datei-Batch-Chunking (LARGE_DIFF_RECALL_SPEC Option A, Bau-Entscheid §9)
+// =============================================================================
+
+describe('draftReviewerStep — Datei-Batch-Chunking (LARGE_DIFF_RECALL_SPEC Option A)', () => {
+    const alphaFile = buildPullRequestFile({ filename: 'src/lib/alpha.ts', patch: '@@ -40,3 +40,5 @@\n+catch (e) {} // alpha' });
+    const betaFile = buildPullRequestFile({ filename: 'src/lib/beta.ts', patch: '@@ -40,3 +40,5 @@\n+catch (e) {} // beta' });
+    const ALPHA_HEADER = '=== FILE: src/lib/alpha.ts (modified) ===';
+    const BETA_HEADER = '=== FILE: src/lib/beta.ts (modified) ===';
+    /** Beide Dateien zusammen ~40 geschätzte Tokens: Grenze 30 ⇒ zwei Batches, Grenze 1000 ⇒ ein Call. */
+    const SPLITTING_BATCH_LIMIT = 30;
+    const GENEROUS_BATCH_LIMIT = 1000;
+    const deadlineAbort = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+
+    function buildTwoFileContext(batchMaxTokens: number, overrides: Partial<PipelineContext> = {}) {
+        const reviewableFiles = [alphaFile, betaFile];
+        return buildPipelineContext({
+            reviewableFiles,
+            combinedDiff: buildCombinedDiff(reviewableFiles),
+            cascadeConfig: { ...DEFAULT_CASCADE_CONFIG, draftBatchMaxTokens: batchMaxTokens },
+            promptConfig: {
+                activeConditionIds: ALL_CONDITION_IDS,
+                filePaths: reviewableFiles.map((file) => file.filename),
+                overrideSmartDetection: false,
+            },
+            ...overrides,
+        });
+    }
+
+    function buildBatchLlmResponse(issuePath: string | null, summary: string) {
+        return {
+            text: JSON.stringify({
+                has_slop: issuePath !== null,
+                issues: issuePath === null ? [] : [{
+                    rule: 'Condition 1 (Silent Error Swallowing)', severity: 'CRITICAL', path: issuePath,
+                    line: 42, end_line: 42, exact_quote: 'catch (e) {}', critique: `Empty catch block in ${issuePath}.`,
+                }],
+                summary,
+            }),
+            usageMetadata: { promptTokenCount: 500, cachedContentTokenCount: 0, candidatesTokenCount: 120 },
+        };
+    }
+
+    /** Antwortet je nach Batch-Inhalt — die Reihenfolge paralleler Calls ist keine Zusage. */
+    function respondByBatch(alphaResponse: () => Promise<unknown>, betaResponse: () => Promise<unknown>): void {
+        generateContentMock.mockImplementation((request: { contents: string }) => (
+            request.contents.includes(ALPHA_HEADER) ? alphaResponse() : betaResponse()
+        ));
+    }
+
+    function sentContents(callIndex: number): string {
+        return generateContentMock.mock.calls[callIndex][0].contents as string;
+    }
+
+    function sentContentsFor(fileHeader: string): string {
+        const matchingCall = generateContentMock.mock.calls.find((sentCall) => String(sentCall[0].contents).includes(fileHeader));
+        if (!matchingCall) throw new Error(`Kein Call mit ${fileHeader}`);
+        return matchingCall[0].contents as string;
+    }
+
+    beforeEach(() => {
+        generateContentMock.mockReset();
+        recordLlmCallMock.mockClear();
+    });
+
+    it('fährt über der Grenze einen PARALLELEN Pass pro Batch mit batch-gefiltertem <already_flagged> und vereinigt die Issues in Diff-Reihenfolge', async () => {
+        let inFlightCalls = 0;
+        let maxInFlightCalls = 0;
+        const respondAfter = async (delayMs: number, response: unknown): Promise<unknown> => {
+            inFlightCalls += 1;
+            maxInFlightCalls = Math.max(maxInFlightCalls, inFlightCalls);
+            await new Promise((resolveDelay) => setTimeout(resolveDelay, delayMs));
+            inFlightCalls -= 1;
+            return response;
+        };
+        // Alpha antwortet LANGSAMER als Beta — die Issue-Reihenfolge folgt trotzdem dem Diff.
+        respondByBatch(
+            () => respondAfter(40, buildBatchLlmResponse('src/lib/alpha.ts', 'alpha review')),
+            () => respondAfter(5, buildBatchLlmResponse('src/lib/beta.ts', 'beta review')),
+        );
+        const batchedContext = buildTwoFileContext(SPLITTING_BATCH_LIMIT, {
+            prescanIssues: [
+                buildReviewIssue({ rule: 'SEC-029 (Banned libc API)', path: 'src/lib/alpha.ts', line: 12, source: 'pre-scanner' }),
+                buildReviewIssue({ rule: 'MAINT-001 (Empty catch)', path: 'src/lib/beta.ts', line: 13, source: 'pre-scanner' }),
+            ],
+        });
+
+        const draftedContext = await draftReviewerStep.execute(batchedContext);
+
+        expect(generateContentMock).toHaveBeenCalledTimes(2);
+        expect(maxInFlightCalls, 'beide Batch-Calls liefen gleichzeitig').toBe(2);
+        const alphaPrompt = sentContentsFor(ALPHA_HEADER);
+        expect(alphaPrompt).not.toContain(BETA_HEADER);
+        expect(alphaPrompt).toContain('- (SEC-029, src/lib/alpha.ts, line 12)');
+        expect(alphaPrompt).not.toContain('src/lib/beta.ts, line 13');
+        const betaPrompt = sentContentsFor(BETA_HEADER);
+        expect(betaPrompt).not.toContain(ALPHA_HEADER);
+        expect(betaPrompt).toContain('- (MAINT-001, src/lib/beta.ts, line 13)');
+        expect(betaPrompt).not.toContain('src/lib/alpha.ts, line 12');
+        // Gleicher Envelope: beide Calls tragen denselben Layer-1-Prefix (hier inline).
+        expect(generateContentMock.mock.calls[0][0].config.systemInstruction)
+            .toBe(generateContentMock.mock.calls[1][0].config.systemInstruction);
+
+        expect(draftedContext.issues.map((issue) => issue.path)).toEqual(['src/lib/alpha.ts', 'src/lib/beta.ts']);
+        expect(draftedContext.reviewSummary).toBe('alpha review beta review');
+        expect(draftedContext.tokenUsage?.promptTokens).toBe(1000);
+        expect(draftedContext.cascade.degradations).toEqual([]);
+        expect(draftedContext.cascade.draftUnreviewedFiles).toEqual([]);
+        // Telemetrie: eine draft-Zeile pro Batch, wie heute pro Call.
+        expect(recordLlmCallMock).toHaveBeenCalledTimes(2);
+        expect(recordLlmCallMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ phase: 'draft', status: 'ok' }));
+        expect(recordLlmCallMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ phase: 'draft', status: 'ok' }));
+    });
+
+    it('unter der Grenze bleibt der Draft-Request byte-identisch zum Einzel-Call (Evidence, Practices, alle Prescan-Tupel, ganzer Diff)', async () => {
+        generateContentMock.mockResolvedValue(buildBatchLlmResponse(null, 'No AI slop found.'));
+        const prescanIssues = [
+            buildReviewIssue({ rule: 'SEC-029 (Banned libc API)', path: 'src/lib/alpha.ts', line: 12, source: 'pre-scanner' }),
+            buildReviewIssue({ rule: 'MAINT-001 (Empty catch)', path: 'src/lib/beta.ts', line: 13, source: 'pre-scanner' }),
+        ];
+        const singleCallContext = buildTwoFileContext(GENEROUS_BATCH_LIMIT, {
+            ragPromptSection: '=== EVIDENCE (Local Repo Context) ===\nexport function fetchData(): Data;',
+            practicesPromptSection: '=== REFERENCE PRACTICES ===\nPrefer explicit error handling.',
+            prescanIssues,
+        });
+
+        const draftedContext = await draftReviewerStep.execute(singleCallContext);
+
+        expect(generateContentMock).toHaveBeenCalledTimes(1);
+        // Exakt die Komposition von vor dem Chunking: Protokoll, Sektionen, NEW-CODE-Marker, combinedDiff.
+        const expectedContents = `${buildProtocolBlock('reviewer_rag')}\n\n`
+            + `${singleCallContext.ragPromptSection}\n\n`
+            + `${singleCallContext.practicesPromptSection}\n\n`
+            + `${buildAlreadyFlaggedSection(prescanIssues)}`
+            + `\n\n\n=== NEW CODE (Pull Request Diff) ===\n${singleCallContext.combinedDiff}`;
+        expect(sentContents(0)).toBe(expectedContents);
+        expect(draftedContext.cascade.degradations).toEqual([]);
+        expect(draftedContext.cascade.draftUnreviewedFiles).toEqual([]);
+    });
+
+    it('pro-direct chunkt nicht: ein Call auf dem Eskalations-Modell mit dem ganzen Diff (Spec §5)', async () => {
+        generateContentMock.mockResolvedValue(buildBatchLlmResponse('src/lib/beta.ts', 'pro review'));
+        const proDirectContext = buildTwoFileContext(SPLITTING_BATCH_LIMIT, {
+            cascade: buildCascadeState({ route: 'pro-direct', escalated: true }),
+        });
+
+        const draftedContext = await draftReviewerStep.execute(proDirectContext);
+
+        expect(generateContentMock).toHaveBeenCalledTimes(1);
+        expect(generateContentMock.mock.calls[0][0].model).toBe(MODEL_ESCALATION);
+        expect(sentContents(0)).toContain(ALPHA_HEADER);
+        expect(sentContents(0)).toContain(BETA_HEADER);
+        expect(draftedContext.cascade.route).toBe('pro-direct');
+    });
+
+    it('jeder Batch-Call trägt das Budget-Signal des Deadline Guards (§3.2)', async () => {
+        respondByBatch(
+            () => Promise.resolve(buildBatchLlmResponse(null, 'No AI slop found.')),
+            () => Promise.resolve(buildBatchLlmResponse(null, 'No AI slop found.')),
+        );
+
+        await draftReviewerStep.execute(buildTwoFileContext(SPLITTING_BATCH_LIMIT, { deadlineAtMs: Date.now() + 120_000 }));
+
+        expect(generateContentMock).toHaveBeenCalledTimes(2);
+        for (const sentCall of generateContentMock.mock.calls) {
+            expect(sentCall[0].config.abortSignal).toBeInstanceOf(AbortSignal);
+            expect(sentCall[0].config.abortSignal.aborted).toBe(false);
+        }
+    });
+
+    it('draft_partial: ein gescheiterter Batch degradiert, die übrigen zählen, die Dateien werden genannt', async () => {
+        // Real beobachtet (Spec §3.5): Vertex 500 INTERNAL nach > 60 s, kein Retry nach A11.
+        respondByBatch(
+            () => Promise.reject(new Error('500 INTERNAL nach 70 s')),
+            () => Promise.resolve(buildBatchLlmResponse('src/lib/beta.ts', 'beta review')),
+        );
+
+        const draftedContext = await draftReviewerStep.execute(buildTwoFileContext(SPLITTING_BATCH_LIMIT));
+
+        expect(draftedContext.issues.map((issue) => issue.path)).toEqual(['src/lib/beta.ts']);
+        expect(draftedContext.cascade.degradations).toEqual(['draft_partial']);
+        expect(draftedContext.cascade.draftUnreviewedFiles).toEqual(['src/lib/alpha.ts']);
+        expect(draftedContext.reviewSummary).toBe('beta review');
+        expect(draftedContext.tokenUsage?.promptTokens).toBe(500);
+        expect(recordLlmCallMock).toHaveBeenCalledWith(expect.objectContaining({ phase: 'draft', status: 'api_error' }));
+        expect(recordLlmCallMock).toHaveBeenCalledWith(expect.objectContaining({ phase: 'draft', status: 'ok' }));
+    });
+
+    it('ein Deadline-Abbruch nur EINES Batches ist draft_partial, kein review_timeout des Jobs', async () => {
+        respondByBatch(
+            () => Promise.reject(deadlineAbort()),
+            () => Promise.resolve(buildBatchLlmResponse('src/lib/beta.ts', 'beta review')),
+        );
+
+        const draftedContext = await draftReviewerStep.execute(
+            buildTwoFileContext(SPLITTING_BATCH_LIMIT, { deadlineAtMs: Date.now() + 120_000 }),
+        );
+
+        expect(draftedContext.cascade.degradations).toEqual(['draft_partial']);
+        expect(draftedContext.cascade.draftUnreviewedFiles).toEqual(['src/lib/alpha.ts']);
+    });
+
+    it('die Summary eines Batches ohne Findings verwässert die der anderen nicht', async () => {
+        respondByBatch(
+            () => Promise.resolve(buildBatchLlmResponse(null, 'No AI slop found.')),
+            () => Promise.resolve(buildBatchLlmResponse('src/lib/beta.ts', 'beta review')),
+        );
+        const draftedContext = await draftReviewerStep.execute(buildTwoFileContext(SPLITTING_BATCH_LIMIT));
+        expect(draftedContext.reviewSummary).toBe('beta review');
+
+        generateContentMock.mockReset();
+        respondByBatch(
+            () => Promise.resolve(buildBatchLlmResponse(null, 'Nothing here.')),
+            () => Promise.resolve(buildBatchLlmResponse(null, 'Nothing there.')),
+        );
+        const cleanContext = await draftReviewerStep.execute(buildTwoFileContext(SPLITTING_BATCH_LIMIT));
+        expect(cleanContext.issues).toEqual([]);
+        expect(cleanContext.reviewSummary).toBe('No AI slop found.');
+    });
+
+    it('scheitern ALLE Batches, gilt das Verhalten des Einzel-Drafts: der erste Fehler in Diff-Reihenfolge propagiert', async () => {
+        respondByBatch(
+            () => Promise.reject(new Error('alpha down')),
+            () => Promise.reject(new Error('beta down')),
+        );
+
+        await expect(draftReviewerStep.execute(buildTwoFileContext(SPLITTING_BATCH_LIMIT))).rejects.toThrow('alpha down');
+        expect(recordLlmCallMock).toHaveBeenCalledTimes(2);
+        expect(recordLlmCallMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ phase: 'draft', status: 'api_error' }));
+        expect(recordLlmCallMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ phase: 'draft', status: 'api_error' }));
+    });
+
+    it('scheitern alle Batches und einer am Job-Budget, endet der Draft als review_timeout (D5)', async () => {
+        respondByBatch(
+            () => Promise.reject(new Error('alpha down')),
+            () => Promise.reject(deadlineAbort()),
+        );
+
+        await expect(draftReviewerStep.execute(
+            buildTwoFileContext(SPLITTING_BATCH_LIMIT, { deadlineAtMs: Date.now() + 120_000 }),
+        )).rejects.toMatchObject({ name: 'ReviewTimeoutError' });
     });
 });

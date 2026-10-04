@@ -71,6 +71,9 @@ export const resultPersisterStep: PipelineStep = {
                     // ein generischer Satz im GitHub-Review — in der DB unsichtbar.
                     degradations: context.cascade.degradations,
                     skipped_stages: context.cascade.skippedStages,
+                    // LARGE_DIFF_RECALL_SPEC Option A: Dateien gescheiterter
+                    // Draft-Batches (`draft_partial`) — Clients nennen sie.
+                    draft_unreviewed_files: context.cascade.draftUnreviewedFiles,
                 },
                 unresolved_fingerprint: rerollBookkeeping.unresolvedFingerprint,
                 reroll_count: rerollBookkeeping.rerollCount,

@@ -104,6 +104,12 @@ export interface ScanResult {
     readonly degradations?: readonly string[];
     /** Aus Zeitgründen übersprungene Stufen; leer/fehlend = alles lief. */
     readonly skippedStages?: readonly SkippedStage[];
+    /**
+     * Dateien, die der AI-Review nicht gesehen hat, weil ihr Draft-Batch
+     * scheiterte (Degradation `draft_partial`, LARGE_DIFF_RECALL_SPEC
+     * Option A). Additiv: fehlt bei Ergebnissen vor 2026-09-29.
+     */
+    readonly draftUnreviewedFiles?: readonly string[];
 }
 
 /** Lebenszyklus eines review_jobs-Eintrags. */

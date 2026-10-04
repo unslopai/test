@@ -19,7 +19,7 @@ import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } 
 // ESLint) in den Worker-Modulgraphen — genau der OOM-Pfad aus ROADMAP §1b.
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
-import { formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
+import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
 import { preScannerStep } from '@/lib/pipeline/steps/pre-scanner-step';
@@ -35,8 +35,7 @@ import { JobAlreadyFinalizedError, resultPersisterStep } from '@/lib/pipeline/st
 import type { CheckRunResult } from '@/lib/check-run';
 import type { JobFailureCode } from '@/lib/job-failure';
 import type { JobClock } from '@/lib/pipeline/deadline';
-import type { SkippedStage } from '@unslop/shared';
-import type { CascadeConfig, PipelineContext, PipelineStep, PipelineConfig, RepoAuthMode } from '@/lib/pipeline/types';
+import type { CascadeConfig, CascadeState, PipelineContext, PipelineStep, PipelineConfig, RepoAuthMode } from '@/lib/pipeline/types';
 
 // =============================================================================
 // Interfaces
@@ -470,12 +469,12 @@ async function closeCheckRun(
             title: 'Nothing to review',
             summary: finalContext.abortReason ?? 'No reviewable files in this pull request.',
         }
-        : appendTimeBudgetNotice(
+        : appendDegradationNotices(
             deriveReviewConclusion(collectReportableIssues(finalContext), {
                 integrityScore: finalContext.cascade.integrityScore,
                 minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
             }),
-            finalContext.cascade.skippedStages,
+            finalContext.cascade,
         );
 
     try {
@@ -496,16 +495,19 @@ async function closeCheckRun(
 }
 
 /**
- * DEADLINE_GUARD_SPEC §3.4: ein Zeit-Skip steht auch in der Check-Summary —
- * die Conclusion-Regeln (check-run.ts) bleiben unverändert (D8).
+ * Ein Zeit-Skip (DEADLINE_GUARD_SPEC §3.4) und ein halber Draft
+ * (LARGE_DIFF_RECALL_SPEC Option A, `draft_partial`) stehen auch in der
+ * Check-Summary — die Conclusion-Regeln (check-run.ts) bleiben unverändert (D8).
  */
-function appendTimeBudgetNotice(checkRunResult: CheckRunResult, skippedStages: readonly SkippedStage[]): CheckRunResult {
-    const timeBudgetNotice = formatTimeBudgetNotice(skippedStages);
-    return timeBudgetNotice
-        ? { ...checkRunResult, summary: `${checkRunResult.summary}
+function appendDegradationNotices(checkRunResult: CheckRunResult, cascade: CascadeState): CheckRunResult {
+    const degradationNotices = [
+        formatTimeBudgetNotice(cascade.skippedStages),
+        formatDraftPartialNotice(cascade.draftUnreviewedFiles),
+    ].filter((notice): notice is string => notice !== null);
+    if (degradationNotices.length === 0) return checkRunResult;
+    return { ...checkRunResult, summary: `${checkRunResult.summary}
 
-${timeBudgetNotice}` }
-        : checkRunResult;
+${degradationNotices.join('\n\n')}` };
 }
 
 /**

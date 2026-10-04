@@ -6,6 +6,16 @@
  * pro-direct: derselbe Review auf dem Eskalations-Modell; Pro liefert die
  * Verbalized Confidence pro Issue direkt mit (kein Verifier-Durchlauf).
  *
+ * Datei-Batch-Chunking (LARGE_DIFF_RECALL_SPEC Option A, 2026-09-29): liegt
+ * der Diff auf der flash-cascade über `cascadeConfig.draftBatchMaxTokens`,
+ * werden die reviewableFiles in Diff-Reihenfolge greedy zu Batches gepackt
+ * und ein Reviewer-Pass pro Batch PARALLEL gefahren — gleicher Envelope,
+ * gleicher Explicit Cache, <already_flagged> auf die Batch-Dateien gefiltert,
+ * Issues vereinigt. Darunter bleibt der Request byte-identisch zum Einzel-
+ * Call (Test-Beweis in draft-reviewer-step.test.ts). Ein gescheiterter Batch
+ * degradiert zu `draft_partial` (übrige Batches zählen, Score null, Dateien
+ * werden genannt); scheitern alle, gilt das Verhalten des Einzel-Drafts.
+ *
  * Der Call-/Parse-/Validierungs-Kern lebt in reviewer-call.ts und wird mit
  * dem second-opinion-reviewer geteilt (LLM_LANE_QUALITY_SPEC §4.4).
  *
@@ -23,8 +33,27 @@ import { addTokenUsage } from '@/lib/pipeline/helpers';
 import { runReviewerPass } from '@/lib/pipeline/reviewer-call';
 import { isCallDeadlineFailure } from '@/lib/pipeline/vertex-retry';
 import { DRAFT_FALLBACK_MIN_MS, ReviewTimeoutError, remainingLlmMs } from '@/lib/pipeline/deadline';
-import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
+import {
+    estimateDiffTokens,
+    resolveDraftBatches,
+    selectPrescanIssuesForBatch,
+} from '@/lib/pipeline/draft-batching';
+import type { DraftBatch } from '@/lib/pipeline/draft-batching';
+import type { ReviewerPassOptions, ReviewerPassResult } from '@/lib/pipeline/reviewer-call';
+import type {
+    CascadeDegradation,
+    PipelineContext,
+    PipelineIssue,
+    PipelineStep,
+    TokenUsage,
+} from '@/lib/pipeline/types';
 import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
+
+/** PipelineIssue.source der Draft-Claims — der integrity-scorer filtert danach. */
+const DRAFT_ISSUE_SOURCE = 'draft-reviewer';
+
+/** Summary eines Drafts ohne Findings (Output-Format-Contract, prompt-builder.ts). */
+const CLEAN_DRAFT_SUMMARY = 'No AI slop found.';
 
 // =============================================================================
 // Step Implementation
@@ -106,6 +135,26 @@ function degradeToFlashCascade(context: PipelineContext): PipelineContext {
     };
 }
 
+// =============================================================================
+// Draft auf einem Modell: ein Pass oder parallele Batches
+// =============================================================================
+
+/** Alles, was jeder Reviewer-Pass dieses Drafts teilt — Envelope und Cache inklusive. */
+interface DraftPassPlan {
+    readonly sharedOptions: Omit<ReviewerPassOptions, 'userPrompt' | 'reviewableFiles'>;
+    readonly promptVariant: PromptVariant;
+}
+
+/** Ergebnis des Drafts über einen oder mehrere Pässe, bevor es in den Kontext fließt. */
+interface DraftOutcome {
+    readonly issues: readonly PipelineIssue[];
+    readonly summary: string;
+    readonly callUsage: TokenUsage;
+    readonly cacheFellBack: boolean;
+    /** Dateien gescheiterter Batches in Diff-Reihenfolge; leer = vollständiger Draft. */
+    readonly unreviewedFiles: readonly string[];
+}
+
 async function runDraftOnModel(
     context: PipelineContext,
     reviewerModel: string,
@@ -125,37 +174,210 @@ async function runDraftOnModel(
         role: isProDirect ? 'escalation' : 'draft',
         deadlineAtMs: context.deadlineAtMs,
     });
-    const userPrompt = buildUserPrompt(context, promptVariant);
+    const passPlan: DraftPassPlan = {
+        promptVariant,
+        sharedOptions: {
+            reviewerModel,
+            telemetryPhase: isProDirect ? 'escalate_full' : 'draft',
+            promptEnvelope,
+            renderedLawRuleIds: renderedLaw.ruleIds,
+            issueSource: DRAFT_ISSUE_SOURCE,
+            adoptSelfReportedConfidence: isProDirect,
+        },
+    };
 
+    // Chunking nur auf der Flash-Kaskade (Spec §5, Umsetzungshinweis):
+    // pro-direct bleibt EIN Call in der Eskalations-Rolle — sein Fallback ist
+    // die Flash-Kaskade, und die chunkt dann selbst.
+    const draftBatches = isProDirect
+        ? null
+        : resolveDraftBatches(context.reviewableFiles, context.combinedDiff, context.cascadeConfig.draftBatchMaxTokens);
+    const draftOutcome = draftBatches
+        ? await runBatchedDraft(context, passPlan, draftBatches)
+        : await runSingleDraft(context, passPlan);
+
+    return applyDraftOutcome(context, draftOutcome);
+}
+
+async function runSingleDraft(context: PipelineContext, passPlan: DraftPassPlan): Promise<DraftOutcome> {
     const passResult = await runReviewerPass(context, {
-        reviewerModel,
-        telemetryPhase: isProDirect ? 'escalate_full' : 'draft',
-        promptEnvelope,
-        userPrompt,
+        ...passPlan.sharedOptions,
+        userPrompt: buildUserPrompt({
+            variant: passPlan.promptVariant,
+            ragPromptSection: context.ragPromptSection,
+            practicesPromptSection: context.practicesPromptSection,
+            prescanIssues: context.prescanIssues,
+            diffText: context.combinedDiff,
+        }),
         reviewableFiles: context.reviewableFiles,
-        renderedLawRuleIds: renderedLaw.ruleIds,
-        issueSource: 'draft-reviewer',
-        adoptSelfReportedConfidence: isProDirect,
     });
+    logPassResult(passResult, passPlan.sharedOptions.reviewerModel, 'Draft');
 
+    return {
+        issues: passResult.aggregatedIssues,
+        summary: passResult.summary,
+        callUsage: passResult.callUsage,
+        cacheFellBack: passResult.effectiveCacheStatus === 'inline_fallback',
+        unreviewedFiles: [],
+    };
+}
+
+async function runBatchedDraft(
+    context: PipelineContext,
+    passPlan: DraftPassPlan,
+    draftBatches: readonly DraftBatch[],
+): Promise<DraftOutcome> {
+    const batchShapes = draftBatches
+        .map((draftBatch) => `${draftBatch.files.length} Dateien/~${draftBatch.estimatedTokens} Tokens`)
+        .join(', ');
     console.log(
-        `[DraftReviewer] ${passResult.aggregatedIssues.length} Issues ` +
+        `[DraftReviewer] Diff ~${estimateDiffTokens(context.combinedDiff)} Tokens über der Batch-Grenze ` +
+        `(${context.cascadeConfig.draftBatchMaxTokens}) — ${draftBatches.length} parallele Batches ` +
+        `(${batchShapes}), Job ${context.jobId}.`,
+    );
+
+    const settledPasses = await Promise.allSettled(
+        draftBatches.map((draftBatch) => runBatchPass(context, passPlan, draftBatch)),
+    );
+    const { succeededBatches, failedBatches } = partitionBatchPasses(draftBatches, settledPasses);
+    if (succeededBatches.length === 0) throw resolveWholeDraftFailure(failedBatches);
+
+    for (const failedBatch of failedBatches) {
+        // Kein Swallowing (MAINT-001): der Fehler steht im Log, die Telemetrie-
+        // Zeile (api_error/parse_error) ist geschrieben, und das Ergebnis trägt
+        // die Degradation samt Dateiliste bis in DB, Check, Review und CLI.
+        console.error(
+            `[DraftReviewer] Batch ${failedBatch.batch.batchIndex + 1}/${draftBatches.length} gescheitert ` +
+            `(${failedBatch.batch.files.length} Dateien, Job ${context.jobId}) — draft_partial:`,
+            failedBatch.failure instanceof Error ? failedBatch.failure.message : failedBatch.failure,
+        );
+    }
+    return mergeBatchPasses(succeededBatches, failedBatches);
+}
+
+async function runBatchPass(
+    context: PipelineContext,
+    passPlan: DraftPassPlan,
+    draftBatch: DraftBatch,
+): Promise<ReviewerPassResult> {
+    const passResult = await runReviewerPass(context, {
+        ...passPlan.sharedOptions,
+        userPrompt: buildUserPrompt({
+            variant: passPlan.promptVariant,
+            ragPromptSection: context.ragPromptSection,
+            practicesPromptSection: context.practicesPromptSection,
+            prescanIssues: selectPrescanIssuesForBatch(context.prescanIssues, draftBatch.files),
+            diffText: draftBatch.diffText,
+        }),
+        // Manifest = nur die Batch-Dateien: ein Issue auf einem Pfad außerhalb
+        // des Batches ist halluziniert und fällt an der Validation-Boundary.
+        reviewableFiles: draftBatch.files,
+    });
+    logPassResult(passResult, passPlan.sharedOptions.reviewerModel, `Batch ${draftBatch.batchIndex + 1}`);
+    return passResult;
+}
+
+interface SucceededBatch {
+    readonly batch: DraftBatch;
+    readonly passResult: ReviewerPassResult;
+}
+
+interface FailedBatch {
+    readonly batch: DraftBatch;
+    readonly failure: unknown;
+}
+
+function partitionBatchPasses(
+    draftBatches: readonly DraftBatch[],
+    settledPasses: readonly PromiseSettledResult<ReviewerPassResult>[],
+): { succeededBatches: SucceededBatch[]; failedBatches: FailedBatch[] } {
+    const succeededBatches: SucceededBatch[] = [];
+    const failedBatches: FailedBatch[] = [];
+    settledPasses.forEach((settledPass, batchIndex) => {
+        const batch = draftBatches[batchIndex];
+        if (settledPass.status === 'fulfilled') {
+            succeededBatches.push({ batch, passResult: settledPass.value });
+        } else {
+            failedBatches.push({ batch, failure: settledPass.reason });
+        }
+    });
+    return { succeededBatches, failedBatches };
+}
+
+/**
+ * Alle Batches gescheitert ⇒ heutiges Verhalten des Einzel-Drafts. Ein
+ * Abbruch am Job-Budget hat Vorrang: dann ist die Restzeit weg, und
+ * `review_timeout` ist die ehrliche Ursache (D5) — sonst zählt der erste
+ * Fehler in Diff-Reihenfolge (z.B. ModelUnavailableError, A11).
+ */
+function resolveWholeDraftFailure(failedBatches: readonly FailedBatch[]): unknown {
+    const deadlineFailure = failedBatches.find((failedBatch) => isCallDeadlineFailure(failedBatch.failure));
+    return (deadlineFailure ?? failedBatches[0]).failure;
+}
+
+function mergeBatchPasses(
+    succeededBatches: readonly SucceededBatch[],
+    failedBatches: readonly FailedBatch[],
+): DraftOutcome {
+    const passResults = succeededBatches.map((succeededBatch) => succeededBatch.passResult);
+    const [firstCallUsage, ...furtherCallUsages] = passResults.map((passResult) => passResult.callUsage);
+    return {
+        // Batch-Dateien sind disjunkt, die Rule+File-Aggregation je Batch
+        // deshalb auch job-weit korrekt (Spec §5, Option A).
+        issues: passResults.flatMap((passResult) => passResult.aggregatedIssues),
+        summary: mergeBatchSummaries(passResults),
+        callUsage: furtherCallUsages.reduce<TokenUsage>(
+            (usageSum, callUsage) => addTokenUsage(usageSum, callUsage), firstCallUsage,
+        ),
+        cacheFellBack: passResults.some((passResult) => passResult.effectiveCacheStatus === 'inline_fallback'),
+        unreviewedFiles: failedBatches.flatMap(
+            (failedBatch) => failedBatch.batch.files.map((batchFile) => batchFile.filename),
+        ),
+    };
+}
+
+/**
+ * Jeder Batch liefert eine eigene Summary. Es bleiben nur die der Batches mit
+ * Findings, in Diff-Reihenfolge — ein "No AI slop found." neben Findings
+ * anderer Batches wäre falsch. Verändert der Scorer später ein Draft-Finding,
+ * ersetzt A12a (final-summary.ts) den Text ohnehin durch das Template.
+ */
+function mergeBatchSummaries(passResults: readonly ReviewerPassResult[]): string {
+    const summariesWithFindings = passResults
+        .filter((passResult) => passResult.aggregatedIssues.length > 0)
+        .map((passResult) => passResult.summary.trim())
+        .filter((batchSummary) => batchSummary.length > 0);
+    return summariesWithFindings.length > 0 ? summariesWithFindings.join(' ') : CLEAN_DRAFT_SUMMARY;
+}
+
+function applyDraftOutcome(context: PipelineContext, draftOutcome: DraftOutcome): PipelineContext {
+    const addedDegradations: CascadeDegradation[] = [];
+    if (draftOutcome.cacheFellBack && !context.cascade.degradations.includes('cache_fallback')) {
+        addedDegradations.push('cache_fallback');
+    }
+    if (draftOutcome.unreviewedFiles.length > 0) addedDegradations.push('draft_partial');
+
+    return {
+        ...context,
+        issues: [...context.issues, ...draftOutcome.issues],
+        reviewSummary: draftOutcome.summary,
+        tokenUsage: addTokenUsage(context.tokenUsage, draftOutcome.callUsage),
+        cascade: {
+            ...context.cascade,
+            degradations: [...context.cascade.degradations, ...addedDegradations],
+            draftUnreviewedFiles: draftOutcome.unreviewedFiles,
+        },
+    };
+}
+
+function logPassResult(passResult: ReviewerPassResult, reviewerModel: string, passLabel: string): void {
+    console.log(
+        `[DraftReviewer] ${passLabel}: ${passResult.aggregatedIssues.length} Issues ` +
         `(${passResult.preAggregationIssueCount} vor der ` +
         `Rule+File-Aggregation, ${passResult.rejectedCount} von der Manifest-Validierung, ` +
         `${passResult.scopeFilteredCount} vom Scope-Post-Filter verworfen), ` +
         `Modell: ${reviewerModel}, has_slop: ${passResult.hasSlop}, cache: ${passResult.effectiveCacheStatus}`,
     );
-
-    return {
-        ...context,
-        issues: [...context.issues, ...passResult.aggregatedIssues],
-        reviewSummary: passResult.summary,
-        tokenUsage: addTokenUsage(context.tokenUsage, passResult.callUsage),
-        cascade: passResult.effectiveCacheStatus === 'inline_fallback'
-            && !context.cascade.degradations.includes('cache_fallback')
-            ? { ...context.cascade, degradations: [...context.cascade.degradations, 'cache_fallback'] }
-            : context.cascade,
-    };
 }
 
 // =============================================================================
@@ -166,29 +388,39 @@ function selectPromptVariant(ragPromptSection: string): PromptVariant {
     return ragPromptSection ? 'reviewer_rag' : 'reviewer_diff';
 }
 
+interface DraftPromptInputs {
+    readonly variant: PromptVariant;
+    readonly ragPromptSection: string;
+    readonly practicesPromptSection: string;
+    readonly prescanIssues: readonly PipelineIssue[];
+    /** Der ganze combinedDiff (Einzel-Call) oder der Diff-Text eines Batches. */
+    readonly diffText: string;
+}
+
 /**
  * Baut den User-Prompt: optionale Kontext-Sektionen (Evidence, Practices,
  * <already_flagged>-Prescan-Tupel) gefolgt vom Diff. Alles Diff-Variable steht
  * bewusst NUR hier und nie im System-Prompt — der bleibt per-Repo
- * byte-identisch (Cache-Contract).
+ * byte-identisch (Cache-Contract). Evidence und Practices sind job-weit und
+ * stehen deshalb in jedem Batch-Prompt.
  */
-function buildUserPrompt(context: PipelineContext, variant: PromptVariant): string {
+function buildUserPrompt(promptInputs: DraftPromptInputs): string {
     const contextSections: string[] = [];
 
-    if (variant === 'reviewer_rag' && context.ragPromptSection) {
-        contextSections.push(context.ragPromptSection);
+    if (promptInputs.variant === 'reviewer_rag' && promptInputs.ragPromptSection) {
+        contextSections.push(promptInputs.ragPromptSection);
     }
-    if (context.practicesPromptSection) {
-        contextSections.push(context.practicesPromptSection);
+    if (promptInputs.practicesPromptSection) {
+        contextSections.push(promptInputs.practicesPromptSection);
     }
-    const alreadyFlaggedSection = buildAlreadyFlaggedSection(context.prescanIssues);
+    const alreadyFlaggedSection = buildAlreadyFlaggedSection(promptInputs.prescanIssues);
     if (alreadyFlaggedSection) {
         contextSections.push(alreadyFlaggedSection);
     }
 
     if (contextSections.length === 0) {
-        return context.combinedDiff;
+        return promptInputs.diffText;
     }
 
-    return `${contextSections.join('\n\n')}\n\n\n=== NEW CODE (Pull Request Diff) ===\n${context.combinedDiff}`;
+    return `${contextSections.join('\n\n')}\n\n\n=== NEW CODE (Pull Request Diff) ===\n${promptInputs.diffText}`;
 }

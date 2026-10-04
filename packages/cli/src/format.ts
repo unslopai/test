@@ -6,6 +6,7 @@ import type { ScanIssue, ScanResult, Severity } from '@unslop/shared';
 
 import {
     describeFindingVerification,
+    formatDraftPartialNotice,
     formatOccurrenceLineRefs,
     formatTimeBudgetNotice,
     sanitizeModelText,
@@ -26,8 +27,9 @@ function severityBadge(severity: Severity): string {
  * next to an uncertain or self-reported one (SPEC.md §6).
  */
 function integrityScoreLine(scanResult: ScanResult): string {
-    const timeBudgetNotice = formatTimeBudgetNotice(scanResult.skippedStages);
-    const noticeSuffix = timeBudgetNotice ? `\n${yellow(`⚠ ${timeBudgetNotice}`)}` : '';
+    const noticeSuffix = degradationNotices(scanResult)
+        .map((degradationNotice) => `\n${yellow(`⚠ ${degradationNotice}`)}`)
+        .join('');
     if (scanResult.cognitiveIntegrityScore === null) {
         return dim('Cognitive Integrity Score: n/a — confidence verification was unavailable for this scan.')
             + noticeSuffix;
@@ -37,6 +39,19 @@ function integrityScoreLine(scanResult: ScanResult): string {
         dim(` — ${describeFindingVerification(scanResult.issues)}.`) +
         noticeSuffix
     );
+}
+
+/**
+ * A time skip (DEADLINE_GUARD_SPEC §3.4) and a partial draft (LARGE_DIFF_RECALL_SPEC
+ * Option A) each get the same one-line notice as the check run and the PR review.
+ * File paths come from the diff and are sanitized like every other model-adjacent text.
+ */
+function degradationNotices(scanResult: ScanResult): string[] {
+    const unreviewedFiles = (scanResult.draftUnreviewedFiles ?? []).map(sanitizeModelText);
+    return [
+        formatTimeBudgetNotice(scanResult.skippedStages),
+        formatDraftPartialNotice(unreviewedFiles),
+    ].filter((degradationNotice): degradationNotice is string => degradationNotice !== null);
 }
 
 /**
