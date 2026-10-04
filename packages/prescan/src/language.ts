@@ -73,8 +73,13 @@ export function hasTreeSitterGrammar(language: PrescanLanguage): boolean {
  * Muster, um sie zu erklären, und Übersetzungskataloge enthalten UI-Sätze wie
  * „API key limit reached“. Die Regex-Regeln über Code-Verhalten laufen dort
  * nicht; nur Secrets in Provider-Format bleiben ein Befund.
+ *
+ * Eingecheckte Diffs (`.diff`, `.patch`) zählen dazu: sie zitieren Code eines
+ * anderen Pfads samt entfernten Zeilen und Kontext. Beleg: unslopai/test#26,
+ * drei CRITICAL (SEC-017, SEC-024) auf `fixtures/rule-recall/r26-clean-config.diff`
+ * (Job `4276a714`, docs/benchmarks/LARGE_PR_CAMPAIGN.md).
  */
-const PROSE_EXTENSION_PATTERN = /\.(md|mdx|markdown|rst|adoc)$/;
+const PROSE_EXTENSION_PATTERN = /\.(md|mdx|markdown|rst|adoc|diff|patch)$/;
 const TRANSLATION_CATALOG_PATTERN =
     /(^|\/)(messages|locales?|i18n|l10n|langs?|translations|_locales)\/.*\.(json|ya?ml|properties)$|\.(po|pot|arb|xlf|xliff)$/;
 

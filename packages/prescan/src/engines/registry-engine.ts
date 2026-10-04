@@ -189,8 +189,7 @@ function extractImportedPackage(
         case 'typescript':
         case 'tsx':
         case 'javascript': {
-            const importMatch = JS_IMPORT_PATTERN.exec(lineText);
-            const importTarget = importMatch?.[1] ?? importMatch?.[2];
+            const importTarget = findFirstCodeImport(lineText);
             const npmPackage = importTarget ? normalizeNpmImport(importTarget, firstPartyNames) : null;
             return npmPackage ? { registry: 'npm', packageName: npmPackage } : null;
         }
@@ -211,6 +210,46 @@ function extractImportedPackage(
         default:
             return null;
     }
+}
+
+const JS_STRING_DELIMITERS: ReadonlySet<string> = new Set(['"', "'", '`']);
+const JS_IMPORT_PATTERN_ALL_MATCHES = new RegExp(JS_IMPORT_PATTERN.source, 'g');
+
+/**
+ * Das erste Import-Ziel der Zeile, das nicht in einem String-Literal steht:
+ * ein zitierter Import vor einem echten auf derselben Zeile verdeckt diesen nicht.
+ */
+function findFirstCodeImport(lineText: string): string | null {
+    for (const importMatch of lineText.matchAll(JS_IMPORT_PATTERN_ALL_MATCHES)) {
+        if (!startsInsideStringLiteral(lineText, importMatch.index)) {
+            return importMatch[1] ?? importMatch[2] ?? null;
+        }
+    }
+    return null;
+}
+
+/**
+ * true = die Fundstelle liegt in einem String-Literal, das auf derselben Zeile
+ * beginnt: ein Import-Statement als Testdatum (`patch: '+import kit from "kit"'`)
+ * ist kein Import. Beleg: unslopai/test#33, zwei CRITICAL SEC-035 auf
+ * `github-reporter-step.test.ts` (docs/benchmarks/LARGE_PR_CAMPAIGN.md).
+ * Bekannte Grenzen der zeilenweisen Prüfung (fail-open, SEC-035 schweigt dann):
+ * mehrzeilige Template-Literale, `${…}`-Ausdrücke in Template-Literalen und ein
+ * Anführungszeichen in Kommentar, Regex-Literal oder JSX-Text vor dem Import.
+ */
+function startsInsideStringLiteral(lineText: string, matchIndex: number): boolean {
+    let openDelimiter: string | null = null;
+    for (let charIndex = 0; charIndex < matchIndex; charIndex += 1) {
+        const currentChar = lineText[charIndex];
+        if (openDelimiter !== null && currentChar === '\\') {
+            charIndex += 1;
+        } else if (openDelimiter === null && JS_STRING_DELIMITERS.has(currentChar)) {
+            openDelimiter = currentChar;
+        } else if (currentChar === openDelimiter) {
+            openDelimiter = null;
+        }
+    }
+    return openDelimiter !== null;
 }
 
 function normalizeNpmImport(importTarget: string, firstPartyNames: ReadonlySet<string>): string | null {

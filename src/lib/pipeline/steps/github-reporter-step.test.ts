@@ -174,6 +174,23 @@ describe('githubReporterStep', () => {
         expect(combinedBody).toContain('Reduced coverage: the AI review failed on 1 file — not reviewed: src/lib/alpha.ts.');
     });
 
+    it('nennt einen ausgefallenen Pre-Scan neben der Modell-Review, mit und ohne Findings (unslopai/test#29)', async () => {
+        const prescanFailedStats = buildPrescanStats({ degraded: true, degradedReason: 'Prescan-Route antwortete mit HTTP 500.' });
+        const prescanFailedNotice = 'Reduced coverage: the deterministic pre-scanner failed on this change';
+
+        await githubReporterStep.execute({ ...buildReportableContext(), prescanStats: prescanFailedStats });
+        await githubReporterStep.execute(buildPipelineContext({
+            reviewableFiles: [buildPullRequestFile()],
+            cascade: buildCascadeState({ integrityScore: 100 }),
+            prescanStats: prescanFailedStats,
+        }));
+        await githubReporterStep.execute({ ...buildReportableContext(), prescanStats: buildPrescanStats() });
+
+        expect(String(createPullRequestReviewMock.mock.calls[0][4])).toContain(prescanFailedNotice);
+        expect(String(createPullRequestReviewMock.mock.calls[1][4])).toContain(prescanFailedNotice);
+        expect(String(createPullRequestReviewMock.mock.calls[2][4])).not.toContain(prescanFailedNotice);
+    });
+
     it('behauptet keine Eskalation, wenn nur die Second Opinion ein stärkeres Modell gerufen hat', async () => {
         const secondOpinionContext = {
             ...buildReportableContext(),

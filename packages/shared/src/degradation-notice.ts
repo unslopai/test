@@ -6,7 +6,9 @@
  *  - Dateien, deren Draft-Batch gescheitert ist (LARGE_DIFF_RECALL_SPEC
  *    Option A, Degradation `draft_partial`);
  *  - ein ausgefallener Pre-Scan in einem Lauf ohne Modell-Review
- *    (LANGUAGE_COVERAGE_SPEC §6.2).
+ *    (LANGUAGE_COVERAGE_SPEC §6.2) und neben einer Modell-Review
+ *    (Kampagne große PRs 2026-09-30; bisher nur Check und Review, CLI, MCP
+ *    und Extension kennen das Feld noch nicht, ROADMAP §1).
  * Weder ein Zeit-Skip noch ein halber Draft noch ein ausgefallener Pre-Scan
  * darf auf irgendeiner Fläche wie ein vollständiger Lauf aussehen.
  */
@@ -69,4 +71,19 @@ export function formatDeterministicOnlyNotice(surface: DeterministicOnlySurface)
 export function formatPrescanFailedNotice(): string {
     return 'Not reviewed: the deterministic pre-scanner failed on this change, and no model reviews it '
         + 'because it changes no TypeScript or JavaScript file. Nothing was checked; re-run the review to try again.';
+}
+
+/**
+ * Der Pre-Scan ist ausgefallen, das Modell hat aber gelesen: der Review
+ * erscheint sonst vollständig, obwohl die deterministischen Regeln fehlen und
+ * Dateien außerhalb der Modell-Review ungeprüft bleiben. null = Pre-Scan lief
+ * oder ist für das Repo abgeschaltet, keine Zeile. Beleg: unslopai/test#29,
+ * Prescan-Route HTTP 500 nach Speicher-Kill, Review ohne Hinweis
+ * (docs/benchmarks/LARGE_PR_CAMPAIGN.md). Kein Rat zum Re-Run: bei
+ * Speicher-Kill und HTTP 413 scheitert derselbe PR wieder.
+ */
+export function formatPrescanUnavailableNotice(prescanDegraded: boolean | undefined): string | null {
+    if (prescanDegraded !== true) return null;
+    return 'Reduced coverage: the deterministic pre-scanner failed on this change — only the model review ran, '
+        + 'and files it does not read were not checked.';
 }
