@@ -17,6 +17,7 @@
  */
 import { CONDITION_REGISTRY } from '@/lib/pipeline/conditions';
 import { buildHunkRangesByFile, isLineWithinHunks } from '@/lib/pipeline/diff-utils';
+import { isGatekeeperRule } from '@/lib/pipeline/gatekeeper-rules';
 import type { HunkRange } from '@/lib/pipeline/diff-utils';
 import type { PullRequestFile } from '@/lib/github';
 import type { PipelineIssue } from '@/lib/pipeline/types';
@@ -67,6 +68,10 @@ function referencesKnownRule(
     knownLawRuleIds: ReadonlySet<string>,
     promptedConditionIds: ReadonlySet<string>,
 ): boolean {
+    // GATE-001 liegt außerhalb von THE LAW und der Conditions (SPEC.md §12.4
+    // A12c): immer bekannt, kein Filter darf die Direktive ausblenden.
+    if (isGatekeeperRule(ruleReference)) return true;
+
     const conditionMatch = CONDITION_REFERENCE_PATTERN.exec(ruleReference);
     if (conditionMatch) {
         return promptedConditionIds.has(`COND-${conditionMatch[1].padStart(3, '0')}`);

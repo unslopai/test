@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-09-28T15:36:47.255Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "results": [
+    {
+      "fixture": "r23-clean-reviewer-mentions.diff",
+      "jobId": "f1d6a26c-f4d8-4183-91a0-1b7d8810f415",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 115,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

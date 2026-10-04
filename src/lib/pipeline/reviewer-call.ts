@@ -12,6 +12,7 @@ import { runEnvelopeGenerateContent } from '@/lib/pipeline/context-cache';
 import { extractTokenUsage, parseModelJson } from '@/lib/pipeline/helpers';
 import { aggregateIssuesByRuleAndFile } from '@/lib/pipeline/finding-aggregation';
 import { validateIssuesAgainstManifest } from '@/lib/pipeline/issue-validation';
+import { normalizeGatekeeperIssue } from '@/lib/pipeline/gatekeeper-rules';
 import { clampConfidence } from '@/lib/pipeline/claim-verification';
 import { CallBudgetExhaustedError, DEFAULT_RETRY_POLICY, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
 import { hasBudgetForCall } from '@/lib/pipeline/deadline';
@@ -87,7 +88,9 @@ export async function runReviewerPass(
         pipelineIssues, options.reviewableFiles, options.renderedLawRuleIds,
         context.promptConfig.activeConditionIds,
     );
-    const scopedIssues = filterIssuesByScope(acceptedIssues, context.promptConfig);
+    // GATE-001 (SPEC.md §12.4 A12c): immer CRITICAL, fester Kundentext.
+    const normalizedIssues = acceptedIssues.map(normalizeGatekeeperIssue);
+    const scopedIssues = filterIssuesByScope(normalizedIssues, context.promptConfig);
     // Aggregation VOR der Claim-Verifikation (ROADMAP §7): N Vorkommen
     // derselben Regel in derselben Datei werden EIN Finding mit
     // occurrences-Liste — also ein Claim, ein Verdict, ein Kommentar.

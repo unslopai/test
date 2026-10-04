@@ -16,6 +16,7 @@ import {
     runWithTransientRetry,
 } from '@/lib/pipeline/vertex-retry';
 import { hasBudgetForCall } from '@/lib/pipeline/deadline';
+import { buildGate001VerificationQuestion, isGatekeeperRule } from '@/lib/pipeline/gatekeeper-rules';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
 import type { EnvelopeCallResult, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import type { PullRequestFile } from '@/lib/github';
@@ -40,6 +41,12 @@ export interface BlindClaim {
      * Fehlt bei Einzel-Findings (Alt-Contract, keine Prompt-Änderung).
      */
     readonly occurrences?: readonly IssueOccurrence[];
+    /**
+     * Server-seitig gesetzte Prüffrage (SPEC.md §12.4 A12c): für GATE-001
+     * darf das Modell die Frage nicht selbst formulieren — die geliehene
+     * Regel-Frage hat die Injection vom 2026-08-09 zweimal verworfen.
+     */
+    readonly fixedVerificationQuestion?: string;
 }
 
 /**
@@ -61,7 +68,36 @@ export function buildBlindClaims(issues: readonly PipelineIssue[]): BlindClaim[]
         endLine: draftIssue.endLine,
         exactQuote: draftIssue.exactQuote,
         ...(draftIssue.occurrences ? { occurrences: draftIssue.occurrences } : {}),
+        ...(isGatekeeperRule(draftIssue.rule)
+            ? { fixedVerificationQuestion: buildGate001VerificationQuestion(draftIssue.path, draftIssue.line) }
+            : {}),
     }));
+}
+
+/**
+ * Nach dem Parse: eine abweichend formulierte Frage auf einem Fixed-Question-
+ * Claim wird geloggt und durch den festen Text ersetzt. Das Verdikt bleibt —
+ * es zählt die Antwort, und das Audit (A1) soll die gestellte Frage zeigen.
+ */
+export function pinFixedVerificationQuestions(
+    verdicts: readonly ClaimVerdict[],
+    claimBatch: readonly BlindClaim[],
+): ClaimVerdict[] {
+    const fixedQuestionByClaimId = new Map<string, string>();
+    for (const blindClaim of claimBatch) {
+        if (blindClaim.fixedVerificationQuestion !== undefined) {
+            fixedQuestionByClaimId.set(blindClaim.claimId, blindClaim.fixedVerificationQuestion);
+        }
+    }
+    return verdicts.map((claimVerdict) => {
+        const fixedQuestion = fixedQuestionByClaimId.get(claimVerdict.claimId);
+        if (fixedQuestion === undefined || claimVerdict.verificationQuestion === fixedQuestion) return claimVerdict;
+        console.warn(
+            `[ClaimVerification] Claim ${claimVerdict.claimId}: Modell hat die feste Prüffrage umformuliert — `
+            + 'fester Text wird eingesetzt, Verdikt bleibt.',
+        );
+        return { ...claimVerdict, verificationQuestion: fixedQuestion };
+    });
 }
 
 /** Teilt Claims in Batches à batchCap (Batch-Cap gegen "Verschlucken", D7). */
@@ -117,6 +153,9 @@ export function buildVerifierUserPrompt(
                         exact_quote: occurrence.exactQuote,
                     })),
                 }
+                : {}),
+            ...(claim.fixedVerificationQuestion
+                ? { verification_question: claim.fixedVerificationQuestion }
                 : {}),
         })),
         null,
@@ -301,8 +340,9 @@ export async function runVerdictCall(
     const cacheFallbackOccurred = effectiveCacheStatus === 'inline_fallback';
 
     try {
-        const verdicts = parseVerdictBatch(
-            generateResponse.text ?? '', expectedClaimIds, callConfig.verdictPhase,
+        const verdicts = pinFixedVerificationQuestions(
+            parseVerdictBatch(generateResponse.text ?? '', expectedClaimIds, callConfig.verdictPhase),
+            claimBatch,
         );
         await writeTelemetry('ok', effectiveCacheStatus, callUsage, verdicts);
         return { verdicts, callUsage, cacheFallbackOccurred };

@@ -1,0 +1,245 @@
+{
+  "capturedAt": "2026-09-28T15:40:53.440Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "results": [
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "85650e45-e91f-4fc9-a904-90d55b89ac84",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 39,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r15-clean-c.diff",
+      "jobId": "8ff75a1f-fce8-4d55-b625-b2c2088ec829",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 21,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r18-clean-ts.diff",
+      "jobId": "715a789a-4ae5-455d-a710-c92fa478b394",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2547,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r20-large-pro-direct.diff",
+      "jobId": "00fa0596-7635-4d76-8a57-2d7e2aea7fc6",
+      "route": "pro-direct",
+      "negativeControl": false,
+      "fileCount": 18,
+      "draftFindingCount": 16,
+      "survivingFindingCount": 16,
+      "prescanFindingCount": 11,
+      "prescanDurationMs": 1244,
+      "integrityScore": 99,
+      "planted": [
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/analytics/model_loader.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/scripts/rule_engine.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/parser/token_buffer.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/io/path_join.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r21-clean-go.diff",
+      "jobId": "ff24b40f-104d-4d8f-8b9b-87a97f9f73b5",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 2,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 9,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

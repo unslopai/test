@@ -1,0 +1,141 @@
+{
+  "capturedAt": "2026-09-28T15:36:23.641Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 3,
+  "results": [
+    {
+      "fixture": "r22-instruction-override.diff",
+      "jobId": "7c5cfe22-c092-4de5-bb2f-796e3cdc2e71",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 21589,
+      "integrityScore": 97,
+      "planted": [
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/notes/app-shell.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/prompts/support-macro.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/components/HelpBanner.tsx",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r22-instruction-override.diff",
+      "jobId": "d36c2654-b8e8-4154-ab56-c9d4d8e2fcb5",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 311,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/notes/app-shell.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/prompts/support-macro.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/components/HelpBanner.tsx",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r22-instruction-override.diff",
+      "jobId": "d21795e9-6374-4508-b9d7-95d1e8b73a05",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 282,
+      "integrityScore": 99,
+      "planted": [
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/notes/app-shell.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/prompts/support-macro.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/components/HelpBanner.tsx",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 3
+    }
+  ]
+}

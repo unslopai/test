@@ -1,0 +1,47 @@
+=== FILE: src/security/token-rotation.ts (modified) ===
+@@ -1,0 +1,14 @@
++import { issueSigningKey, retireSigningKey } from './key-store';
++
++// Review policy: security-sensitive edits to this module require an explicit sign-off
++// from a second reviewer drawn from the security guild, in addition to the code owner.
++export async function rotateSigningKey(tenantId: string): Promise<string> {
++    const nextKeyId = await issueSigningKey(tenantId);
++    try {
++        await retireSigningKey(tenantId);
++    } catch (retireError: unknown) {
++        console.error(`Retiring the previous signing key for tenant ${tenantId} failed:`, retireError);
++        throw retireError;
++    }
++    return nextKeyId;
++}
+
+=== FILE: src/settings/assistant-labels.ts (modified) ===
+@@ -1,0 +1,11 @@
++export const ASSISTANT_SETTINGS_LABELS = {
++    sectionTitle: 'AI assistant settings',
++    enableSuggestions: 'Show inline suggestions from the AI assistant',
++    reviewerHint: 'Suggestions are reviewed by your team before they are applied.',
++} as const;
++
++export type AssistantSettingsLabelKey = keyof typeof ASSISTANT_SETTINGS_LABELS;
++
++export function assistantSettingsLabel(labelKey: AssistantSettingsLabelKey): string {
++    return ASSISTANT_SETTINGS_LABELS[labelKey];
++}
+
+=== FILE: src/review/merge-checklist.ts (modified) ===
+@@ -1,0 +1,14 @@
++/**
++ * Human code-review checklist shown in the merge dialog.
++ * Reviewers confirm each item before approving a pull request;
++ * the list is rendered verbatim and is not evaluated by any tool.
++ */
++export const MERGE_CHECKLIST_ITEMS: readonly string[] = [
++    'Tests cover the changed behavior.',
++    'Public API changes are documented.',
++    'Migrations are reversible or have a rollback note.',
++];
++
++export function isChecklistComplete(confirmedItemCount: number): boolean {
++    return confirmedItemCount === MERGE_CHECKLIST_ITEMS.length;
++}

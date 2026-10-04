@@ -317,7 +317,7 @@ F5 pass, job `e49caffe`: one Vertex `429 RESOURCE_EXHAUSTED` on the Flash draft 
 |---|--------|--------|
 | A11 | **Transient model errors are retried with backoff, and exhausted capacity has its own client code.** `src/lib/pipeline/vertex-retry.ts: runWithTransientRetry` wraps every cascade LLM call (the shared reviewer pass for draft/pro-direct/second opinion in `reviewer-call.ts`, and the verdict calls in `claim-verification.ts: runVerdictCallWithRetry`). Detection is structural (`name === 'ApiError'` + status 429/500/502/503/504, directly or one level down as `cause`, because `VerdictCallError` wraps it) — not `instanceof`, which a CJS/ESM double bundle would silently break. The retries are independent of the existing parse retry, so a 429 never uses up the degeneration retry, and once the backoff is exhausted the verifier's immediate retry does not fire. The final failure is a `ModelUnavailableError`; the worker persists it as `error_message = '[model_unavailable] <detail>'` (`src/lib/job-failure.ts`), the poll route returns only the code (`model_unavailable` vs `server_error`, prefix check at string start), and the GitHub check says "AI model temporarily unavailable — re-run this check" instead of "internal error". Rejected for now: a Flash→Pro fallback for the draft (a second capacity pool, but spends Pro budget and cost on every capacity dip; product decision, ROADMAP §6). | §8, D10, A7 |
 
-### 12.4 Contested-finding amendment (APPROVED 2026-09-26 — A12a implemented; A12b approved, build gated on data; A12c decided by Fable 5.1 on the founder's delegation, approved for implementation)
+### 12.4 Contested-finding amendment (APPROVED 2026-09-26 — A12a implemented; A12b approved, build gated on data; A12c decided by Fable 5.1 on the founder's delegation, implemented 2026-09-28)
 
 Reviewed on 2026-09-26 by Fable 5.1. All six findings from that review are incorporated, and its data claims were re-checked against `review_job_llm_calls`.
 
@@ -453,6 +453,15 @@ The check-run title and summary stay as `deriveReviewConclusion` renders them. T
 - **Why it matters:** it carries `verification: 'deterministic'`, so it cannot be refuted. It is also the only path for non-JS/TS files (Markdown, Python, YAML), which never reach the LLM lane.
 - **Gate before shipping:** 0 hits on a false-positive corpus made of this repository's own `AGENTS.md`, `CLAUDE.md`, `.agents/rules/*.md` and `docs/**`, plus the r20 line-474 comment and r23.
 - **Once shipped:** the `<already_flagged>` dedupe applies, and the prescan finding wins over the LLM finding, as for every other overlap.
+
+*Implemented 2026-09-28.* Deviations from the text above, each on purpose:
+- **Where the id lives.** `GATEKEEPER_RULE_IDS`, the fixed question and the customer copy live in `src/lib/pipeline/gatekeeper-rules.ts`, not next to `SHARED_GATEKEEPER_CORE`. `issue-validation.ts` and `claim-verification.ts` import them, and pulling in `prompt-builder.ts` there would drag the whole prompt module into the validation boundary. The core sentence itself is in `prompt-builder.ts`, as specified.
+- **Normalization point.** Severity CRITICAL, the rule label and the customer copy are applied right after `validateIssuesAgainstManifest` in `reviewer-call.ts: runReviewerPass`. That is the one boundary that draft, pro-direct and second opinion share.
+- **Arbiter `UNCERTAIN` annotation.** Rule 4 names no text of its own. Its annotation is "⚠️ Independent verification stayed uncertain about this finding. Kept as CRITICAL because instruction-override findings are never dropped without a conclusive refutation." Rules 4 and 5 both set the finding confidence to 50 (as `UNCERTAIN` in §6), never to the verifier's confidence in its refutation.
+- **Skip reason in rule 5.** The `{reason}` placeholder is resolved from the cascade degradations: "time budget exhausted", "escalation budget exhausted" or "escalation model unavailable".
+- **r22 ecosystems.** r22 uses `detectedEcosystems: ["react", "typescript"]`, because one of its variants is a `.tsx` file.
+
+*Acceptance, 2026-09-28:* r22 9/9 over 3 runs, r23 and r14/r15/r18/r21 with 0 false positives, and no `GATE-001` on r20 (see `RULE_RECALL_BENCHMARK.md`). The full run on universe 129 waits for the escalation budget to reset on 2026-10-01.
 
 *Known risks, accepted with this decision:*
 1. **A hallucinated `GATE-001` stays red when the arbiter does not run** (rule 5). The mitigation is the escalation ordering in rule 1. The opposite risk is documented: three real injections were lost.
