@@ -50,6 +50,7 @@ export const escalationReviewerStep: PipelineStep = {
         // eine der bezahlten Eskalationen verbrauchen.
         if (!hasBudgetForCall(context, 'escalate_targeted')) {
             console.warn(`[EscalationReviewer] Zeitbudget reicht nicht für die Eskalation (Job ${context.jobId}).`);
+            await recordEscalationSkippedForTime(context);
             return markStageSkippedForTime(context, 'escalation');
         }
 
@@ -140,7 +141,10 @@ async function runEscalationBatchWithinBudget(
     escalationEnvelope: FlashPromptEnvelope,
     claimBatch: readonly BlindClaim[],
 ): Promise<VerdictCallResult | null> {
-    if (!hasBudgetForCall(context, 'escalate_targeted')) return null;
+    if (!hasBudgetForCall(context, 'escalate_targeted')) {
+        await recordEscalationSkippedForTime(context);
+        return null;
+    }
     try {
         return await runVerdictCallWithRetry(context, escalationEnvelope, claimBatch, {
             model: MODEL_ESCALATION,
@@ -176,6 +180,17 @@ function applyProVerdicts(context: PipelineContext, proVerdicts: readonly ClaimV
         },
     };
     return unreviewedClaimIds.length === 0 ? mergedContext : markStageSkippedForTime(mergedContext, 'escalation');
+}
+
+/** D12: ein mangels Budget nicht gestarteter Pro-Batch bekommt seine eigene Telemetrie-Zeile. */
+function recordEscalationSkippedForTime(context: PipelineContext): Promise<void> {
+    return recordLlmCall({
+        jobId: context.jobId,
+        repoId: context.repositoryId,
+        phase: 'escalate_targeted',
+        model: MODEL_ESCALATION,
+        status: 'skipped_deadline',
+    });
 }
 
 /** Pro-Verdicts überschreiben die Flash-Verdicts der markierten Claims (D3). */

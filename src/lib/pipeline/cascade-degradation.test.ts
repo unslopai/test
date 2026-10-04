@@ -412,9 +412,13 @@ describe('cascade degradation replay — Deadline Guard (DEADLINE_GUARD_SPEC §3
     it('unter 40 s Rest startet kein Verify-Batch', async () => {
         const finalContext = await runCascadeTail(buildBudgetedThreeClaimContext(39_000));
 
-        expect(generateContentMock).not.toHaveBeenCalled();
-        expect(finalContext.cascade.skippedStages).toEqual(['verifier']);
-        expect(finalContext.cascade.integrityScore).toBeNull();
+        expect(generateContentMock, 'kein Verify-Call unter der 40-s-Schwelle').not.toHaveBeenCalled();
+        expect(finalContext.cascade.skippedStages, 'Verifier als übersprungen markiert').toEqual(['verifier']);
+        // D12 (Migration 048 live seit 2026-09-26): der Skip ist in der Telemetrie sichtbar.
+        expect(recordLlmCallMock, 'skipped_deadline-Telemetriezeile geschrieben').toHaveBeenCalledWith(
+            expect.objectContaining({ phase: 'verify', status: 'skipped_deadline' }),
+        );
+        expect(finalContext.cascade.integrityScore, 'Score ohne Verifikation ehrlich null').toBeNull();
     });
 
     it('Eskalation unter 60 s Rest: übersprungen, KEIN Pro-Kontingent verbraucht, Claim ehrlich downgraded', async () => {
@@ -432,12 +436,15 @@ describe('cascade degradation replay — Deadline Guard (DEADLINE_GUARD_SPEC §3
         const escalatedContext = await escalationReviewerStep.execute(markedContext);
         const finalContext = await integrityScorerStep.execute(escalatedContext);
 
-        expect(consumeProEscalationBudgetMock).not.toHaveBeenCalled();
-        expect(generateContentMock).not.toHaveBeenCalled();
-        expect(finalContext.cascade.skippedStages).toEqual(['escalation']);
-        expect(finalContext.cascade.degradations).toEqual(['time_budget_exhausted']);
-        expect(finalContext.issues[0].severity).toBe('WARNING');
-        expect(finalContext.issues[0].critique).toContain('budget, API or time-limit degradation');
+        expect(consumeProEscalationBudgetMock, 'Zeit-Skip verbraucht kein Pro-Kontingent').not.toHaveBeenCalled();
+        expect(generateContentMock, 'kein Pro-Call unter der 60-s-Schwelle').not.toHaveBeenCalled();
+        expect(recordLlmCallMock, 'skipped_deadline-Telemetriezeile geschrieben').toHaveBeenCalledWith(
+            expect.objectContaining({ phase: 'escalate_targeted', status: 'skipped_deadline' }),
+        );
+        expect(finalContext.cascade.skippedStages, 'Eskalation als übersprungen markiert').toEqual(['escalation']);
+        expect(finalContext.cascade.degradations, 'Degradation time_budget_exhausted').toEqual(['time_budget_exhausted']);
+        expect(finalContext.issues[0].severity, 'markierter CRITICAL ehrlich auf WARNING downgraded').toBe('WARNING');
+        expect(finalContext.issues[0].critique, 'Annotation nennt das Zeitlimit').toContain('budget, API or time-limit degradation');
     });
 
     it('Budget endet zwischen zwei Pro-Batches: bezahlte Pro-Verdicts bleiben, der Rest wird konservativ downgraded', async () => {

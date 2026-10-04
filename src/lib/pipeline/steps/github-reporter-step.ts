@@ -13,11 +13,11 @@
  */
 import {
     GitHubApiError,
-    createPullRequestReview,
     fetchReviewComments,
     postPRComment,
 } from '@/lib/github';
 import { supabase } from '@/lib/supabase';
+import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
@@ -104,13 +104,10 @@ async function createGatekeeperReview(
     inlineComments: readonly PullRequestReviewComment[],
 ): Promise<number | null> {
     if (context.authMode === 'app') {
-        return await createPullRequestReview(
-            context.githubToken,
-            context.repoFullName,
-            context.prNumber,
-            context.headSha,
+        return await postReviewIdempotently(
+            context,
             reviewBody,
-            [...inlineComments],
+            inlineComments,
             'COMMENT',
         );
     }
@@ -133,13 +130,10 @@ async function createReviewWithSelfAuthorFallback(
     inlineComments: readonly PullRequestReviewComment[],
 ): Promise<number | null> {
     try {
-        return await createPullRequestReview(
-            context.githubToken,
-            context.repoFullName,
-            context.prNumber,
-            context.headSha,
+        return await postReviewIdempotently(
+            context,
             reviewBody,
-            [...inlineComments],
+            inlineComments,
             'REQUEST_CHANGES',
         );
     } catch (reviewError: unknown) {
@@ -152,13 +146,10 @@ async function createReviewWithSelfAuthorFallback(
             `Fallback auf COMMENT-Review für ${context.repoFullName}#${context.prNumber}.`,
         );
 
-        return await createPullRequestReview(
-            context.githubToken,
-            context.repoFullName,
-            context.prNumber,
-            context.headSha,
+        return await postReviewIdempotently(
+            context,
             reviewBody,
-            [...inlineComments],
+            inlineComments,
             'COMMENT',
         );
     }
@@ -263,11 +254,8 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
         ? `\n\n_Not reviewed (size cap exceeded): ${context.omittedFiles.map((filePath) => `\`${filePath}\``).join(', ')}_`
         : '';
 
-    await createPullRequestReview(
-        context.githubToken,
-        context.repoFullName,
-        context.prNumber,
-        context.headSha,
+    await postReviewIdempotently(
+        context,
         '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.'
             + omittedNote
             + buildIntegrityScoreBlock(context.cascade, []),
@@ -320,9 +308,21 @@ function describeVerificationPath(cascade: CascadeState, reportableIssues: reado
         return '_This pull request exceeded complexity thresholds and was reviewed end-to-end by the '
             + `strongest model — ${verificationSummary}._`;
     }
-    return cascade.escalated
-        ? `_${capitalize(verificationSummary)}; low-confidence findings were escalated to a stronger model._`
-        : `_${capitalize(verificationSummary)}._`;
+    return `_${capitalize(verificationSummary)}${describeEscalationSuffix(cascade)}._`;
+}
+
+/**
+ * Eskaliert heißt nicht immer "Low-Confidence-Findings nachgeprüft": hat nur
+ * die Second Opinion ein Modell gerufen (escalationReason 'second_opinion'),
+ * wurde kein Finding eskaliert — sie hat untererfasste Dateien nachgeprüft
+ * (Live-Receipt 2026-09-26, unslopai/test#16: die alte Copy behauptete dort
+ * eine Eskalation, die nie stattfand).
+ */
+function describeEscalationSuffix(cascade: CascadeState): string {
+    if (!cascade.escalated) return '';
+    return cascade.escalationReason === 'second_opinion'
+        ? '; a stronger model re-reviewed under-reported files as a second opinion'
+        : '; low-confidence findings were escalated to a stronger model';
 }
 
 function capitalize(sentence: string): string {

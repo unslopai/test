@@ -523,6 +523,49 @@ export async function createPullRequestReview(
     return typeof reviewId === 'number' ? reviewId : null;
 }
 
+/** Die Felder eines bestehenden PR-Reviews, die die 5xx-Abgleichslogik braucht. */
+export interface ExistingPullRequestReview {
+    readonly id: number;
+    readonly body: string;
+    readonly commitId: string;
+    readonly submittedAtMs: number;
+}
+
+/**
+ * Listet die Reviews eines PRs (paginiert). Grundlage für das idempotente
+ * Posten (review-posting.ts): GitHub legt einen Review bei einem 5xx teils
+ * trotzdem an — ohne Abgleich würde ein Retry doppelt posten.
+ */
+export async function listPullRequestReviews(
+    token: string,
+    repoFullName: string,
+    prNumber: number,
+): Promise<ExistingPullRequestReview[]> {
+    const rawReviews = await githubFetchPaginated<RawPullRequestReview>(
+        `/repos/${repoFullName}/pulls/${prNumber}/reviews`, token,
+    );
+    return rawReviews.flatMap((rawReview) => {
+        const existingReview = parseExistingReview(rawReview);
+        return existingReview ? [existingReview] : [];
+    });
+}
+
+interface RawPullRequestReview {
+    readonly id?: unknown;
+    readonly body?: unknown;
+    readonly commit_id?: unknown;
+    readonly submitted_at?: unknown;
+}
+
+/** [ARCH-002] Nur strukturell vollständige Reviews zählen; alles andere wird verworfen. */
+function parseExistingReview(rawReview: RawPullRequestReview): ExistingPullRequestReview | null {
+    const { id, body, commit_id: commitId, submitted_at: submittedAt } = rawReview;
+    if (typeof id !== 'number' || typeof body !== 'string') return null;
+    if (typeof commitId !== 'string' || typeof submittedAt !== 'string') return null;
+    const submittedAtMs = Date.parse(submittedAt);
+    return Number.isNaN(submittedAtMs) ? null : { id, body, commitId, submittedAtMs };
+}
+
 /** Ein Inline-Comment eines geposteten Reviews (nur die Comment-Map-Felder). */
 export interface PostedReviewComment {
     readonly id: number;

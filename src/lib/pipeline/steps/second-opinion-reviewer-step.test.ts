@@ -179,10 +179,13 @@ describe('Deadline Guard (DEADLINE_GUARD_SPEC D4/D13)', () => {
 
         const skippedContext = await secondOpinionReviewerStep.execute(context);
 
-        expect(consumeProEscalationBudget).not.toHaveBeenCalled();
-        expect(runReviewerPass).not.toHaveBeenCalled();
-        expect(skippedContext.cascade.skippedStages).toEqual(['second_opinion']);
-        expect(skippedContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+        expect(consumeProEscalationBudget, 'Zeit-Skip verbraucht kein Pro-Kontingent').not.toHaveBeenCalled();
+        expect(runReviewerPass, 'kein Second-Opinion-Call unter der 80-s-Schwelle').not.toHaveBeenCalled();
+        expect(skippedContext.cascade.skippedStages, 'Second Opinion als übersprungen markiert').toEqual(['second_opinion']);
+        expect(recordLlmCall, 'skipped_deadline-Telemetriezeile geschrieben').toHaveBeenCalledWith(
+            expect.objectContaining({ phase: 'escalate_second_opinion', status: 'skipped_deadline' }),
+        );
+        expect(skippedContext.cascade.degradations, 'Degradation time_budget_exhausted').toEqual(['time_budget_exhausted']);
     });
 
     it('ein Abbruch am Job-Budget während des Calls ist ein Zeit-Skip, kein pro_api_error (D14)', async () => {
