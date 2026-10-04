@@ -21,7 +21,12 @@ import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
 import { appendAiDisclosure, isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
-import { describeNothingReviewed, hasIncompleteCoverage, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import {
+    describeFilesWithoutModelReview,
+    describeNothingReviewed,
+    hasIncompleteCoverage,
+    resolveReviewOutcome,
+} from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import {
@@ -295,11 +300,16 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
     const omittedNote = context.omittedFiles.length > 0
         ? `\n\n_Not reviewed (size cap exceeded): ${context.omittedFiles.map((filePath) => `\`${filePath}\``).join(', ')}_`
         : '';
+    const unreadFilesNotice = describeFilesWithoutModelReview(context);
+    const unreadFilesNote = unreadFilesNotice === null ? '' : `
+
+_${unreadFilesNotice}_`;
 
     await postReviewIdempotently(
         context,
         buildApprovalHeadline(context)
             + omittedNote
+            + unreadFilesNote
             // Der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt.
             + appendAiDisclosure(buildIntegrityScoreBlock(context, [])),
         [],

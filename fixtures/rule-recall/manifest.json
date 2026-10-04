@@ -947,5 +947,13 @@
     "detectedEcosystems": null,
     "negativeControl": true,
     "expected": []
+  },
+  "r27-clean-java.diff": {
+    "description": "Negative control: idiomatic, well-engineered Java/Spring that must produce zero findings",
+    "detectedEcosystems": [
+      "java-spring"
+    ],
+    "negativeControl": true,
+    "expected": []
   }
 }

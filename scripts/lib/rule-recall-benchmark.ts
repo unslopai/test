@@ -27,6 +27,13 @@
  *   npx tsx scripts/rule-recall-benchmark.ts --bypass-filter --ecosystems polyglot
  *                                                                 # Fixtures mit polyglotEcosystems im Manifest
  *                                                                 # laufen mit dem Law-Filter eines polyglotten Repos
+ *   npx tsx scripts/rule-recall-benchmark.ts --llm-extensions .py,.java
+ *                                                                 # Review-Umfang des Produktionspfads wie eine
+ *                                                                 # Repo-Config `reviewScope.llmExtensions`
+ *                                                                 # (Default: DEFAULT_REVIEW_SCOPE_CONFIG)
+ *   npx tsx scripts/rule-recall-benchmark.ts --no-escalation      # verbraucht kein Eskalations-Kontingent: kein
+ *                                                                 # pro-direct, keine Eskalation, keine Zweitmeinung;
+ *                                                                 # der Report nennt, was eskaliert waere
  *
  * Zwei Pfade (LANGUAGE_COVERAGE_SPEC §7.1):
  *  - Produktionspfad (Default): das Modell bekommt nur, was `isReviewableFile`
@@ -64,7 +71,13 @@ import {
 import type { ProductionLane, ProductionPathPlan } from '@/lib/benchmark/production-path';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import { buildCombinedDiff } from '@/lib/pipeline/helpers';
-import { DEFAULT_CASCADE_CONFIG, INITIAL_CASCADE_STATE } from '@/lib/pipeline/defaults';
+import {
+    DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REVIEW_SCOPE_CONFIG,
+    GATED_LLM_EXTENSIONS,
+    INITIAL_CASCADE_STATE,
+} from '@/lib/pipeline/defaults';
+import { evaluateSecondOpinionTrigger } from '@/lib/pipeline/second-opinion';
 import { DEFAULT_PRESCAN_CONFIG, runPrescan } from '@unslop/prescan';
 import type { PrescanFile } from '@unslop/prescan';
 import { MODEL_DRAFT, MODEL_ESCALATION, MODEL_VERIFIER } from '@/lib/pipeline/models';
@@ -75,7 +88,7 @@ import { escalationReviewerStep } from '@/lib/pipeline/steps/escalation-reviewer
 import { secondOpinionReviewerStep } from '@/lib/pipeline/steps/second-opinion-reviewer-step';
 import { integrityScorerStep } from '@/lib/pipeline/steps/integrity-scorer-step';
 import type { PullRequestFile } from '@/lib/github';
-import type { CascadeConfig, PipelineContext } from '@/lib/pipeline/types';
+import type { CascadeConfig, PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
 
 const RULE_RECALL_DIR = path.join(process.cwd(), 'fixtures', 'rule-recall');
 
@@ -121,7 +134,14 @@ interface BenchmarkRunOptions {
     readonly cascadeConfig: CascadeConfig;
     /** null ⇔ --prescan-only: die LLM-Kaskade laeuft nicht. */
     readonly ownerUserId: string | null;
+    /** --llm-extensions: Review-Umfang des Produktionspfads (`reviewScope.llmExtensions`). */
+    readonly llmExtensions: readonly string[];
+    /** false ⇔ --no-escalation: kein Schritt verbraucht Eskalations-Kontingent. */
+    readonly allowEscalation: boolean;
 }
+
+/** Was ein Lauf mit --no-escalation unterdrueckt hat; leer = der Lauf waere auch so nicht eskaliert. */
+export type SuppressedEscalation = 'pro_direct' | 'targeted' | 'second_opinion';
 
 interface FixtureResult {
     readonly fixture: string;
@@ -134,6 +154,8 @@ interface FixtureResult {
     readonly prescanFindingCount: number;
     readonly prescanDurationMs: number;
     readonly integrityScore: number | null;
+    /** Nur mit --no-escalation: Eskalationen, die der Lauf sonst gefahren haette. */
+    readonly suppressedEscalations?: readonly SuppressedEscalation[];
     readonly planted: readonly PlantedRuleResult[];
     /** Nur Negativ-Kontrollen: ueberlebende Findings (unerwartet), beide Lanes. */
     readonly falsePositives: readonly { rule: string; path: string; severity: string; lane: 'llm' | 'prescan' }[];
@@ -230,7 +252,7 @@ async function createBenchmarkJob(fixtureName: string): Promise<string> {
     return insertedJob.id as string;
 }
 
-async function resolveBudgetOwnerUserId(): Promise<string> {
+export async function resolveBudgetOwnerUserId(): Promise<string> {
     const { data: accountRow, error: lookupError } = await supabase
         .from('billing_accounts')
         .select('owner_user_id, status')
@@ -246,19 +268,41 @@ async function resolveBudgetOwnerUserId(): Promise<string> {
     return accountRow.owner_user_id as string;
 }
 
-interface CascadeInput {
+export interface CascadeInput {
     readonly fixtureFiles: readonly PullRequestFile[];
     readonly reviewableFiles: readonly PullRequestFile[];
     readonly detectedEcosystems: readonly string[] | null;
 }
 
+/** Die Laufparameter, die eine Kaskade braucht — ohne die Pfadwahl des Benchmarks. */
+export interface CascadeRunSettings {
+    readonly ownerUserId: string;
+    readonly cascadeConfig: CascadeConfig;
+    readonly llmExtensions: readonly string[];
+    readonly allowEscalation: boolean;
+}
+
+/**
+ * Ohne Eskalation bleibt der Router auf flash-cascade: die Heuristik-Schwellen
+ * sind unerreichbar, also ruft er `consumeProEscalationBudget` nie.
+ */
+function resolveRunCascadeConfig(cascadeSettings: CascadeRunSettings): CascadeConfig {
+    if (cascadeSettings.allowEscalation) return cascadeSettings.cascadeConfig;
+    return {
+        ...cascadeSettings.cascadeConfig,
+        heuristicMaxDiffTokens: Number.MAX_SAFE_INTEGER,
+        heuristicMaxFiles: Number.MAX_SAFE_INTEGER,
+    };
+}
+
 function buildContext(
     jobId: string,
-    ownerUserId: string,
     cascadeInput: CascadeInput,
-    cascadeConfig: CascadeConfig,
+    cascadeSettings: CascadeRunSettings,
 ): PipelineContext {
     const { fixtureFiles, reviewableFiles, detectedEcosystems } = cascadeInput;
+    const { ownerUserId } = cascadeSettings;
+    const cascadeConfig = resolveRunCascadeConfig(cascadeSettings);
     return {
         jobId,
         repoFullName: 'rule-recall/benchmark',
@@ -293,6 +337,7 @@ function buildContext(
         cascade: INITIAL_CASCADE_STATE,
         cascadeConfig,
         prescanConfig: DEFAULT_PRESCAN_CONFIG,
+        reviewScopeConfig: { llmExtensions: cascadeSettings.llmExtensions },
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,
@@ -307,40 +352,73 @@ function matchesAnyIssue(expected: ExpectedFinding, issues: readonly IssueLike[]
     );
 }
 
-interface CascadeLaneResult {
+export interface CascadeLaneResult {
     readonly jobId: string;
     readonly route: string;
     readonly draftIssues: readonly IssueLike[];
     readonly secondOpinionIssues: readonly IssueLike[];
-    readonly survivingIssues: readonly IssueLike[];
+    /** Volle Issues: der Schattenlauf braucht Zitat und Kritik zum Sichten. */
+    readonly survivingIssues: readonly PipelineIssue[];
     readonly integrityScore: number | null;
+    readonly suppressedEscalations: readonly SuppressedEscalation[];
 }
 
-async function runCascadeLane(
+/** Welche Eskalationen ein Lauf ohne --no-escalation gefahren haette (Router, gezielt, Zweitmeinung). */
+function collectSuppressedEscalations(
+    verifiedContext: PipelineContext,
+    unpinnedCascadeConfig: CascadeConfig,
+): SuppressedEscalation[] {
+    const { estimatedDiffTokens } = verifiedContext.cascade;
+    const exceedsRouterHeuristic = estimatedDiffTokens > unpinnedCascadeConfig.heuristicMaxDiffTokens
+        || verifiedContext.reviewableFiles.length > unpinnedCascadeConfig.heuristicMaxFiles;
+    const suppressedEscalations: SuppressedEscalation[] = [];
+    if (exceedsRouterHeuristic && estimatedDiffTokens <= unpinnedCascadeConfig.proDirectMaxDiffTokens) {
+        suppressedEscalations.push('pro_direct');
+    }
+    if (verifiedContext.cascade.escalationClaimIds.length > 0) suppressedEscalations.push('targeted');
+    if (evaluateSecondOpinionTrigger(verifiedContext) !== null) suppressedEscalations.push('second_opinion');
+    return suppressedEscalations;
+}
+
+/** Eskalation und Zweitmeinung — oder, mit --no-escalation, der Vermerk, was ausgelassen wurde. */
+async function runEscalationStages(
+    verifiedContext: PipelineContext,
+    cascadeSettings: CascadeRunSettings,
+): Promise<{ readonly escalatedContext: PipelineContext; readonly suppressedEscalations: SuppressedEscalation[] }> {
+    if (!cascadeSettings.allowEscalation) {
+        return {
+            escalatedContext: verifiedContext,
+            suppressedEscalations: collectSuppressedEscalations(verifiedContext, cascadeSettings.cascadeConfig),
+        };
+    }
+    const escalated = await escalationReviewerStep.execute(verifiedContext);
+    return { escalatedContext: await secondOpinionReviewerStep.execute(escalated), suppressedEscalations: [] };
+}
+
+export async function runCascadeLane(
     fixtureName: string,
     cascadeInput: CascadeInput,
-    ownerUserId: string,
-    cascadeConfig: CascadeConfig,
+    cascadeSettings: CascadeRunSettings,
 ): Promise<CascadeLaneResult> {
     const jobId = await createBenchmarkJob(fixtureName);
 
-    const initial = buildContext(jobId, ownerUserId, cascadeInput, cascadeConfig);
+    const initial = buildContext(jobId, cascadeInput, cascadeSettings);
     const routed = await complexityRouterStep.execute(initial);
     const drafted = await draftReviewerStep.execute(routed);
     const verified = await claimVerifierStep.execute(drafted);
-    const escalated = await escalationReviewerStep.execute(verified);
-    const secondOpined = await secondOpinionReviewerStep.execute(escalated);
+    const { escalatedContext: secondOpined, suppressedEscalations } = await runEscalationStages(verified, cascadeSettings);
     const scored = await integrityScorerStep.execute(secondOpined);
 
     return {
         jobId,
+        suppressedEscalations,
         route: scored.cascade.route,
         draftIssues: drafted.issues as unknown as IssueLike[],
         // Eigene Lane statt in "Draft" versteckt: der A/B-Vergleich gegen die
         // Referenz (reiner Flash-Draft) bleibt sonst nicht interpretierbar.
         secondOpinionIssues: secondOpined.issues
             .filter((issue) => issue.source === 'second-opinion-reviewer') as unknown as IssueLike[],
-        survivingIssues: scored.issues as unknown as IssueLike[],
+        survivingIssues: scored.issues,
         integrityScore: scored.cascade.integrityScore,
     };
 }
@@ -376,8 +454,12 @@ async function runCascadeForPlan(
             reviewableFiles: fixturePlan.pathPlan.reviewableFiles,
             detectedEcosystems: resolveFixtureEcosystems(manifestEntry, runOptions.usePolyglotEcosystems),
         },
-        runOptions.ownerUserId,
-        runOptions.cascadeConfig,
+        {
+            ownerUserId: runOptions.ownerUserId,
+            cascadeConfig: runOptions.cascadeConfig,
+            llmExtensions: runOptions.llmExtensions,
+            allowEscalation: runOptions.allowEscalation,
+        },
     );
 }
 
@@ -424,7 +506,7 @@ async function runFixture(
 ): Promise<FixtureResult> {
     const combinedDiff = fs.readFileSync(path.join(RULE_RECALL_DIR, fixtureName), 'utf-8');
     const fixtureFiles = parseFixtureFiles(fixtureName, combinedDiff);
-    const productionPlan = planProductionPath(fixtureFiles);
+    const productionPlan = planProductionPath(fixtureFiles, runOptions.llmExtensions);
     const pathPlan = runOptions.pathMode === 'production' ? productionPlan : planModelPotentialPath(fixtureFiles);
 
     const prescanLane = await runPrescanLane(pathPlan.prescanFiles);
@@ -446,6 +528,7 @@ async function runFixture(
         prescanFindingCount: prescanLane.issues.length,
         prescanDurationMs: prescanLane.durationMs,
         integrityScore: cascadeLane?.integrityScore ?? null,
+        ...(runOptions.allowEscalation ? {} : { suppressedEscalations: cascadeLane?.suppressedEscalations ?? [] }),
         planted,
         falsePositives,
     };
@@ -455,7 +538,7 @@ async function runFixture(
 // Reporting
 // =============================================================================
 
-function readCliFlag(flagName: string): string | null {
+export function readCliFlag(flagName: string): string | null {
     const flagIndex = process.argv.indexOf(flagName);
     return flagIndex >= 0 && process.argv[flagIndex + 1] ? process.argv[flagIndex + 1] : null;
 }
@@ -491,6 +574,22 @@ function parseEcosystemsFlag(rawEcosystems: string | null): boolean {
         throw new Error(`--ecosystems: "${rawEcosystems}" ist ungueltig (einziger Wert: polyglot).`);
     }
     return true;
+}
+
+/**
+ * --llm-extensions .py,.java — STRIKT wie --cascade: eine Endung ausserhalb der
+ * Gate-Liste darf nicht still herausfallen und den Lauf als Default maskieren.
+ */
+export function parseLlmExtensionsFlag(rawExtensions: string | null): readonly string[] {
+    if (rawExtensions === null) return DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions;
+    const requestedExtensions = rawExtensions.split(',').filter((extension) => extension.length > 0);
+    const unknownExtensions = requestedExtensions.filter((extension) => !GATED_LLM_EXTENSIONS.includes(extension));
+    if (unknownExtensions.length > 0) {
+        throw new Error(
+            `--llm-extensions: ${unknownExtensions.join(', ')} nicht erlaubt (gueltig: ${GATED_LLM_EXTENSIONS.join(', ')}).`,
+        );
+    }
+    return requestedExtensions;
 }
 
 /** --runs N — Wiederholungen pro Fixture (Default 1, muss ganzzahlig >= 1 sein). */
@@ -810,8 +909,14 @@ export async function runRuleRecallBenchmark(): Promise<void> {
     const pathMode: BenchmarkPathMode = process.argv.includes('--bypass-filter') ? 'model-potential' : 'production';
     const usePolyglotEcosystems = parseEcosystemsFlag(readCliFlag('--ecosystems'));
     const ownerUserId = prescanOnly ? null : await resolveBudgetOwnerUserId();
-    const runOptions: BenchmarkRunOptions = { pathMode, usePolyglotEcosystems, cascadeConfig, ownerUserId };
+    const llmExtensions = parseLlmExtensionsFlag(readCliFlag('--llm-extensions'));
+    const allowEscalation = !process.argv.includes('--no-escalation');
+    const runOptions: BenchmarkRunOptions = {
+        pathMode, usePolyglotEcosystems, cascadeConfig, ownerUserId, llmExtensions, allowEscalation,
+    };
     console.log(`[benchmark] Pfad: ${PATH_MODE_LABELS[pathMode]}`);
+    console.log(`[benchmark] Modell-Review liest zusaetzlich zu JS/TS: ${llmExtensions.join(', ') || 'nichts'}`);
+    if (!allowEscalation) console.log('[benchmark] --no-escalation: kein Schritt verbraucht Eskalations-Kontingent.');
     if (usePolyglotEcosystems) {
         console.log('[benchmark] --ecosystems polyglot: Fixtures mit polyglotEcosystems laufen mit dem Law-Filter eines polyglotten Repos.');
     }
@@ -879,6 +984,8 @@ export async function runRuleRecallBenchmark(): Promise<void> {
         // als Produktionspfad lesbar sein.
         pathMode,
         ecosystems: usePolyglotEcosystems ? 'polyglot' : 'manifest',
+        llmExtensions,
+        escalation: allowEscalation ? 'enabled' : 'disabled',
         results,
     }, null, 2));
     console.log(`\nReport geschrieben: ${outPath}`);

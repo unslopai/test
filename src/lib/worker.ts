@@ -21,13 +21,23 @@ import {
 } from '@/lib/check-run';
 import { runPipelineUnderWatchdog } from '@/lib/job-watchdog';
 import { buildJobClock, resolveJobBudgetMs } from '@/lib/pipeline/deadline';
-import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } from '@/lib/pipeline/defaults';
+import {
+    DEFAULT_PIPELINE_CONFIG,
+    INITIAL_CASCADE_STATE,
+    resolveCascadeConfig,
+    resolveReviewScopeConfig,
+} from '@/lib/pipeline/defaults';
 // Subpath-Import mit Absicht: der Index zieht alle Scan-Engines (tree-sitter,
 // ESLint) in den Worker-Modulgraphen — genau der OOM-Pfad aus ROADMAP §1b.
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
-import { describeNothingReviewed, hasIncompleteCoverage, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import {
+    describeFilesWithoutModelReview,
+    describeNothingReviewed,
+    hasIncompleteCoverage,
+    resolveReviewOutcome,
+} from '@/lib/pipeline/review-scope';
 import {
     formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
 } from '@unslop/shared/degradation-notice';
@@ -382,6 +392,7 @@ function buildInitialContext(params: InitialContextParams): PipelineContext {
         cascade: INITIAL_CASCADE_STATE,
         cascadeConfig: resolveCascadeConfig(params.pipelineConfig.cascade),
         prescanConfig: resolvePrescanConfig(params.pipelineConfig.prescan),
+        reviewScopeConfig: resolveReviewScopeConfig(params.pipelineConfig.reviewScope),
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,
@@ -534,14 +545,12 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
  * Modell-Review. Ohne Findings macht `markIncompleteCoverage` aus `success`
  * ein `neutral`; CRITICAL bleibt `failure` (D8).
  */
-function appendDegradationNotices(
-    checkRunResult: CheckRunResult,
-    finalContext: Pick<PipelineContext, 'cascade' | 'prescanStats'>,
-): CheckRunResult {
+function appendDegradationNotices(checkRunResult: CheckRunResult, finalContext: PipelineContext): CheckRunResult {
     const degradationNotices = [
         formatTimeBudgetNotice(finalContext.cascade.skippedStages),
         formatDraftPartialNotice(finalContext.cascade.draftUnreviewedFiles),
         formatPrescanUnavailableNotice(finalContext.prescanStats?.degraded),
+        describeFilesWithoutModelReview(finalContext),
     ].filter((notice): notice is string => notice !== null);
     if (degradationNotices.length === 0) return checkRunResult;
     return { ...checkRunResult, summary: `${checkRunResult.summary}
@@ -624,9 +633,9 @@ function parsePipelineConfig(rawConfig: unknown): PipelineConfig | null {
         return null;
     }
 
-    // cascade-/prescan-Blöcke werden nur strukturell durchgereicht — die Feld-
-    // Validierung (Fallback auf Defaults) machen resolveCascadeConfig bzw.
-    // resolvePrescanConfig.
+    // cascade-/prescan-/reviewScope-Blöcke werden nur strukturell durchgereicht —
+    // die Feld-Validierung (Fallback auf Defaults) machen resolveCascadeConfig,
+    // resolvePrescanConfig und resolveReviewScopeConfig.
     const cascadeOverrides = candidate.cascade && typeof candidate.cascade === 'object'
         ? candidate.cascade as Partial<CascadeConfig>
         : undefined;
@@ -637,5 +646,6 @@ function parsePipelineConfig(rawConfig: unknown): PipelineConfig | null {
         overrideSmartDetection: candidate.overrideSmartDetection as boolean,
         cascade: cascadeOverrides,
         prescan: candidate.prescan,
+        reviewScope: candidate.reviewScope,
     };
 }

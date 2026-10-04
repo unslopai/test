@@ -4,8 +4,12 @@
  * Das Gate ist opt-in: ohne Repo-Config bleibt es aus (0), und eine kaputte
  * Config darf nie einen Job töten — ungültige Werte fallen auf den Default.
  */
-import { describe, expect, it } from 'vitest';
-import { resolveCascadeConfig } from '@/lib/pipeline/defaults';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+    DEFAULT_REVIEW_SCOPE_CONFIG,
+    resolveCascadeConfig,
+    resolveReviewScopeConfig,
+} from '@/lib/pipeline/defaults';
 
 describe('resolveCascadeConfig — minIntegrityScore', () => {
     it('defaults to 0 (gate disabled) when the repo config has no cascade block', () => {
@@ -45,5 +49,32 @@ describe('resolveCascadeConfig — draftBatchMaxTokens (LARGE_DIFF_RECALL_SPEC �
         expect(resolveCascadeConfig({ draftBatchMaxTokens: 30000 }).draftBatchMaxTokens).toBe(30000);
         expect(resolveCascadeConfig({ draftBatchMaxTokens: 0 }).draftBatchMaxTokens).toBe(20000);
         expect(resolveCascadeConfig({ draftBatchMaxTokens: Number.NaN }).draftBatchMaxTokens).toBe(20000);
+    });
+});
+
+describe('resolveReviewScopeConfig (LANGUAGE_COVERAGE_SPEC §6.3)', () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    it('reads Python by default and Java only per repo config (gate result, LANGUAGE_COVERAGE_SPEC §6.5)', () => {
+        expect(DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions).toEqual(['.py']);
+    });
+
+    it('uses the code default when the repo config has no usable reviewScope block', () => {
+        expect(resolveReviewScopeConfig(undefined)).toEqual(DEFAULT_REVIEW_SCOPE_CONFIG);
+        expect(resolveReviewScopeConfig({ llmExtensions: '.py' })).toEqual(DEFAULT_REVIEW_SCOPE_CONFIG);
+    });
+
+    it('takes the repo list, keeps only gated extensions, and treats the empty list as JS/TS only', () => {
+        expect(resolveReviewScopeConfig({ llmExtensions: ['.java', '.go', '.py', 42] }).llmExtensions)
+            .toEqual(['.py', '.java']);
+        expect(resolveReviewScopeConfig({ llmExtensions: [] }).llmExtensions).toEqual([]);
+    });
+
+    it('UNSLOP_LLM_LANE_JSTS_ONLY=1 overrides the repo config without a deploy', () => {
+        vi.stubEnv('UNSLOP_LLM_LANE_JSTS_ONLY', '1');
+
+        expect(resolveReviewScopeConfig({ llmExtensions: ['.py', '.java'] }).llmExtensions).toEqual([]);
     });
 });

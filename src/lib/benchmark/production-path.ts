@@ -30,8 +30,14 @@ export function planModelPotentialPath(fixtureFiles: readonly PullRequestFile[])
     return { reviewableFiles: fixtureFiles, prescanFiles: fixtureFiles, aborted: false };
 }
 
-export function planProductionPath(fixtureFiles: readonly PullRequestFile[]): ProductionPathPlan {
-    const reviewableFiles = fixtureFiles.filter((fixtureFile) => isReviewableFile(fixtureFile.filename));
+/** `llmExtensions`: der aufgelöste Review-Umfang des Laufs, wie ihn der Diff-Loader aus dem Kontext liest. */
+export function planProductionPath(
+    fixtureFiles: readonly PullRequestFile[],
+    llmExtensions: readonly string[],
+): ProductionPathPlan {
+    const reviewableFiles = fixtureFiles.filter(
+        (fixtureFile) => isReviewableFile(fixtureFile.filename, llmExtensions),
+    );
     const aborted = reviewableFiles.length === 0 && planUnreviewableDiff({
         changedFiles: fixtureFiles, omittedFilePaths: [], surface: 'pull_request',
     }).shouldAbort;

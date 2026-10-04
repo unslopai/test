@@ -1,5 +1,25 @@
 # Rule-Recall Benchmark
 
+## Volllauf Universum 129 auf PR #40 (2026-10-01): 127/129 combined, 0 FP, r22 3/3 — keine JS/TS-Regression durch den sprachneutralen Prompt-Kern
+
+Branch `feat/langcov-stufe2` nach Merge mit `main` (`b5cf951`), Pfad **Modell-Potenzial** (`--bypass-filter`, jede Fixture-Datei erreicht das Modell, damit vergleichbar mit 125/126 vom 2026-09-16), Modell-Review liest zusätzlich `.py`. Aufruf: `--bypass-filter --only r0,r1,r20,r21,r22,r23,r25,r26,r27` (26 Fixtures, r24 ausgenommen).
+
+| Messung | Wert |
+|---|---|
+| Combined recall | **127/129 (98,4 %)**; Referenz 125/126 (2026-09-16, Universum vor A12c) |
+| Draft recall | 124/129 (96,1 %) |
+| Prescan recall | 51/129 (39,5 %) |
+| r22 Instruction Override | 3/3 |
+| Negativ-Kontrollen (8, inkl. r26, r27) | 0 CRITICAL, 0 WARNING |
+| Nach Produktions-Lane der Datei | Modell + Pre-Scan 81/83, nur Pre-Scan 46/46 |
+| Misses | r20 MAINT-003 `bigpr/billing/tax-calculator.ts`, r20 SEC-013 `bigpr/auth/authorize.ts` (r20 16/18) |
+| False Refutation | 1: r07 COND-011 `components/orders/OrderSummary.tsx` (bekannt seit 2026-09-01, N=2) |
+| Eskalationen | Kontingent 0 → 2/50 (Oktober) |
+| Kosten | **nicht erhoben**: Lauf ohne `--keep`, die Jobs samt Telemetrie wurden am Ende gelöscht, `benchmark-cost.ts` sieht 0 Calls. Frühere Volläufe lagen bei ~$0,84 |
+| Report | `results/2026-10-01-langcov-stufe2-volllauf-model-potential.json` |
+
+**Lesart:** Kein JS/TS-Rückschritt durch Stufe 2, #40 ist damit freigegeben. Der „Benchmark: FAILED“ des Runners kommt von den zwei Misses, nicht von Fehlalarmen. Offen bleibt derselbe Lauf auf dem **Produktionspfad** (ohne `--bypass-filter`); beim nächsten Lauf `--keep` setzen, damit die Kosten belegt sind.
+
 ## Pre-Scanner SEC-009 Argument-Form + SEC-011 Python (2026-09-30): Prescan-only 68 → 70/177, 0 neue CRITICAL auf 9 Korpora
 
 Branch `fix/prescan-sec009-sec011` auf `main` `b841bcf`, 0 Token (`--prescan-only` setzt `ownerUserId = null`: keine Kaskade, keine DB-Jobs).
@@ -32,6 +52,23 @@ Beleg mit jedem hinzugekommenen Finding: `results/2026-09-30-prescan-sec009-sec0
 **Review-Runde vor dem PR** (Subagent, 45 Probe-Eingaben gegen `runTreeSitterEngine`): Die Request-Erkennung war zu großzügig. Das pytest-Fixture `request.param`/`request.getfixturevalue`, Zuweisungen in anderen oder inneren Funktionen und auf `self.x`, `req.` in einem String-Literal sowie `shlex.split(MODUL_KONSTANTE)`, `shell: undefined` und Zahlen im argv hätten neue CRITICALs oder WARNINGs erzeugt. Die Korpora trafen keinen dieser Fälle. Alle sind behoben und stehen als 18 zusätzliche Testfälle in `tree-sitter-engine.test.ts`; Korpus- und Benchmark-Zahlen oben stammen aus dem Lauf danach und sind identisch.
 
 **Nebenbefund:** Die 8 SEC-009-CRITICAL in diesem Repo und 4 der 7 in vite sind schon auf `main` Fehlalarme: `RegExp.prototype.exec` in Dateien, die `child_process` erwähnen (ROADMAP To-Do §1).
+
+## Sprachabdeckung Stufe 2 (2026-09-30): Python und Java auf dem Produktionspfad 90/90 über 3 Läufe, 0 FP auf r14 und r27; Schattenlauf auf 20 echten PRs mit 1 falschen CRITICAL auf Java
+
+Gate-Nachweis für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.5 (Branch `feat/langcov-stufe2` auf `main` `b9f01b2`). Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, sprachneutraler Prompt-Kern, ohne RAG, ohne Reference Practices, ohne Job-Budget, **ohne Eskalation**.
+
+| Messung | Wert |
+|---|---|
+| G7, `--only r03,r04,r09,r14,r16,r27 --runs 3 --keep --no-escalation --llm-extensions .py,.java` | Draft **90/90**, Combined 90/90, nach Verifier 90/90; je Lauf r03 10/10, r04 6/6, r09 7/7, r16 7/7. Alle 30 gepflanzten Regeln 3/3 im Draft |
+| Negativ-Kontrollen r14 (Python), r27 (Java, neu) | 0 CRITICAL, 0 WARNING, je 3 Läufe |
+| Unterdrückte Eskalationen in G7 | keine (`suppressedEscalations` leer in 18 Läufen) |
+| G9, Draft plus Verify je Job | Maximum **83,1 s** (r16, Job `ceee592a`); Mittel r03 48,4 s, r04 43,3 s, r09 51,4 s, r16 58,3 s, r14 9,1 s, r27 17,2 s |
+| G8, Schattenlauf, 10 PRs je Sprache (`scripts/shadow-run.ts`) | Python: 0 Findings. Java: 1 CRITICAL, **Fehlalarm** (HAL-002 auf `org.springframework.boot.restclient.RestTemplateBuilder`, `spring-petclinic#2573`, Job `9f8dccf4`). 12 von 20 PRs hätten die Zweitmeinung ausgelöst, sie lief nicht |
+| Kosten (`scripts/benchmark-cost.ts`) | G7 **$0,47**, G8 **$0,23**, zusammen $0,70 von $5,00; geschätzt vorher $0,46 und höchstens $1,60 |
+| Eskalations-Kontingent | 36/50 vorher und nachher |
+| Reports | `results/2026-09-30-langcov-stufe2-g7-production.json`, `-g8-shadow.json`; PR-Liste `fixtures/shadow-run/langcov-stufe2-prs.json` |
+
+**Lesart:** Python ist seitdem Default der Modell-Review, Java nur je Repo-Config. Der Fehlalarm ist veraltetes Modellwissen über Spring Boot 4, vom Blind-Verifier bestätigt. G7 ist der erste Lauf mit Modell auf dem Produktionspfad für diese Fixtures; die Werte decken sich mit dem Modell-Potenzial-Lauf aus Spec §4.2. Runner neu: `--llm-extensions`, `--no-escalation` (Report-Felder `llmExtensions`, `escalation`, `suppressedEscalations`).
 
 ## Sprachabdeckung Stufe 1 (2026-09-30): Produktionspfad Prescan-only wieder 68/177, neue Config-Kontrolle r26, 0 FP auf 7 Kontrollen
 

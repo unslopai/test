@@ -5,8 +5,12 @@
  * gelaufen) muss exakt das Verhalten vor Phase 5 liefern. renderLawBlock muss
  * byte-deterministisch bleiben (Cache-Contract des System-Prompts).
  */
+import * as fs from 'fs';
+import * as path from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import { filterRulesByEcosystems, renderLawBlock } from '@/lib/law';
+import { GATED_LLM_EXTENSIONS } from '@/lib/pipeline/defaults';
+import { detectDiffEcosystems, detectRepoEcosystems } from '@/lib/pipeline/ecosystem-detection';
 
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
@@ -106,5 +110,49 @@ describe('renderLawBlock — kein IP-Leak in den System-Prompt (ROADMAP §12)', 
         const anyRule = buildRuleRow('SEC-001', null, 'Check allocation results before use.');
 
         expect(renderLawBlock([anyRule])).toContain('### [SEC-001] (security)');
+    });
+});
+
+describe('Gate G6 — Law-Filter im polyglotten Repo (LANGUAGE_COVERAGE_SPEC §6.4)', () => {
+    /** TypeScript-Host mit einem Python-Service und einem Spring-Modul. */
+    const POLYGLOT_TREE_PATHS = [
+        'package.json', 'tsconfig.json', 'src/app/page.tsx',
+        'services/reports/pyproject.toml', 'services/reports/report_job.py',
+        'billing/pom.xml', 'billing/src/main/java/com/acme/billing/Ledger.java',
+    ];
+    const MANIFEST_CONTENTS: Readonly<Record<string, string>> = {
+        'package.json': '{"dependencies":{"next":"16.2.4","react":"19.0.0"}}',
+        'billing/pom.xml': '<parent><artifactId>spring-boot-starter-parent</artifactId></parent>',
+    };
+
+    /** Snapshot der Live-Tabelle `golden_standards` (Drift-Check im Benchmark-Preflight). */
+    function loadInventoryRuleRows(): TestRuleRow[] {
+        const inventory: unknown = JSON.parse(
+            fs.readFileSync(path.join(process.cwd(), 'fixtures', 'rule-recall', 'rules-inventory.json'), 'utf-8'),
+        );
+        if (!inventory || typeof inventory !== 'object' || !('rules' in inventory) || !Array.isArray(inventory.rules)) {
+            throw new Error('rules-inventory.json: rules-Liste fehlt.');
+        }
+        return inventory.rules.map((inventoryRule: { rule_id: string; applies_to: readonly string[] | null }) =>
+            buildRuleRow(inventoryRule.rule_id, inventoryRule.applies_to));
+    }
+
+    it.each(GATED_LLM_EXTENSIONS)('keeps every rule tagged for the language of %s files in the filtered block', async (gatedExtension) => {
+        const repoEcosystems = await detectRepoEcosystems(
+            POLYGLOT_TREE_PATHS,
+            (manifestPath) => Promise.resolve(MANIFEST_CONTENTS[manifestPath] ?? null),
+        );
+        const languageEcosystems: readonly string[] = detectDiffEcosystems([`module/changed_file${gatedExtension}`]);
+        const inventoryRuleRows = loadInventoryRuleRows();
+        const taggedRuleIds = inventoryRuleRows
+            .filter((ruleRow) => ruleRow.applies_to?.some((ecosystemTag) => languageEcosystems.includes(ecosystemTag)))
+            .map((ruleRow) => ruleRow.rule_id);
+
+        const filteredRuleIds = filterRulesByEcosystems(inventoryRuleRows, repoEcosystems)
+            .map((ruleRow) => ruleRow.rule_id);
+
+        expect(languageEcosystems).toHaveLength(1);
+        expect(taggedRuleIds.length).toBeGreaterThanOrEqual(7);
+        expect(filteredRuleIds).toEqual(expect.arrayContaining(taggedRuleIds));
     });
 });

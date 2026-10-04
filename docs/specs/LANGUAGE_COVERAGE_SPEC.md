@@ -1,6 +1,6 @@
 # Sprachabdeckung: wie unslop Nicht-JS/TS-Code prüft
 
-**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
+**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“). Stufe 2 ist für Python und Java gebaut (2026-09-30, §6.2 „Stand nach Stufe 2“, Gate-Ergebnisse in §6.5): Python ist Default, Java nur je Repo-Config, Go bleibt draußen (E7).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
 
 Code-Stand aller Belege und Messungen: `main` bei `17ee7ec` (2026-09-30). Rohdaten: `fixtures/rule-recall/results/2026-09-30-langcov-*.json`. Die Benchmark-Jobs liegen mit `--keep` in `review_jobs` und `review_job_llm_calls`. Modelle laut `src/lib/pipeline/models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (in keiner Messung gerufen).
 
@@ -355,6 +355,21 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 - Prompt-Kern sprachneutral formulieren. Das rotiert den Cache einmal.
 - Gemischte PRs: Summary nennt Dateitypen, die kein Modell gelesen hat.
 
+**Stand nach Stufe 2 (2026-09-30), mit den Entscheidungen beim Bau:**
+
+- **Umfang.** Python (`.py`) und Java (`.java`). Go fehlt (E7). `GATED_LLM_EXTENSIONS` in `src/lib/pipeline/defaults.ts` nennt die Endungen, die überhaupt in die Modell-Review dürfen; jede andere Endung fällt aus einer Repo-Config heraus.
+- **Config.** `pipeline_config.reviewScope.llmExtensions` nennt, was die Modell-Review **zusätzlich** zu JS/TS liest. Der Wert wird wie `prescan` strukturell durchgereicht, `resolveReviewScopeConfig` löst ihn beim Job-Start auf: Block fehlt oder ist kaputt ⇒ Default; gültige Liste ⇒ ersetzt den Default, die leere Liste heißt „nur JS/TS“. `isReviewableFile(filename, llmExtensions)` hat bewusst keinen Default-Parameter, damit kein Aufrufer still auf JS/TS zurückfällt. Beide Diff-Loader und der Benchmark-Runner lesen den aufgelösten Wert.
+- **Default.** `DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions = ['.py']`. Begründung in §6.5: Python besteht G6 bis G9, Java reißt G8.
+- **Operator-Allowlist.** Der Settings-PUT (`/api/repos/[id]/settings`, operator-only) übernimmt `reviewScope` und speichert nur Endungen aus `GATED_LLM_EXTENSIONS`. Die Operator-Seite rendert kein Feld dafür; sie reicht den Block bei Save und Reset unverändert durch. Gesetzt wird er per PUT oder per SQL.
+- **Rollback.** `UNSLOP_LLM_LANE_JSTS_ONLY=1` übersteuert Default und jede Repo-Config, zur Laufzeit gelesen (`isLlmLaneRestrictedToJsTs`). Solange der Schalter gesetzt ist, sind die Texte aus §7.2 falsch: er ist ein Notfall-Schalter, kein Dauerzustand.
+- **Prompt.** Der Kern sagt „production codebases in any programming language“ statt „high-scale React/Next.js environments“, die Überschrift der React-Conditions trägt den Zusatz „apply ONLY to React and Next.js files“. `PROMPT_CACHE_SCHEMA_VERSION` steigt von 2 auf 3. Das rotiert jeden expliziten Cache einmal: der erste Job je Cache-Key nach dem Deploy meldet `explicit_created` statt `explicit_hit` und zahlt den Prefix einmal zum vollen Input-Preis (rund 4.800 bis 7.000 Tokens, unter einem Cent je Key); die alten Caches laufen nach höchstens einer Stunde TTL aus.
+- **Gemischter PR.** `describeFilesWithoutModelReview` (`review-scope.ts`) liefert den Satz „No model read N changed files of these types: .go, .rs.“ Er steht in der gespeicherten Summary (`resolvePublishedSummary`, also auch in CLI, Extension und MCP), im Review-Body, im Kommentar ohne Findings und in der Check-Summary. Hat kein Modell gelesen, entfällt der Satz, weil die Summary das dann schon sagt.
+- **Nur Quellcode-Dateien im Hinweis** (Nachtrag 2026-09-30, Review-Befunde an PR #40). Der Satz nennt nur Dateien, die ein Leser von einer Code-Review erwartet: `isSourceCodeFile` mit der Liste `SOURCE_CODE_LANGUAGES` neben der Lane-Definition in `packages/prescan/src/language.ts` (TypeScript, JavaScript, Python, Java, Go, Rust, C/C++, PowerShell, Terraform `.tf`), sofern nicht im aktiven Review-Umfang. Config, Daten, Styles, Markup, YAML, JSON, TOML, Terraform-Variablen, Workflows, Dockerfiles und Binärdateien lösen ihn nicht aus; sonst trüge fast jeder JS/TS-PR mit `package.json` oder `.css` den Satz. Gezählt werden nur Dateien mit Hunk: ohne Hunk (Binärdatei, reine Modus-Änderung) hat eine Datei auch im CLI/MCP-Pfad keinen Patch (`parseUnifiedDiff`) und zählt weder für den Pre-Scan noch für den Hinweis. Prosa, Lockfiles, generierte Pfade, entfernte Dateien und Opfer des Größen-Caps zählen weiter nicht.
+- **Eine Liste generierter Pfade.** `isGeneratedPath` (`src/lib/pipeline/helpers.ts`) gilt für Modell-Review und Pre-Scanner und vergleicht per Pfadsegment (`node_modules/`, `dist/`, `build/`, `.next/`, `.git/`, dazu `*.min.js`/`*.min.css`): `src/rebuild/x.ts` wird reviewt. `.env`-Dateien (`.env`, `.env.local` …) erreichen nie ein Modell, verglichen am Dateinamen, sodass `app.env.ts` Code bleibt; der Pre-Scanner liest sie weiter, damit seine Secret-Regeln einen eingecheckten Schlüssel finden. Endungen vergleicht `isReviewableFile` ohne Groß-/Kleinschreibung (`Foo.PY` ist Python).
+- **Hinweistexte.** Die Sätze zu „nur deterministisch geprüft“ (`degradation-notice.ts`, MCP `unslop_scan`, `describeNothingReviewed`) sagen „no file of a type the model review reads“ statt „no TypeScript or JavaScript file“. So stimmen sie für jeden Review-Umfang.
+- **Runner.** `--llm-extensions .py,.java` setzt den Review-Umfang des Produktionspfads wie eine Repo-Config (Default: der Code-Default). `--no-escalation` verbraucht kein Eskalations-Kontingent: der Router bleibt auf `flash-cascade`, Eskalation und Zweitmeinung laufen nicht, und der Report nennt je Fixture in `suppressedEscalations`, was sonst gelaufen wäre. Neue Negativ-Kontrolle `r27-clean-java.diff` (drei saubere Spring-Dateien), weil es für Java keine gab.
+- **Nicht gebaut.** Die Distribution-Entwürfe unter `distribution/channels/` sagen weiter „JS/TS only“ (ROADMAP To-Do). Die Skeleton-Evidence bleibt JS/TS (§2.6).
+
 **Stufe 3, C/C++, Terraform, PowerShell:**
 
 - Erst die Repo-Erkennung um Pfadsignale erweitern (`.tf`, `.c/.h/.cpp`, `.ps1`, Kubernetes-Manifeste). Der Cache-Contract bleibt, weil der Filter weiter nur vom Repo abhängt (`law.ts:65-66`).
@@ -366,8 +381,8 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 |---|---|---|
 | 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute. Gebaut: `isPrescanOnlyReviewEnabled`, zur Laufzeit gelesen, greift mit dem nächsten Job |
 | 1, je Repo | `pipeline_config.enabledStepIds` ohne `pre-scanner` | besteht schon (`worker.ts:100-107`) |
-| 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS |
-| 2 und 3, global | Env `UNSLOP_LLM_LANE_JSTS_ONLY=1` | übersteuert die Config, Rollback ohne Deploy |
+| 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS. Gebaut: `resolveReviewScopeConfig`, Default `['.py']` |
+| 2 und 3, global | Env `UNSLOP_LLM_LANE_JSTS_ONLY=1` | übersteuert die Config, Rollback ohne Deploy. Gebaut: `isLlmLaneRestrictedToJsTs`, zur Laufzeit gelesen |
 
 Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
 
@@ -385,6 +400,67 @@ Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
 | G8 Schattenlauf | 2, 3 | 10 echte PR-Diffs je Sprache, alle CRITICALs gesichtet, Fehlalarmquote im Log |
 | G9 Latenz | 2, 3 | Maximum Draft plus Verify unter 210 s über die G7-Läufe |
 | G10 Live-Receipt | 1, 2 | je ein Job auf `unslopai/test` mit Job-ID in der Chronik |
+
+### 6.5 Gate-Ergebnisse Stufe 2 (2026-09-30)
+
+Code-Stand: Branch `feat/langcov-stufe2` auf `main` `b9f01b2`. Modelle laut `models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`. Alle Läufe mit dem sprachneutralen Prompt-Kern, ohne RAG, ohne Reference Practices, ohne Job-Budget, **ohne Eskalation** (`--no-escalation`, Auftrag: das Kontingent steht bei 36/50 und blieb dort).
+
+| Gate | Python | Java | Beleg |
+|---|---|---|---|
+| G6 Law-Filter | grün: alle 8 getaggten Regeln im Block | grün für Spring: alle 7 getaggten Regeln im Block | `src/lib/law.test.ts` „Gate G6 — Law-Filter im polyglotten Repo“: echte `detectRepoEcosystems` auf einem TypeScript-Host mit `pyproject.toml` und Spring-`pom.xml`, Regeln aus `rules-inventory.json` (deckt sich mit der Live-Tabelle, SQL vom 2026-09-30) |
+| G7 Recall, 3 Läufe | r03 10/10, r04 6/6, r16 7/7 (davon 5 Python) je Lauf; r14 0 Findings ×3 | r09 7/7 je Lauf; r27 0 Findings ×3 | `results/2026-09-30-langcov-stufe2-g7-production.json`: Draft 90/90, Combined 90/90, nach Verifier 90/90, 0 CRITICAL und 0 WARNING auf 6 Kontroll-Läufen. §4.2 hatte für dieselben Fixtures Combined 100 % im Modell-Potenzial-Pfad |
+| G8 Schattenlauf | grün: 10 PRs, 0 Findings | **gerissen**: 10 PRs, 1 CRITICAL, gesichtet als Fehlalarm | `results/2026-09-30-langcov-stufe2-g8-shadow.json`, Methode und Liste unten |
+| G9 Latenz | Maximum Draft plus Verify **83,1 s** (r16, Job `ceee592a`), Grenze 210 s | Maximum 59,8 s (r09) | SQL auf `review_job_llm_calls` der 18 G7-Jobs; je Fixture Mittel / Max: r03 48,4 / 50,7 s, r04 43,3 / 53,7 s, r09 51,4 / 59,8 s, r16 58,3 / 83,1 s, r14 9,1 / 10,7 s, r27 17,2 / 38,0 s |
+
+**G8, Methode.** `scripts/shadow-run.ts` lädt je PR `https://github.com/<repo>/pull/<n>.diff`, parst ihn mit dem Parser des CLI-Pfads (`parseUnifiedDiff`), filtert wie der Diff-Loader (`isReviewableFile` mit `.py`, `.java`, dann `trimReviewableFiles`) und fährt Router, Draft, Verifier und Scorer. Der Law-Filter bekommt die Ökosysteme, die `detectRepoEcosystems` am 2026-09-30 auf dem Default-Branch des Repos erkennt (`--detect`). Jedes überlebende Finding steht mit Zitat und Kritik im Report; das Urteil „Fehlalarm“ fällt beim Sichten. Auswahl vor dem ersten Modell-Call: je Sprache drei bekannte öffentliche Repos, gemergte PRs mit Code-Änderung, je Repo die größten Diffs der Kandidatenliste (`--plan`, 0 Token), alle unter der Router-Heuristik (höchstens 15 Dateien und 12k geschätzte Tokens), damit kein PR in Produktion `pro-direct` gelaufen wäre. Die Liste liegt in `fixtures/shadow-run/langcov-stufe2-prs.json`.
+
+| Sprache | PR | erkannte Ökosysteme | Dateien im Modell / im PR | geschätzte Tokens | Job | CRITICAL / WARNING | Zweitmeinung unterdrückt |
+|---|---|---|---|---|---|---|---|
+| Python | pallets/flask#5928 | `python` | 8 / 10 | 4.118 | `f8cfd624` | 0 / 0 | ja |
+| Python | pallets/flask#5917 | `python` | 5 / 7 | 2.518 | `63cac8c8` | 0 / 0 | ja |
+| Python | pallets/flask#5818 | `python` | 5 / 6 | 5.505 | `d4faae48` | 0 / 0 | nein |
+| Python | pallets/flask#5736 | `python` | 4 / 6 | 6.550 | `7889c2d1` | 0 / 0 | ja |
+| Python | psf/requests#7505 | `python` | 3 / 3 | 782 | `21fac984` | 0 / 0 | nein |
+| Python | psf/requests#7502 | `python` | 2 / 2 | 314 | `5b5e134b` | 0 / 0 | ja |
+| Python | psf/requests#7496 | `python` | 4 / 5 | 981 | `95e50f6c` | 0 / 0 | nein |
+| Python | encode/httpx#3690 | `python` | 4 / 4 | 1.335 | `ea012298` | 0 / 0 | nein |
+| Python | encode/httpx#3673 | `python` | 8 / 8 | 2.608 | `ed4977ff` | 0 / 0 | nein |
+| Python | encode/httpx#3571 | `python` | 1 / 1 | 111 | `27f0b2e1` | 0 / 0 | nein |
+| Java | spring-projects/spring-petclinic#2672 | `java-spring` | 4 / 4 | 1.169 | `0a93272a` | 0 / 0 | ja |
+| Java | spring-projects/spring-petclinic#2611 | `java-spring` | 4 / 4 | 813 | `6b9f3bed` | 0 / 0 | ja |
+| Java | spring-projects/spring-petclinic#2573 | `java-spring` | 4 / 7 | 2.965 | `9f8dccf4` | **1** / 0 | ja |
+| Java | spring-projects/spring-petclinic#2490 | `java-spring` | 3 / 12 | 766 | `5ec7ef39` | 0 / 0 | nein |
+| Java | google/guava#8704 | keine (kein Filter) | 4 / 4 | 1.118 | `3f5b270d` | 0 / 0 | ja |
+| Java | google/guava#8703 | keine (kein Filter) | 12 / 12 | 3.520 | `84974678` | 0 / 0 | ja |
+| Java | google/guava#8685 | keine (kein Filter) | 2 / 2 | 1.628 | `4c3801f1` | 0 / 0 | ja |
+| Java | spring-projects/spring-boot#51870 | `nodejs, java-spring` | 6 / 8 | 1.945 | `e29ccb4b` | 0 / 0 | nein |
+| Java | spring-projects/spring-boot#51855 | `nodejs, java-spring` | 2 / 6 | 1.482 | `9ffe8eb9` | 0 / 0 | ja |
+| Java | spring-projects/spring-boot#51841 | `nodejs, java-spring` | 2 / 2 | 1.528 | `4533a2c7` | 0 / 0 | ja |
+
+**G8, Sichtung.** Ein CRITICAL in 20 PRs, in `spring-petclinic#2573`: HAL-002 auf `import org.springframework.boot.restclient.RestTemplateBuilder;` in `PetClinicConcurrencyTests.java:17`. Der Draft nennt das Paket „non-existent“ und verweist auf `org.springframework.boot.web.client`; der Blind-Verifier bestätigte. **Fehlalarm:** Das Repo steht auf Spring Boot 4.1.0 (`pom.xml`), und dort liegt die Klasse genau in diesem Paket (`module/spring-boot-restclient/.../org/springframework/boot/restclient/RestTemplateBuilder.java` im Spring-Boot-Repo, abgerufen 2026-09-30). Das Wissen beider Modelle endet vor der Modularisierung von Spring Boot 4.
+
+| | Python | Java |
+|---|---|---|
+| PRs mit falschem CRITICAL | 0 von 10 | **1 von 10** |
+| falsche CRITICALs / alle CRITICALs | 0 / 0 | 1 / 1 |
+| richtige Findings | 0 | 0 |
+| Draft-Latenz Mittel / Max (beide Sprachen) | 14,3 s / 31,6 s | |
+
+**Lesart und Grenzen:**
+
+- Die Ursache des Fehlalarms ist nicht Java-spezifisch: HAL-002 lässt das Modell aus eigenem Wissen über die Existenz einer API urteilen, und der Verifier hat dasselbe Wissen. Auf JS/TS kann dasselbe mit jeder neuen Framework-Version passieren. Gemessen ist es aber auf Java, und ein CRITICAL lässt den Check scheitern.
+- Null Findings auf 19 von 20 PRs heißt auch: Der Lauf belegt keine richtigen Treffer auf echtem Code. Die PRs stammen aus gepflegten Projekten mit Review; KI-geschriebene Diffs aus Kunden-Repos sehen anders aus.
+- **Die Zweitmeinung ist nicht gemessen.** 12 der 20 PRs hätten in Produktion den Trigger `test-gap` ausgelöst (Testdateien ohne Finding) und einen Pass des Eskalations-Modells bekommen. Er lief nicht, weil er Kontingent verbraucht. Seine Fehlalarmquote auf Python und Java ist offen, und der Trigger feuert auf Python- und Java-Tests künftig in Produktion.
+- N = 10 je Sprache, Temperatur 0, ein Lauf.
+- Der Pre-Scanner lief im Schattenlauf nicht; seine Korpus-Messung steht in §4.4.
+
+**Entscheidung.** Python ist Default: alle vier Gates grün. Java ist nicht Default: G8 reißt mit 1 falschem CRITICAL auf 10 PRs. Java bleibt über `reviewScope.llmExtensions` je Repo einschaltbar. Für Java als Default bräuchte es eins von beiden, danach denselben Schattenlauf mit 0 falschen CRITICALs: *(a)* HAL-002-Claims über die Existenz eines Imports oder Pakets enden als WARNING statt CRITICAL, so wie SEC-035 für Import-Namen seit Stufe 0 (§4.4); *(b)* der Draft bekommt die Versionen aus dem Build-Manifest (`pom.xml`, `build.gradle`) als Kontext.
+
+**Java ohne Spring.** `detectRepoEcosystems` kennt nur `java-spring`, und nur mit Spring-Bezug im Manifest (§2.5). In einem polyglotten Repo mit Java ohne Spring fehlen deshalb die Java-Regeln HAL-004, HAL-006, HAL-007 und SEC-030 im Prompt; SEC-015 bleibt nur, wenn das Repo `nodejs` hat, SEC-006 und SEC-008 nur mit `python`. Ein reines Java-Repo ohne Spring hat `[]` und bekommt den ungefilterten Block. G6 ist für den Spring-Fall grün; der Fall ohne Spring ist ein To-Do und ein weiterer Grund gegen Java als Default.
+
+**Vertex-Verbrauch.** Schätzung vorher aus §4.2: G7 rund $0,46 (3 × $0,153), G8 höchstens $1,60 (20 PRs zu je $0,03 bis $0,08). Gemessen mit `scripts/benchmark-cost.ts`: G7 **$0,47** (18 Jobs, 30 Calls), G8 **$0,23** (20 Jobs, 21 Calls), zusammen **$0,70 von $5,00**. Eskalationen: 0 Calls, `billing_accounts.escalation_month_count` 36 vorher und nachher. In G7 wäre keine Eskalation gelaufen (`suppressedEscalations` leer in allen 18 Läufen), in G8 zwölfmal die Zweitmeinung.
+
+**Nebenwirkung der Läufe.** G7 lief noch mit `PROMPT_CACHE_SCHEMA_VERSION = 2` und legte die Caches der Keys `python`, `java-spring` und `unfiltered` mit dem neuen Kern neu an (`explicit_created` um 12:00 bis 12:04 UTC, vorher abgelaufen). Ein Produktions-Job mit einem dieser drei Keys hätte bis zum TTL-Ablauf den neuen Kern gelesen. Die Produktions-Repos laufen unter anderen Keys (`unslopai/test`: `nodejs,react,typescript`).
 
 ## 7. Folgen für Benchmark und Marketing
 
@@ -413,6 +489,8 @@ Claim-Policy `MARKETING_CLAIMS.md` §00: eigene Messungen nur mit Methode, Datum
 
 Die fehlende Grenze bei 125/126 besteht heute schon. Sie ist als eigenes To-Do in der ROADMAP vermerkt.
 
+**Mit Stufe 2 geändert (EN und DE, 2026-09-30):** Der Umfang heißt überall „TypeScript, JavaScript and Python“, weil nur Python Default ist (§6.5): FAQ-Antwort zu den Sprachen (samt neuem Satz zum gemischten PR), Tabelle „Files“, die Definition im Glossar-Block, `honestyFileTypes` und die Extension-README. Die Grenze der Messung nennt jetzt 46 statt 69 Verstöße in Dateitypen, die das Modell in Produktion nicht liest (69 minus 23 in `.py`). Java steht in keinem Text als Modell-Sprache. Die Distribution-Entwürfe sind nicht nachgezogen (ROADMAP To-Do).
+
 ## 8. Offene Entscheidungen für Luca
 
 | Nr. | Frage | Vorschlag | Entscheidung 2026-09-30 |
@@ -431,7 +509,7 @@ Die fehlende Grenze bei 125/126 besteht heute schon. Sie ist als eigenes To-Do i
 |---|---|
 | Anteil der Kunden-PRs ohne JS/TS oder mit Nicht-JS/TS-Anteil | keine externen Nutzer vor dem Launch, `review_jobs` speichert für Webhook-Jobs keine Dateiliste |
 | Recall auf dem echten Produktionspfad (59/126 ist gerechnet) | Runner umgeht den Filter, Umbau ist Produktions-naher Code und nicht Teil dieser Session |
-| Fehlalarmquote der LLM-Lane auf echtem Python/Go/Java-Code | braucht gesichtete reale Diffs. Die Fixtures haben nur 3 Kontrollen mit 8 Dateien |
+| Fehlalarmquote der LLM-Lane auf echtem Python/Go/Java-Code | Python und Java gemessen in §6.5 (je 10 PRs, ohne Zweitmeinung). Offen: Go, die Zweitmeinung, KI-geschriebene Diffs statt gepflegter Projekte |
 | Wirkung von RAG und Reference Practices auf Nicht-JS/TS | Runner fährt beides aus. Der Skeleton-Index enthält nur JS/TS |
 | LLM-Lane auf großen Nicht-JS/TS-Diffs (Batching ab 20k, `pro-direct`) | keine große Fixture in diesen Sprachen. r20 hätte Eskalationsbudget verbraucht |
 | Ursache der Go-Latenz (83 bis 161 s) | N=3, unter paralleler Last gemessen |

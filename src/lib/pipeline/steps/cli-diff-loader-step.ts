@@ -36,7 +36,9 @@ export const cliDiffLoaderStep: PipelineStep = {
         }
 
         const parsedFiles = parseUnifiedDiff(uploadedDiff);
-        const candidateFiles = parsedFiles.filter((file) => isReviewableFile(file.filename));
+        const candidateFiles = parsedFiles.filter(
+            (file) => isReviewableFile(file.filename, context.reviewScopeConfig.llmExtensions),
+        );
         const { trimmedFiles: reviewableFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
 
         if (reviewableFiles.length === 0) {
@@ -78,6 +80,9 @@ const DIFF_FILE_HEADER_PATTERN = /^diff --git a\/(.+?) b\/(.+)$/;
 /**
  * Parst eine `git diff`-Ausgabe in PullRequestFile-Objekte.
  * Pro Datei: Pfad (b-Seite; a-Seite bei Löschungen), Status und Hunk-Inhalt.
+ * Ohne Hunk (Binärdatei, reine Modus-Änderung) bleibt `patch` undefined, wie
+ * bei der GitHub-API: dann zählt die Datei weder für den Pre-Scan noch für den
+ * Hinweis auf ungelesene Dateitypen.
  */
 export function parseUnifiedDiff(rawDiff: string): PullRequestFile[] {
     const diffLines = rawDiff.split('\n');
@@ -87,7 +92,7 @@ export function parseUnifiedDiff(rawDiff: string): PullRequestFile[] {
 
     const finalizeCurrentFile = (): void => {
         if (currentFile) {
-            currentFile.patch = currentPatchLines.join('\n');
+            if (currentPatchLines.length > 0) currentFile.patch = currentPatchLines.join('\n');
             parsedFiles.push(currentFile);
         }
         currentPatchLines = [];

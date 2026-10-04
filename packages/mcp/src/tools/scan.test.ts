@@ -5,6 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@unslop/shared/node';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import { runScanTool } from './scan.js';
 import type { ToolDeps } from '../tool-deps.js';
 import type { RepoContextResolution } from '../repo-context.js';
@@ -181,7 +182,7 @@ describe('unslop_scan — timing (MCP_SPEC §10)', () => {
                     result: {
                         hasSlop: false,
                         issues: [],
-                        summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+                        summary: formatDeterministicOnlyNotice('local_diff'),
                         filesReviewed: 0,
                         filesScanned: 2,
                         outcome: 'deterministic_only',

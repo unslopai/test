@@ -35,7 +35,7 @@ interface SettingsClientProps {
 }
 
 /**
- * Client-side mirror of PipelineConfig. `cascade`/`prescan` are pass-through
+ * Client-side mirror of PipelineConfig. `cascade`/`prescan`/`reviewScope` are pass-through
  * blocks the 3-field UI never renders — they must survive Save AND Reset
  * untouched (dropping them on save was the original prescan-loss bug; dropping
  * them on reset was the two-click path back into the parked prod OOM, D10).
@@ -46,6 +46,7 @@ interface PipelineConfigState {
     overrideSmartDetection: boolean;
     cascade?: Record<string, number>;
     prescan?: unknown;
+    reviewScope?: unknown;
 }
 
 type LoadState = 'loading' | 'loaded' | 'error' | 'saving';

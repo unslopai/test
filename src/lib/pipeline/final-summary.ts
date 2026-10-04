@@ -15,7 +15,7 @@
  * und Reporter ihre Summary beziehen.
  */
 import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
-import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeFilesWithoutModelReview, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
 
 /** Summary eines Laufs ohne jedes Finding. */
@@ -94,6 +94,9 @@ export function buildFinalStateSummary(
  *    nichts gemeldet, ersetzt dieser Satz den Clean-Text. Hat das Modell
  *    Findings, aber keinen Text, zählt die Template-Summary beide Lanes —
  *    „reported no further findings“ stünde dann neben Modell-Findings.
+ *
+ * Im gemischten PR (Stufe 2) folgt der Satz, welche Dateitypen kein Modell
+ * gelesen hat: der Clean-Satz gilt sonst scheinbar für den ganzen PR.
  */
 export function resolvePublishedSummary(
     context: SummaryContext,
@@ -102,6 +105,16 @@ export function resolvePublishedSummary(
     if (resolveReviewOutcome(context) === 'deterministic_only') {
         return buildDeterministicOnlySummary(context, reportableIssues);
     }
+    const unreadFilesNotice = describeFilesWithoutModelReview(context);
+    const reviewedScopeSummary = resolveReviewedScopeSummary(context, reportableIssues);
+    return unreadFilesNotice === null ? reviewedScopeSummary : `${reviewedScopeSummary} ${unreadFilesNotice}`;
+}
+
+/** Die Summary über das, was geprüft wurde — ohne den Hinweis auf nicht gelesene Dateitypen. */
+function resolveReviewedScopeSummary(
+    context: SummaryContext,
+    reportableIssues: readonly PipelineIssue[],
+): string {
     if (reportableIssues.length === 0) return context.reviewSummary || CLEAN_REVIEW_SUMMARY;
 
     const deterministicIssues = reportableIssues.filter((reportableIssue) => reportableIssue.source === 'pre-scanner');
@@ -120,6 +133,7 @@ export function resolvePublishedSummary(
 type SummaryContext = Pick<
     PipelineContext,
     'reviewSummary' | 'llmSkipped' | 'shouldAbort' | 'deterministicOnlyReason' | 'prescanStats'
+    | 'prFiles' | 'reviewableFiles' | 'omittedFiles'
 >;
 
 /** "<Grund>. The deterministic pre-scanner found … / checked N files and found nothing." */

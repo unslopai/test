@@ -6,6 +6,7 @@
  * wird derselbe Review als COMMENT wiederholt — inklusive Inline-Comments.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import { GitHubApiError } from '@/lib/github';
 import { githubReporterStep } from '@/lib/pipeline/steps/github-reporter-step';
 import {
@@ -237,7 +238,7 @@ describe('githubReporterStep', () => {
         const deterministicOnlyContext = buildPipelineContext({
             prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
             llmSkipped: true,
-            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            deterministicOnlyReason: formatDeterministicOnlyNotice('pull_request'),
             prescanStats: {
                 degraded: false,
                 degradedReason: null,
@@ -258,8 +259,8 @@ describe('githubReporterStep', () => {
 
         const postedBody = createPullRequestReviewMock.mock.calls[0][4];
         expect(postedBody).toBe(
-            'ℹ️ **Anti-Slop Gatekeeper**: Deterministic checks only: this pull request changes no TypeScript or '
-            + 'JavaScript file, so no model reviewed it. The pre-scanner checked 2 files and found nothing.',
+            `ℹ️ **Anti-Slop Gatekeeper**: ${formatDeterministicOnlyNotice('pull_request')} `
+            + 'The pre-scanner checked 2 files and found nothing.',
         );
         expect(createPullRequestReviewMock.mock.calls[0][6]).toBe('COMMENT');
         expect(postPRCommentMock).not.toHaveBeenCalled();
@@ -273,7 +274,7 @@ describe('githubReporterStep', () => {
                 rule: 'SEC-005 (Hardcoded secret)', path: scannedFile.filename, line: 2, endLine: 2, source: 'pre-scanner',
             })],
             llmSkipped: true,
-            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            deterministicOnlyReason: formatDeterministicOnlyNotice('pull_request'),
             prescanStats: {
                 degraded: false,
                 degradedReason: null,
@@ -302,7 +303,7 @@ describe('githubReporterStep', () => {
             prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
             llmSkipped: true,
             abortReason: 'No reviewable code files in this pull request.',
-            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            deterministicOnlyReason: formatDeterministicOnlyNotice('pull_request'),
             prescanStats: {
                 degraded: true,
                 degradedReason: 'internal route timeout',

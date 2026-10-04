@@ -5,7 +5,7 @@
  * (z.B. bei neu verbundenen Repos). Dient auch als "Reset to Defaults"-Baseline.
  */
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
-import type { CascadeConfig, CascadeState, PipelineConfig } from '@/lib/pipeline/types';
+import type { CascadeConfig, CascadeState, PipelineConfig, ReviewScopeConfig } from '@/lib/pipeline/types';
 
 export const DEFAULT_PIPELINE_CONFIG: Readonly<PipelineConfig> = {
     enabledStepIds: [
@@ -28,6 +28,61 @@ export const DEFAULT_PIPELINE_CONFIG: Readonly<PipelineConfig> = {
     activeConditionIds: ALL_CONDITION_IDS,
     overrideSmartDetection: false,
 };
+
+/**
+ * Endungen, die per `reviewScope.llmExtensions` in die Modell-Review dürfen:
+ * nur Sprachen, die die Gates G6–G9 gefahren haben (LANGUAGE_COVERAGE_SPEC
+ * §6.4). Go fehlt bis zur geklärten Draft-Latenz (E7). Eine Endung außerhalb
+ * dieser Liste wird aus jeder Repo-Config verworfen.
+ */
+export const GATED_LLM_EXTENSIONS: readonly string[] = ['.py', '.java'];
+
+/**
+ * Review-Umfang ohne Repo-Config (LANGUAGE_COVERAGE_SPEC §6.3). Die Liste
+ * nennt, was die Modell-Review zusätzlich zu JS/TS liest.
+ *
+ * Python ist Default, weil G6–G9 grün sind (Spec §6.5). Java ist es nicht: im
+ * Schattenlauf G8 war das einzige CRITICAL auf 10 echten Java-PRs ein
+ * Fehlalarm (HAL-002 auf einem Import, den es seit Spring Boot 4 gibt). Java
+ * bleibt je Repo einschaltbar. Wer diese Liste ändert, zieht im selben Commit
+ * die Texte nach, die den Umfang nennen (Spec §7.2).
+ */
+export const DEFAULT_REVIEW_SCOPE_CONFIG: Readonly<ReviewScopeConfig> = {
+    llmExtensions: ['.py'],
+};
+
+/**
+ * Globaler Rollback ohne Deploy (Muster `UNSLOP_ESCALATION_LEGACY_PRO`):
+ * `UNSLOP_LLM_LANE_JSTS_ONLY=1` übersteuert Default und jede Repo-Config.
+ * Zur Laufzeit gelesen, greift mit dem nächsten Job.
+ */
+export function isLlmLaneRestrictedToJsTs(): boolean {
+    return process.env.UNSLOP_LLM_LANE_JSTS_ONLY === '1';
+}
+
+/**
+ * Löst `pipeline_config.reviewScope` gegen Default und Env-Rollback auf.
+ * Fehlt der Block oder ist er kaputt, gilt der Default; eine gültige Liste
+ * (auch die leere: nur JS/TS) ersetzt ihn. Unbekannte Endungen fallen heraus —
+ * eine kaputte Repo-Config darf nie einen Job töten.
+ */
+export function resolveReviewScopeConfig(rawReviewScope: unknown): ReviewScopeConfig {
+    if (isLlmLaneRestrictedToJsTs()) return { llmExtensions: [] };
+    const configuredExtensions = readConfiguredLlmExtensions(rawReviewScope);
+    if (configuredExtensions === null) return DEFAULT_REVIEW_SCOPE_CONFIG;
+    return {
+        llmExtensions: GATED_LLM_EXTENSIONS.filter(
+            (gatedExtension) => configuredExtensions.includes(gatedExtension),
+        ),
+    };
+}
+
+/** null = kein auswertbarer `llmExtensions`-Wert in der Repo-Config. */
+function readConfiguredLlmExtensions(rawReviewScope: unknown): readonly unknown[] | null {
+    if (!rawReviewScope || typeof rawReviewScope !== 'object') return null;
+    const configuredExtensions = 'llmExtensions' in rawReviewScope ? rawReviewScope.llmExtensions : undefined;
+    return Array.isArray(configuredExtensions) ? configuredExtensions : null;
+}
 
 /**
  * PROC-009-Gates für das Reference-Practice-Retrieval (BEST_PRACTICES_PLAN §9.3).

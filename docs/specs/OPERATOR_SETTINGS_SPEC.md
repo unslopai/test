@@ -63,6 +63,7 @@ export function isOperatorUser(userId: string): boolean
 - `request.json()` in try/catch → `400 { error: 'Ungültiges JSON.' }` (Stil der Route beibehalten: deutsche Meldungen, interne Fläche).
 - UPDATE bekommt `.select('id').single()`; kein Row-Match ⇒ `404 Repository nicht gefunden.` (identisch zu GET). DB-Fehler bleibt 500 [MAINT-001].
 - Validator-Allowlist, stilles Filtern unbekannter Ids, `prescan`-Passthrough (Feld-Validierung liegt in `resolvePrescanConfig` beim Lesen) und `cascade`-Feldprüfung bleiben **unverändert**.
+- Nachtrag 2026-09-30 (LANGUAGE_COVERAGE_SPEC §6.3): Der Validator übernimmt zusätzlich `reviewScope.llmExtensions` und speichert nur Endungen aus `GATED_LLM_EXTENSIONS` (`.py`, `.java`). Die Operator-Seite rendert kein Feld dafür und reicht den Block bei Save und Reset durch.
 
 ### 3.4 Operator-Seite (SettingsClient)
 

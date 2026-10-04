@@ -34,7 +34,7 @@ export const diffLoaderStep: PipelineStep = {
         );
 
         const candidateFiles = prFiles.filter(
-            (file) => file.patch && isReviewableFile(file.filename),
+            (file) => file.patch && isReviewableFile(file.filename, context.reviewScopeConfig.llmExtensions),
         );
         const { trimmedFiles: reviewableFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
 

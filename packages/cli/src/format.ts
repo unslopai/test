@@ -70,7 +70,7 @@ function printNothingReviewed(scanResult: ScanResult): void {
 }
 
 /**
- * No model read this diff (no TypeScript or JavaScript file), only the
+ * No model read this diff (no file of a type the model review reads), only the
  * deterministic pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2). Findings are
  * real and listed like any other; zero findings is still not a clean verdict,
  * so this branch never prints the green check. The summary carries the

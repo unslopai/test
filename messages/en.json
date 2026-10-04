@@ -33,7 +33,7 @@
     "copyFailed": "Copying failed — please copy the command manually.",
     "copyCommand": "Copy command",
     "guideLink": "Full guide →",
-    "honestyFileTypes": "The model review reads only .ts, .tsx, .js, .jsx, .mjs and .cjs files. A pull request without them gets deterministic checks only, and the result says so.",
+    "honestyFileTypes": "The model review reads only TypeScript, JavaScript and Python files (.ts, .tsx, .js, .jsx, .mjs, .cjs, .py). A pull request without them gets deterministic checks only, and the result says so.",
     "honestyMergeBase": "Reviewed are your changes against the merge-base — code that was already committed and pushed before is not part of the diff scan.",
     "tabs": {
       "github": "PR reviews on GitHub",
@@ -348,7 +348,7 @@
         "result": "<strong>125 of 126</strong> planted rule violations found, <strong>0</strong> false positives on 4 clean control fixtures.",
         "method": "Method: our rule-recall benchmark. We plant known violations in test fixtures and count one as found when the pre-scan or the model review reports the expected rule in the expected file.",
         "run": "Run: 2026-09-16, one full run. Models: Gemini 3.8 Flash for the review, Gemini 3.6 Flash for the blind re-check.",
-        "limits": "Limits: we wrote the fixtures ourselves; these are not customer repositories. It is a single run, and results vary between runs. The benchmark runs without a time budget and without repository context, and it sends every fixture file to the model review. In production the model review reads only TypeScript and JavaScript files, and 69 of the 126 violations sit in other file types, which the model does not see in a real pull request. On a larger fixture with 48 planted violations (2026-09-29, two runs) the result was 46 of 48 both times. The model for the third pass has changed since this run."
+        "limits": "Limits: we wrote the fixtures ourselves; these are not customer repositories. It is a single run, and results vary between runs. The benchmark runs without a time budget and without repository context, and it sends every fixture file to the model review. In production the model review reads only TypeScript, JavaScript and Python files, and 46 of the 126 violations sit in other file types, which the model does not see in a real pull request. On a larger fixture with 48 planted violations (2026-09-29, two runs) the result was 46 of 48 both times. The model for the third pass has changed since this run."
       }
     },
     "pillarDeterministic": {
@@ -392,7 +392,7 @@
         "files": {
           "check": "Files",
           "prescan": "TypeScript, JavaScript, Python, Java, Go, Rust, C and C++, plus config files such as YAML, JSON, Terraform and TOML",
-          "model": "TypeScript and JavaScript only"
+          "model": "TypeScript, JavaScript and Python only"
         },
         "gate": {
           "check": "Can it fail the check?",
@@ -467,7 +467,7 @@
         },
         "limits": {
           "term": "Honest limits",
-          "definition": "Nothing catches every flaw in AI-written code, and neither do we. The model review reads TypeScript and JavaScript only, and its results vary between runs."
+          "definition": "Nothing catches every flaw in AI-written code, and neither do we. The model review reads TypeScript, JavaScript and Python only, and its results vary between runs."
         }
       }
     },
@@ -493,7 +493,7 @@
         },
         "languages": {
           "question": "Which languages are covered?",
-          "answer": "The model review reads TypeScript and JavaScript files. The deterministic pre-scan also covers Python, Java, Go, Rust, C and C++ and common config files. A pull request without a TypeScript or JavaScript file gets deterministic checks only, if it changes Python, Java, Go, C, C++, PowerShell, Terraform, YAML or JSON files. No model reads it then: the check is titled “Deterministic checks only” and stays neutral unless a critical finding fails it. Anything else, such as a docs-only pull request, still concludes as neutral with “Nothing to review”."
+          "answer": "The model review reads TypeScript, JavaScript and Python files. The deterministic pre-scan also covers Java, Go, Rust, C and C++ and common config files. A pull request without a TypeScript, JavaScript or Python file gets deterministic checks only, if it changes Java, Go, C, C++, PowerShell, Terraform, YAML or JSON files. No model reads it then: the check is titled “Deterministic checks only” and stays neutral unless a critical finding fails it. When a pull request mixes both, the summary names the file types no model read. Anything else, such as a docs-only pull request, still concludes as neutral with “Nothing to review”."
         },
         "outage": {
           "question": "What happens when a review fails?",

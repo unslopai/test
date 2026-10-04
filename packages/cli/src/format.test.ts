@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { printHumanResult } from './format.js';
 import { sanitizeModelText } from '@unslop/shared/node';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import type { ScanIssue, ScanResult } from '@unslop/shared';
 
 const ESC = String.fromCharCode(0x1b);
@@ -132,7 +133,7 @@ describe('printHumanResult — nothing-reviewed honesty (ROADMAP §3)', () => {
                 exactQuote: 'hallucinated-http-kit==1.2.0',
                 critique: 'This declared package does not exist on the public registry.',
             }],
-            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            summary: formatDeterministicOnlyNotice('local_diff'),
             filesReviewed: 0,
             filesScanned: 2,
             outcome: 'deterministic_only',
@@ -141,7 +142,7 @@ describe('printHumanResult — nothing-reviewed honesty (ROADMAP §3)', () => {
         });
         const withoutFindingsOutput = capturedOutput({
             ...NOTHING_REVIEWED_RESULT,
-            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            summary: formatDeterministicOnlyNotice('local_diff'),
             outcome: 'deterministic_only',
             omittedFiles: [],
         });

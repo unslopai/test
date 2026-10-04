@@ -386,21 +386,41 @@ function findFirstJsonDelimiter(rawText: string): number {
 // File Filtering
 // =============================================================================
 
-const REVIEWABLE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
-
-const IGNORED_PATHS = [
-    'node_modules/', 'package-lock.json', '.next/',
-    '.git/', 'dist/', 'build/', '.env',
-];
+/** JS/TS liest die Modell-Review immer; weitere Endungen kommen aus `reviewScope.llmExtensions`. */
+const BASE_REVIEWABLE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
 /**
- * Prüft ob eine Datei reviewbar ist (Code-Dateien, keine Binärdateien/Configs).
+ * Generierte und vendored Pfade — die eine Liste für Modell-Review und
+ * Pre-Scanner. Verglichen wird per Pfadsegment, nicht per Teilstring:
+ * `src/rebuild/x.ts` liegt nicht in `build/`.
  */
-export function isReviewableFile(filename: string): boolean {
-    if (IGNORED_PATHS.some((ignoredPath) => filename.includes(ignoredPath))) {
+const GENERATED_PATH_PATTERN = /(^|\/)(node_modules|dist|build|\.next|\.git)\/|\.min\.(js|css)$/i;
+
+/**
+ * `.env`, `.env.local` … erreichen nie ein Modell. Nur der Dateiname zählt:
+ * `app.env.ts` ist Code. Der Pre-Scanner liest sie weiter, seine
+ * Secret-Regeln sollen einen eingecheckten Schlüssel finden.
+ */
+const ENV_FILE_NAME_PATTERN = /(^|\/)\.env(\.[^/]*)?$/i;
+
+export function isGeneratedPath(filePath: string): boolean {
+    return GENERATED_PATH_PATTERN.test(filePath);
+}
+
+/**
+ * Prüft, ob eine Datei die Modell-Review erreicht (Code-Dateien, keine
+ * Binärdateien/Configs). `llmExtensions` ist der aufgelöste Review-Umfang des
+ * Jobs (`resolveReviewScopeConfig`): bewusst ohne Default, damit kein Aufrufer
+ * still auf „nur JS/TS“ zurückfällt (LANGUAGE_COVERAGE_SPEC §6.3). Endungen
+ * zählen ohne Groß-/Kleinschreibung: `Foo.PY` ist Python.
+ */
+export function isReviewableFile(filename: string, llmExtensions: readonly string[]): boolean {
+    if (isGeneratedPath(filename) || ENV_FILE_NAME_PATTERN.test(filename)) {
         return false;
     }
-    return REVIEWABLE_EXTENSIONS.some((ext) => filename.endsWith(ext));
+    const lowerFilename = filename.toLowerCase();
+    return [...BASE_REVIEWABLE_EXTENSIONS, ...llmExtensions]
+        .some((reviewableExtension) => lowerFilename.endsWith(reviewableExtension.toLowerCase()));
 }
 
 // =============================================================================

@@ -1,6 +1,6 @@
 # Anti-AI-Slop Gatekeeper
 
-Review for AI-generated code, before it reaches a pull request. The extension sends the diff of your **local work** (commits not yet on the default branch plus uncommitted changes) to Unslop's hosted review and shows each finding in the editor with the ID of the rule it violates. Rule-based detectors check the diff first, without a model. A model then reviews the JavaScript and TypeScript files, and a second model re-checks its findings blind. Not every finding gets that re-check (a stage can be skipped for time, and some routes report the reviewing model's own confidence), so the status bar tooltip states for every scan how many findings passed the re-check, stayed uncertain, carry only the model's own confidence, could not be verified, or came from a rule detector.
+Review for AI-generated code, before it reaches a pull request. The extension sends the diff of your **local work** (commits not yet on the default branch plus uncommitted changes) to Unslop's hosted review and shows each finding in the editor with the ID of the rule it violates. Rule-based detectors check the diff first, without a model. A model then reviews the JavaScript, TypeScript and Python files, and a second model re-checks its findings blind. Not every finding gets that re-check (a stage can be skipped for time, and some routes report the reviewing model's own confidence), so the status bar tooltip states for every scan how many findings passed the re-check, stayed uncertain, carry only the model's own confidence, could not be verified, or came from a rule detector.
 
 ## What it does
 
@@ -17,7 +17,7 @@ Review for AI-generated code, before it reaches a pull request. The extension se
 
 ## How it works
 
-The extension is a thin client: it shells out to the `unslop` CLI, which sends your change diff to the hosted review pipeline (a complexity-routed cascade of a draft reviewer, a blind claim verifier, and an escalation model, scored for cognitive integrity). No analysis happens locally and no rules ship in this package. The model review reads `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs` files. A diff without such files gets deterministic checks only (regex and registry rules, no model); the status bar then shows “Deterministic only” instead of a clean verdict.
+The extension is a thin client: it shells out to the `unslop` CLI, which sends your change diff to the hosted review pipeline (a complexity-routed cascade of a draft reviewer, a blind claim verifier, and an escalation model, scored for cognitive integrity). No analysis happens locally and no rules ship in this package. The model review reads TypeScript, JavaScript and Python files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.py`). A diff without such files gets deterministic checks only (regex and registry rules, no model); the status bar then shows “Deterministic only” instead of a clean verdict.
 
 Every transmitted byte passes a secret filter (key/token patterns plus high-entropy detection) before upload.
 

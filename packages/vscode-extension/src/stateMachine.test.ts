@@ -7,6 +7,7 @@
  * `trial_quota_exhausted`), dazu kamen `job_stalled` und `invalid_api_key`.
  */
 import { describe, expect, it } from 'vitest';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import {
     changeTouchesAnchor,
     classifyMergeBaseRemedy,
@@ -224,7 +225,7 @@ describe('presentState — RESULTS variants (§2.1)', () => {
     it('renders a deterministic-only scan as "Deterministic only", never "No slop ✓"; findings keep their count', () => {
         const deterministicOnlyNotice = {
             coverage: 'deterministic_only' as const,
-            reason: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            reason: formatDeterministicOnlyNotice('local_diff'),
             omittedFiles: [],
         };
         const withoutFindings = presentState('RESULTS', { critical: 0, warning: 0, stale: 0 }, null, deterministicOnlyNotice);

@@ -5,7 +5,11 @@
  * Tests übersteuern nur die Felder, die für das jeweilige Szenario tragen.
  * Wird ausschließlich aus *.test.ts importiert — nie aus Produktions-Code.
  */
-import { DEFAULT_CASCADE_CONFIG, INITIAL_CASCADE_STATE } from '@/lib/pipeline/defaults';
+import {
+    DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REVIEW_SCOPE_CONFIG,
+    INITIAL_CASCADE_STATE,
+} from '@/lib/pipeline/defaults';
 import { DEFAULT_PRESCAN_CONFIG } from '@unslop/prescan';
 import type { PrescanStats } from '@unslop/prescan';
 import type { PullRequestFile } from '@/lib/github';
@@ -110,6 +114,7 @@ export function buildPipelineContext(overrides: Partial<PipelineContext> = {}): 
         cascade: INITIAL_CASCADE_STATE,
         cascadeConfig: DEFAULT_CASCADE_CONFIG,
         prescanConfig: DEFAULT_PRESCAN_CONFIG,
+        reviewScopeConfig: DEFAULT_REVIEW_SCOPE_CONFIG,
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,

@@ -13,16 +13,14 @@
  * Oberfläche ein anderes Urteil zeigt als die andere. Den Grund zu „nichts
  * geprüft“ liefert ebenso eine Stelle, `describeNothingReviewed`.
  */
-import { isDeterministicLaneFile } from '@unslop/prescan/language';
+import { isDeterministicLaneFile, isSourceCodeFile } from '@unslop/prescan/language';
 import { formatDeterministicOnlyNotice, formatPrescanFailedNotice } from '@unslop/shared/degradation-notice';
 import type { DeterministicOnlySurface } from '@unslop/shared/degradation-notice';
 import type { PrescanStats, SkippedFile } from '@unslop/prescan';
 import type { ScanOutcome } from '@unslop/shared';
+import { isGeneratedPath } from '@/lib/pipeline/helpers';
 import type { PullRequestFile } from '@/lib/github';
 import type { PipelineContext } from '@/lib/pipeline/types';
-
-/** Generierte/vendored Pfade, die nie deterministisch gescannt werden. */
-const PRESCAN_IGNORED_PATH_PATTERN = /(^|\/)(node_modules|dist|build|\.next|\.git)\/|\.min\.(js|css)$/;
 
 /**
  * Lockfiles (LANGUAGE_COVERAGE_SPEC §6.2): vom Paketmanager erzeugt, voller
@@ -59,7 +57,7 @@ export function hasIncompleteCoverage(context: Pick<PipelineContext, 'cascade' |
 /** Eine Datei, die der Pre-Scanner überhaupt ansieht: mit Patch, nicht generiert, kein Lockfile. */
 export function isPrescanScannable(changedFile: PullRequestFile): boolean {
     return changedFile.patch !== undefined
-        && !PRESCAN_IGNORED_PATH_PATTERN.test(changedFile.filename)
+        && !isGeneratedPath(changedFile.filename)
         && !isLockfile(changedFile.filename);
 }
 
@@ -183,6 +181,39 @@ function describeUnscannedChange(filesSkipped: readonly SkippedFile[]): string {
             .map((skippedFile) => `${skippedFile.path}, ${SKIPPED_FILE_LABELS[skippedFile.reason]}`)
             .join('; ')}).`
         : 'the pre-scanner found no added lines to check.';
-    return 'Nothing to review: this change has no TypeScript or JavaScript file for the model review, '
+    return 'Nothing to review: this change has no file of a type the model review reads, '
         + `and ${scanOutcome}`;
+}
+
+/**
+ * Gemischter PR (LANGUAGE_COVERAGE_SPEC §6.2, Stufe 2): welche geänderten
+ * Dateitypen kein Modell gelesen hat. Gezählt wird nur Quellcode mit Patch
+ * (`isSourceCodeFile`); Config, Daten, Styles, Prosa, Lockfiles, generierte
+ * Pfade, Binärdateien, entfernte Dateien und die Opfer des Größen-Caps (die
+ * nennt `omittedFiles`) zählen nicht. null = jede solche
+ * Datei lag im Review-Umfang, oder kein Modell hat überhaupt gelesen — dann
+ * sagt das die Summary des Laufs schon.
+ */
+export function describeFilesWithoutModelReview(
+    context: Pick<PipelineContext, 'prFiles' | 'reviewableFiles' | 'omittedFiles' | 'llmSkipped'>,
+): string | null {
+    if (context.llmSkipped || context.reviewableFiles.length === 0) return null;
+    const modelLanePaths = new Set([
+        ...context.reviewableFiles.map((reviewableFile) => reviewableFile.filename),
+        ...context.omittedFiles,
+    ]);
+    const unreadFiles = context.prFiles.filter((changedFile) => changedFile.status !== 'removed'
+        && isPrescanScannable(changedFile)
+        && isSourceCodeFile(changedFile.filename)
+        && !modelLanePaths.has(changedFile.filename));
+    if (unreadFiles.length === 0) return null;
+
+    const fileTypeLabels = [...new Set(unreadFiles.map((unreadFile) => describeFileType(unreadFile.filename)))].sort();
+    return `No model read ${unreadFiles.length} changed ${unreadFiles.length === 1 ? 'file' : 'files'} `
+        + `of ${fileTypeLabels.length === 1 ? 'this type' : 'these types'}: ${fileTypeLabels.join(', ')}.`;
+}
+
+/** Endung in Kleinbuchstaben — jede Quellcode-Datei hat eine (`isSourceCodeFile`). */
+function describeFileType(filePath: string): string {
+    return filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
 }

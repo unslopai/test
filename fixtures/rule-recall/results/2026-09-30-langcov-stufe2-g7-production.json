@@ -1,0 +1,1219 @@
+{
+  "capturedAt": "2026-09-30T12:12:34.748Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 3,
+  "pathMode": "production",
+  "ecosystems": "manifest",
+  "llmExtensions": [
+    ".py",
+    ".java"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "b4c07572-d80c-48e2-98ab-09e1bfb19ef4",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 314,
+      "integrityScore": 97,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r04-python-structure.diff",
+      "jobId": "ba500bac-a27a-4e1c-9cc0-726f2797f942",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 6,
+      "survivingFindingCount": 6,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 72,
+      "integrityScore": 99,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/analytics/regional_orders.py",
+          "ruleContains": "ARCH-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/image_pipeline.py",
+          "ruleContains": "CONC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/orders/search_endpoint.py",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/accounts/reset_tokens.py",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/thumbnail_endpoint.py",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "app/security/payload_cipher.py",
+          "ruleContains": "HAL-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r09-java-spring.diff",
+      "jobId": "7a450e24-c599-486c-81c4-0bca3cc323e9",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 12,
+      "integrityScore": 96,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/shipping/CarrierRateAdjuster.java",
+          "ruleContains": "HAL-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/billing/ArrearsSummarizer.java",
+          "ruleContains": "HAL-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/transfers/WireTransferService.java",
+          "ruleContains": "HAL-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/profiles/ProfileImportController.java",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/auth/ResetTokenFactory.java",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/vault/CardVaultCipher.java",
+          "ruleContains": "SEC-015",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/gateway/ApiKeyAuthenticator.java",
+          "ruleContains": "SEC-030",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "1945997f-319f-44d7-8c8a-9a5b1d7a2d14",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "f188f757-68aa-4ddf-954e-1a1b21d226e6",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 62,
+      "integrityScore": 96,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r27-clean-java.diff",
+      "jobId": "a80036a9-d29d-408b-a9d8-0b3f74309b5d",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 6,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "5f331cfb-0346-46f7-ae5e-275210470659",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 252,
+      "integrityScore": 99,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r04-python-structure.diff",
+      "jobId": "5ca9f3f8-d7fe-405c-a1ac-3171fcfe2198",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 6,
+      "survivingFindingCount": 6,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 80,
+      "integrityScore": 99,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/analytics/regional_orders.py",
+          "ruleContains": "ARCH-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/image_pipeline.py",
+          "ruleContains": "CONC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/orders/search_endpoint.py",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/accounts/reset_tokens.py",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/thumbnail_endpoint.py",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "app/security/payload_cipher.py",
+          "ruleContains": "HAL-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r09-java-spring.diff",
+      "jobId": "e6430b54-557c-424a-8ac8-88a1ed101cb1",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 25,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/shipping/CarrierRateAdjuster.java",
+          "ruleContains": "HAL-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/billing/ArrearsSummarizer.java",
+          "ruleContains": "HAL-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/transfers/WireTransferService.java",
+          "ruleContains": "HAL-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/profiles/ProfileImportController.java",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/auth/ResetTokenFactory.java",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/vault/CardVaultCipher.java",
+          "ruleContains": "SEC-015",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/gateway/ApiKeyAuthenticator.java",
+          "ruleContains": "SEC-030",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "adf17f51-eef3-42f5-b22b-f4f2bf78db5b",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "ceee592a-b571-46d1-a5a3-759349db545d",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 10,
+      "integrityScore": 95,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r27-clean-java.diff",
+      "jobId": "247aa5e3-fa8f-41c7-9765-0cf832559701",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 7,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "bbe34d85-4a46-4655-bbb8-5701983c7bc4",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 301,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 3
+    },
+    {
+      "fixture": "r04-python-structure.diff",
+      "jobId": "d05e2936-dec1-420a-bb74-3d9118a9a838",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 6,
+      "survivingFindingCount": 6,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 140,
+      "integrityScore": 99,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/analytics/regional_orders.py",
+          "ruleContains": "ARCH-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/image_pipeline.py",
+          "ruleContains": "CONC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/orders/search_endpoint.py",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/accounts/reset_tokens.py",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/thumbnail_endpoint.py",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "app/security/payload_cipher.py",
+          "ruleContains": "HAL-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 3
+    },
+    {
+      "fixture": "r09-java-spring.diff",
+      "jobId": "2c93c2fa-7652-4275-9066-b7cccceb71b3",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 5,
+      "integrityScore": 99,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/shipping/CarrierRateAdjuster.java",
+          "ruleContains": "HAL-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/billing/ArrearsSummarizer.java",
+          "ruleContains": "HAL-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/transfers/WireTransferService.java",
+          "ruleContains": "HAL-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/profiles/ProfileImportController.java",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/auth/ResetTokenFactory.java",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/vault/CardVaultCipher.java",
+          "ruleContains": "SEC-015",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/gateway/ApiKeyAuthenticator.java",
+          "ruleContains": "SEC-030",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 3
+    },
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "ff248c67-a375-463b-b3ac-10dac4116281",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 13,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 3
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "6154308a-d9fd-4c1d-b680-77a86c78dc67",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 11,
+      "integrityScore": 96,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": [],
+      "runIndex": 3
+    },
+    {
+      "fixture": "r27-clean-java.diff",
+      "jobId": "c2f4e89f-496f-42d7-8510-4a4bcd02e00f",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 4,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 3
+    }
+  ]
+}
