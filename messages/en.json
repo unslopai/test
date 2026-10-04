@@ -1,0 +1,555 @@
+{
+  "common": {
+    "appName": "Unslop",
+    "loading": "Loading…",
+    "backToDashboard": "Dashboard"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "de": "German",
+    "switchTo": "Switch to {locale}"
+  },
+  "login": {
+    "heading": "Sign in",
+    "back": "Return",
+    "subtitle": "Sign in to connect your repositories.",
+    "loginWithGitHub": "Login with GitHub",
+    "scopesNotice": "We request the <repo>repo</repo>, <hook>admin:repo_hook</hook>, and <org>read:org</org> scopes to read your repositories, manage webhooks, and verify permission for organization installations; the sign-in itself reads your GitHub email address (user:email)."
+  },
+  "dashboardNav": {
+    "brand": "Gatekeeper",
+    "repositories": "Repositories",
+    "apiKeys": "API Keys",
+    "billing": "Billing",
+    "getStarted": "Get started"
+  },
+  "onboarding": {
+    "title": "Get started",
+    "previewBadge": "Preview",
+    "comingSoon": "Coming soon",
+    "cliComingSoonNote": "The CLI and the editor extension are not published yet — this path unlocks at launch.",
+    "copied": "Copied",
+    "copyFailed": "Copying failed — please copy the command manually.",
+    "copyCommand": "Copy command",
+    "guideLink": "Full guide →",
+    "honestyFileTypes": "Only .ts, .tsx, .js, .jsx, .mjs and .cjs files are reviewed — other file types are skipped.",
+    "honestyMergeBase": "Reviewed are your changes against the merge-base — code that was already committed and pushed before is not part of the diff scan.",
+    "tabs": {
+      "github": "PR reviews on GitHub",
+      "cli": "Terminal & editor"
+    },
+    "steps": {
+      "installApp": {
+        "title": "Install the GitHub App",
+        "description": "Authorize the official Unslop GitHub App for your repositories.",
+        "action": "Install GitHub App"
+      },
+      "activateRepo": {
+        "title": "Activate a repository",
+        "description": "Use the Activate button in the repository list below."
+      },
+      "openPr": {
+        "title": "Open a pull request",
+        "description": "The review appears as a check directly on the PR."
+      },
+      "installCli": {
+        "title": "Install the CLI"
+      },
+      "login": {
+        "title": "Sign in"
+      },
+      "firstScan": {
+        "title": "Run your first scan"
+      }
+    },
+    "guide": {
+      "intro": "Pick how you want to use Unslop — both paths end at your first scan result. The progress below is derived live from your account.",
+      "github": {
+        "installApp": "The GitHub App posts reviews as native checks on your pull requests. Install it once for your account or organization and choose which repositories it may see.",
+        "activateRepo": "Activating a repository registers it with the Gatekeeper and starts a one-time index of its API surface. Only activated repositories are reviewed.",
+        "openPr": "From now on every pull request is reviewed automatically — findings land as a check run and as review comments on the PR."
+      },
+      "cli": {
+        "installCli": "The CLI runs the same review pipeline against your local changes, before anything reaches a pull request.",
+        "login": "This opens the dashboard in your browser and stores an API key for this machine. You can inspect and revoke keys at any time under API Keys.",
+        "firstScan": "Scans your tracked changes against the merge-base and prints the findings in the terminal — zero configuration."
+      },
+      "extensionTitle": "VS Code extension",
+      "extensionBody": "The extension shows findings directly in the editor and lets you review and apply fixes without leaving it. It uses the same sign-in as the CLI.",
+      "extensionInstall": "Install it from the VS Code Marketplace and click the shield in the status bar to scan.",
+      "ciNote": "CI note: unslop scan exits with a non-zero code when a CRITICAL finding is confirmed — the build fails."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "activeBadge": "{count} active",
+    "signOut": "Sign out",
+    "scansPausedBanner": "Scans are paused — no active subscription or trial. <trialLink>Start your 14-day trial</trialLink>",
+    "yourRepositories": "Your repositories",
+    "installGitHubApp": "Install GitHub App",
+    "refresh": "Refresh",
+    "refreshing": "Loading…",
+    "loadingRepos": "Loading repositories…",
+    "noRepos": "No repositories found.",
+    "signInAgain": "Sign in again",
+    "tryAgain": "Try again",
+    "statusActive": "Gatekeeper active",
+    "statusSyncing": "Syncing…",
+    "statusError": "Error",
+    "statusPendingActivation": "GitHub App installed — not yet activated",
+    "statusNotConnected": "Not connected",
+    "privateBadge": "Private",
+    "prReviewsBadge": "PR Reviews",
+    "prReviewsTooltip": "Webhook registered — PRs are reviewed automatically",
+    "cliOnlyBadge": "CLI only",
+    "cliOnlyTooltip": "No webhook registered — reviews via CLI scan only. Can be enabled on the repository detail page.",
+    "detailsLink": "Details",
+    "band": {
+      "quotaLabel": "Scans this month",
+      "quotaTrialLabel": "Trial scans",
+      "quotaValue": "{used} / {limit}",
+      "activeReposLabel": "Active repositories",
+      "lastScanLabel": "Last scan",
+      "lastScanNone": "No scans yet"
+    },
+    "lastScan": {
+      "never": "never scanned",
+      "clean": "{relativeTime} · ✓ no slop",
+      "slop": "{relativeTime} · ✗ {count, plural, one {# finding} other {# findings}}",
+      "neutral": "{relativeTime} · — nothing reviewed"
+    },
+    "webhook": {
+      "description": "Automatic PR reviews run through a repo webhook (via GitHub OAuth, admin rights required). CLI scans work independently.",
+      "checking": "Checking webhook on GitHub…",
+      "recheck": "Recheck",
+      "enablePrReviews": "Enable PR reviews",
+      "repairWebhook": "Repair webhook",
+      "settingUp": "Setting up…",
+      "staleUrlDetail": "Registered: <registered>{hookUrl}</registered> — expected: <expected>{expectedUrl}</expected>",
+      "health": {
+        "healthy": "Active",
+        "app_managed": "GitHub App",
+        "not_configured": "Not set up",
+        "broken_missing": "Webhook deleted",
+        "broken_stale_url": "Stale URL",
+        "broken_delivery": "Delivery disrupted"
+      },
+      "errors": {
+        "healthCheckFailed": "Health check failed.",
+        "webhookSetupFailed": "Webhook setup failed.",
+        "network": "Network error"
+      }
+    },
+    "errors": {
+      "connected": "GitHub App connected. Your repositories will appear here shortly.",
+      "not_owner": "This installation belongs to a GitHub account you don't manage. For organizations you must be an owner (admin) of the organization.",
+      "already_linked": "This installation is already linked to another Unslop account.",
+      "reauth_required": "We can't check your organization role yet. Sign in again and reopen the installation afterwards.",
+      "link_failed": "The installation could not be linked.",
+      "sync_failed": "The installation is linked, but your repositories could not be fully loaded.",
+      "invalid_installation": "Invalid installation ID.",
+      "not_configured": "The GitHub App is not configured in this environment.",
+      "reposLoadFailed": "Repositories could not be loaded.",
+      "network": "Network error",
+      "connectFailed": "Connection failed.",
+      "disconnectFailed": "Disconnect failed.",
+      "repository_empty": "Repository is empty — push a first commit.",
+      "unknown": "Something went wrong."
+    }
+  },
+  "repoActions": {
+    "activate": "Activate",
+    "connecting": "Connecting…",
+    "syncing": "Syncing…",
+    "reconnect": "Reconnect"
+  },
+  "repoDetail": {
+    "backToRepos": "← Repos",
+    "viewOnGitHub": "View on GitHub",
+    "webhookHeading": "PR webhook",
+    "history": {
+      "heading": "Scan history",
+      "refresh": "Refresh",
+      "refreshing": "Loading…",
+      "loading": "Loading scan history…",
+      "loadFailed": "Scan history could not be loaded.",
+      "empty": "No scans yet — open a pull request and the first review will show up here.",
+      "loadMore": "Load older scans",
+      "loadingMore": "Loading…",
+      "prLink": "PR #{number}",
+      "localScan": "Local scan",
+      "integrity": "Integrity {score}",
+      "statusRunning": "Running…",
+      "statusError": "Scan failed",
+      "verdictClean": "✓ no slop",
+      "verdictSlop": "✗ {count, plural, one {# finding} other {# findings}}",
+      "verdictNeutral": "— nothing reviewed",
+      "toggleFindings": "Findings"
+    },
+    "findings": {
+      "sourcePrescan": "Pre-scan",
+      "sourceLlm": "LLM",
+      "confidence": "Confidence {value}"
+    },
+    "dangerZone": {
+      "heading": "Danger zone",
+      "description": "Deactivating stops PR reviews for this repository immediately.",
+      "deactivate": "Deactivate repository"
+    }
+  },
+  "confirmDialogs": {
+    "deactivateRepo": {
+      "title": "Deactivate repository?",
+      "body": "PR reviews for {fullName} stop immediately. You can reactivate the repository at any time.",
+      "confirm": "Deactivate",
+      "busy": "Deactivating…",
+      "cancel": "Cancel"
+    },
+    "revokeKey": {
+      "title": "Revoke API key?",
+      "body": "<name>{label}</name> (<code>{prefix}</code>) will stop working immediately for CLI, IDE extension, and CI.",
+      "lastUsed": "Last used {relativeTime}.",
+      "neverUsed": "This key has never been used.",
+      "irreversible": "This cannot be undone.",
+      "confirm": "Revoke key",
+      "busy": "Revoking…",
+      "cancel": "Cancel"
+    },
+    "cancelSubscription": {
+      "title": "Cancel subscription?",
+      "body": "Your subscription runs until {date}. After that, scans stop.",
+      "resumeNote": "You can resume the subscription at any time before then.",
+      "confirm": "Cancel subscription",
+      "cancel": "Keep subscription"
+    }
+  },
+  "toasts": {
+    "close": "Dismiss",
+    "repoActivated": "{fullName} activated — first sync is running.",
+    "keyCreated": "API key created.",
+    "reviewsStopped": "PR reviews for {fullName} stopped."
+  },
+  "installAppModal": {
+    "title": "GitHub App Required",
+    "body": "To activate Unslop Gatekeeper for <name>{repoName}</name>, you must authorize our official GitHub App on this repository.",
+    "costNote": "After installation you'll return here and the repository can be activated. Indexing only starts then — installing alone costs nothing.",
+    "install": "Install GitHub App",
+    "later": "Later"
+  },
+  "billing": {
+    "heading": "Billing",
+    "intro": "Scans require an active subscription or trial. Payment, invoices, and tax are handled by Paddle.",
+    "loadError": "Could not load billing status.",
+    "actionError": "The billing action failed. Try again.",
+    "currentPlan": "Current plan",
+    "cancellationNotice": "⚠️ Cancellation scheduled — access ends {date}. You can resume the subscription until then.",
+    "resubscribe": "Resubscribe",
+    "startTrial": "Start 14-day trial",
+    "cancelSubscription": "Cancel subscription",
+    "resumeSubscription": "Resume subscription",
+    "processingCheckout": "Payment received — activating your subscription…",
+    "processingTimeout": "Payment received — activation is taking a little longer. Reload this page in a moment.",
+    "showInvoices": "Show invoices",
+    "invoicesLoading": "Loading invoices…",
+    "invoicesEmpty": "No invoices yet.",
+    "invoiceDownload": "PDF",
+    "scansThisMonth": "{used} / {limit} scans used this month",
+    "trialScansOnly": "Trial: {used} / {limit} scans used",
+    "trialScansAndEscalations": "Trial: {scansUsed} / {scansLimit} scans used · {escalationsUsed} / {escalationsLimit} deep escalations used",
+    "trialLimitReached": "Trial limit reached — upgrade to continue scanning.",
+    "trialLimitInfo": "Trial limits apply for the whole trial period, not per month.",
+    "status": {
+      "none": "No subscription — scans are paused",
+      "trialing": "{planName} — trial until {date}",
+      "active": "{planName} — active, renews {date}",
+      "pastDue": "Payment failed — scans are paused until payment succeeds",
+      "paused": "Subscription paused — scans are paused",
+      "canceled": "Subscription ended — resubscribe to resume scans",
+      "complimentary": "Complimentary access",
+      "unknown": "{status} — scans are paused"
+    }
+  },
+  "apiKeys": {
+    "heading": "API Keys",
+    "intro": "Machine credentials for the CLI, IDE extension, and CI. Keys are shown once at creation.",
+    "loadError": "Could not load API keys.",
+    "createError": "Key creation failed.",
+    "revokeError": "Key revocation failed.",
+    "labelPlaceholder": "Label (e.g. laptop-cli, ci-pipeline)",
+    "create": "Create key",
+    "creating": "Creating…",
+    "copyOnce": "Copy this key now — it will not be shown again:",
+    "active": "Active",
+    "revoked": "Revoked",
+    "lastUsed": "Last used {date}",
+    "neverUsed": "Never used",
+    "revoke": "Revoke",
+    "empty": "No API keys yet."
+  },
+  "cliAuth": {
+    "heading": "Authorize the unslop CLI",
+    "intro": "A terminal on this machine (<device>{deviceLabel}</device>) is requesting an API key. The key is created for your account and sent to <host>{callbackHost}</host> — it never leaves your computer.",
+    "needsSubscription": "You need an active subscription or trial to create API keys. <billingLink>Open billing</billingLink>, then run <cmd>unslop login</cmd> again.",
+    "keyLimit": "API key limit reached — revoke an unused key under <keysLink>API Keys</keysLink> first.",
+    "failed": "Authorization failed. Try again.",
+    "authorizing": "Authorizing…",
+    "authorize": "Authorize CLI"
+  },
+  "marketing": {
+    "meta": {
+      "title": "Unslop — Review gate for AI-generated code",
+      "description": "Unslop reviews AI-generated code on every pull request: deterministic checks first, then a model review whose findings a second model re-checks blind. Every finding names its rule. In private beta.",
+      "ogTitle": "Review gate for AI-generated code",
+      "ogTagline": "Deterministic checks first. Model findings re-checked blind. Skipped stages reported."
+    },
+    "a11y": {
+      "skipToContent": "Skip to content",
+      "mainNavigation": "Main navigation",
+      "languageSwitcher": "Language"
+    },
+    "nav": {
+      "findings": "Findings",
+      "mechanism": "How it works",
+      "architecture": "Platform",
+      "faq": "FAQ",
+      "login": "Log in"
+    },
+    "hero": {
+      "eyebrow": "Review gate for AI-generated code",
+      "headline": "Looks fine in review. <accent>Breaks in production.</accent>",
+      "bluf": "Unslop reviews every pull request for the ways AI-written code fails: swallowed errors, packages that don’t exist, SQL built from strings, tests that assert nothing.",
+      "sub": "A deterministic pre-scan runs first. Then a model reviews the diff, and a second model re-checks its findings without seeing the first one’s reasoning. Every finding names its rule and quotes the code.",
+      "status": "Private beta. Sign-up is closed, and the CLI, the editor extension and the MCP server are not published yet.",
+      "ctaPrimary": "See a real finding",
+      "ctaSecondary": "How the verdict is made",
+      "tagline": "Show the finding. Explain the verdict. Say what was skipped.",
+      "exhibitCaption": "Real output, not a mock-up: the check run and the review comment on pull request #20 in our own test repository, 2026-09-30. This finding comes from the deterministic pre-scan."
+    },
+    "findings": {
+      "eyebrow": "Show, don’t claim",
+      "heading": "Two more findings, copied as stored",
+      "intro": "Both come from scans of our own test repository. Rule, quoted code, explanation and fix are product output, unedited. The product writes its findings in English.",
+      "quoteLabel": "Quoted code",
+      "fixLabel": "Suggested fix",
+      "cards": {
+        "confirmed": {
+          "label": "Model finding, confirmed by the blind re-check",
+          "caption": "CLI scan of 2026-09-17, job 0cf82b14. The reviewing model drafted the finding. The second model confirmed it from the rule and the quoted code alone."
+        },
+        "downgraded": {
+          "label": "Model finding, downgraded because a stage was skipped",
+          "caption": "Pull request #17, 2026-09-26, job f2c676ba. For this run we cut the time budget to 150 seconds on purpose, to exercise this path. The third pass did not run, so the finding was downgraded to a warning, and the comment says why."
+        }
+      },
+      "measurement": {
+        "eyebrow": "Our own measurement",
+        "heading": "One number, with its limits",
+        "result": "<strong>125 of 126</strong> planted rule violations found, <strong>0</strong> false positives on 4 clean control fixtures.",
+        "method": "Method: our rule-recall benchmark. We plant known violations in test fixtures and count one as found when the pre-scan or the model review reports the expected rule in the expected file.",
+        "run": "Run: 2026-09-16, one full run. Models: Gemini 3.8 Flash for the review, Gemini 3.6 Flash for the blind re-check.",
+        "limits": "Limits: we wrote the fixtures ourselves; these are not customer repositories. It is a single run, and results vary between runs. The benchmark runs without a time budget and without repository context, and it sends every fixture file to the model review. In production the model review reads only TypeScript and JavaScript files, and 69 of the 126 violations sit in other file types, which the model does not see in a real pull request. On a larger fixture with 48 planted violations (2026-09-29, two runs) the result was 46 of 48 both times. The model for the third pass has changed since this run."
+      }
+    },
+    "pillarDeterministic": {
+      "eyebrow": "Deterministic first",
+      "header": "55 rules are checked by code, not by a model.",
+      "paragraphDetectors": "The pre-scan runs before any model call. It uses pattern matchers, syntax-tree queries, config checks, lint rules and package-registry lookups, and it has a detector for <strong>55 rule IDs</strong>.",
+      "paragraphNoRejudge": "A model never re-judges a deterministic finding. If the model reports the same rule at the same place, the deterministic finding wins. In the result it is marked <strong>deterministic</strong>."
+    },
+    "pillarModel": {
+      "eyebrow": "Model review, re-checked blind",
+      "header": "A second model re-checks each finding without the first one’s reasoning.",
+      "paragraphDraft": "The rule catalogue has <strong>119 entries</strong>. Rules without a detector need judgement, so a model reviews the diff against the rules that apply to your stack. Some rules describe process and cannot be checked on a diff at all. What the model reports is a claim, not yet a finding.",
+      "paragraphBlind": "A second model gets only the rule, the location, the quoted code and the diff. It does not see the first model’s explanation, severity or fix. It answers <strong>confirmed</strong>, <strong>refuted</strong> or <strong>uncertain</strong>. Refuted claims are removed. Uncertain ones, and critical ones that are refuted or weakly confirmed, get a third pass. What stays uncertain becomes a warning and says so.",
+      "paragraphHonest": "Two things to know. All models are Gemini models from one vendor: the independence comes from what the second model is not shown, not from a different model family. And not every finding gets the blind re-check: large diffs can be reviewed in a single pass without it, and the review then says so."
+    },
+    "pillarDegradation": {
+      "eyebrow": "When a stage is skipped",
+      "header": "A skipped stage is reported, not hidden.",
+      "paragraphBudget": "Every review has a time budget of <strong>300 seconds</strong>. When the re-check or the third pass cannot run because of time, a model error or an exhausted budget, the findings are not passed off as verified. A finding that was waiting for the third pass is downgraded to a warning with a note. If the re-check did not run, the confidence score reads n/a instead of a number.",
+      "paragraphNotice": "The pull request, the check run and the CLI then carry the same line, for example: “Reduced confidence: time budget exhausted — skipped: blind verification (some or all findings).” If the model review fails on some files, those files are listed by name.",
+      "punchlineLabel": "From the CLI",
+      "punchline": "“Nothing was reviewed — this is NOT a clean verdict.”"
+    },
+    "verdictTable": {
+      "eyebrow": "Who decides",
+      "heading": "Which part of the verdict comes from where",
+      "columnCheck": "Question",
+      "columnPrescan": "Deterministic pre-scan",
+      "columnModel": "Model review",
+      "rows": {
+        "rules": {
+          "check": "Rules",
+          "prescan": "55 rule IDs with a detector",
+          "model": "Rules that need judgement, from a catalogue of 119"
+        },
+        "production": {
+          "check": "How a finding is produced",
+          "prescan": "Code: patterns, syntax tree, config checks, lint rules, registry lookups",
+          "model": "One model drafts it, a second model re-checks it blind"
+        },
+        "files": {
+          "check": "Files",
+          "prescan": "TypeScript, JavaScript, Python, Java, Go, Rust, C and C++, plus config files such as YAML, JSON, Terraform and TOML",
+          "model": "TypeScript and JavaScript only"
+        },
+        "gate": {
+          "check": "Can it fail the check?",
+          "prescan": "Yes. A CRITICAL finding fails the check.",
+          "model": "Yes. A CRITICAL finding fails the check, so a verdict can rest on a model finding."
+        },
+        "label": {
+          "check": "Marked in the result as",
+          "prescan": "deterministic",
+          "model": "confirmed, uncertain or unverified"
+        }
+      }
+    },
+    "problems": {
+      "eyebrow": "The problem",
+      "heading": "What gets through review",
+      "items": {
+        "swallowedErrors": {
+          "claim": "“It ran without errors.”",
+          "rebuttal": "Because the error was caught and dropped. A catch block that logs and returns null looks tidy in a diff and hides the failure in production. The confirmed finding above is exactly this."
+        },
+        "inventedPackages": {
+          "claim": "“The import looked plausible.”",
+          "rebuttal": "The package name was made up. Unslop looks up the dependencies declared in package.json, requirements.txt, pyproject.toml and Cargo.toml on their registry (rule SEC-035)."
+        },
+        "greenTests": {
+          "claim": "“The tests are green.”",
+          "rebuttal": "A test without an assertion is always green. Assertion-free tests are one of the deterministic rules (TEST-001)."
+        },
+        "unreadDiff": {
+          "claim": "“I didn’t read all forty files.”",
+          "rebuttal": "The agent changed more than anyone read. Unslop reviews every push to the pull request again and comments on the line in question."
+        }
+      }
+    },
+    "architectureSpec": {
+      "eyebrow": "Platform",
+      "heading": "One review, four surfaces",
+      "intro": "Pull request, terminal, editor, coding agent.",
+      "rows": {
+        "rules": {
+          "term": "Rule catalogue",
+          "definition": "119 rules, each with an ID. 55 have a deterministic detector. The model review is given the rules that apply to your stack; some rules describe process and cannot be checked on a diff."
+        },
+        "enforcement": {
+          "term": "PR gate",
+          "definition": "GitHub App. Every review is a check run named “Anti-Slop Gatekeeper” plus comments on the lines. A CRITICAL finding fails the check; warnings conclude as neutral."
+        },
+        "retrieval": {
+          "term": "Repository context",
+          "definition": "For connected repositories, signatures and type definitions from your code are retrieved as context for the model. They inform the review; they never excuse a rule violation."
+        },
+        "rescans": {
+          "term": "Every push",
+          "definition": "Each push to a pull request is reviewed on its own. There is no comparison with the previous revision."
+        },
+        "integration": {
+          "term": "CLI, editor, MCP",
+          "definition": "“unslop scan” reviews your local changes against the merge-base and can apply suggested fixes. The VS Code extension shows findings as diagnostics. An MCP server offers the scan to coding agents. All three are built and not published yet."
+        },
+        "webhooks": {
+          "term": "Webhook security",
+          "definition": "Every GitHub webhook is verified by its HMAC-SHA256 signature."
+        },
+        "tokens": {
+          "term": "Encryption",
+          "definition": "GitHub OAuth tokens are encrypted at rest with AES-256-GCM. API keys are stored as hashes."
+        },
+        "planned": {
+          "term": "Planned (concept)",
+          "definition": "Not built yet: failing the check when a revision raises findings over the previous one, and a second model vendor for the re-check."
+        },
+        "limits": {
+          "term": "Honest limits",
+          "definition": "Nothing catches every flaw in AI-written code, and neither do we. The model review reads TypeScript and JavaScript only, and its results vary between runs."
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "heading": "Frequently asked questions",
+      "items": {
+        "sourceCode": {
+          "question": "Do you store or train on our source code?",
+          "answer": "We don’t train on it, and neither does Google: the Vertex AI service terms exclude using customer prompts and responses to train Google’s models. The review models run on the EU multi-region endpoint of Vertex AI, for which Google guarantees that ML processing stays inside EU member states. For a pull request we read the diff and the changed files from GitHub for the review, and we store the findings with the quoted lines, not the diff. A scan from the CLI or the MCP server uploads a diff, and that diff is stored with the scan; before the upload, the client refuses any diff in which it detects a secret. The repository index is built from signatures, interfaces and type definitions rather than implementation logic. GitHub OAuth tokens are encrypted at rest with AES-256-GCM."
+        },
+        "ciSpeed": {
+          "question": "Will this slow down our CI/CD or block our merges?",
+          "answer": "It runs next to your CI, not inside it. The webhook returns as soon as the review is registered; the review then runs as a GitHub check run with a hard limit of 300 seconds. Only CRITICAL findings fail the check; warnings conclude as neutral and do not block a merge. Whether the check is required is your branch-protection setting."
+        },
+        "adoption": {
+          "question": "Does my team need to learn another dashboard?",
+          "answer": "No. Findings appear as a check run and as review comments on the pull request. The CLI diffs your tracked changes against the merge-base, and the VS Code extension shows findings and applies suggested fixes in the editor; both are built and not published yet. The dashboard is for repositories, scan history, API keys and billing."
+        },
+        "determinism": {
+          "question": "Is this just another AI reviewer?",
+          "answer": "Partly, and we say which part. 55 rules are checked by deterministic detectors, and those findings never pass through a model. The rest is a model review, and a finding from it can fail the check. That is why a second model re-checks the findings without seeing the first one’s reasoning, and why the review states when that re-check did not happen. Model calls run at temperature 0; results still vary somewhat between runs."
+        },
+        "languages": {
+          "question": "Which languages are covered?",
+          "answer": "The model review reads TypeScript and JavaScript files. The deterministic pre-scan also covers Python, Java, Go, Rust, C and C++ and common config files. Today a pull request is only reviewed if it contains at least one TypeScript or JavaScript file; otherwise the check concludes as neutral with “Nothing to review”."
+        },
+        "outage": {
+          "question": "What happens when a review fails?",
+          "answer": "The check is closed, not left hanging. A failed review concludes as a failure with the reason in the check, for example “Review timed out”. A review that is not started (no subscription, quota used up, repository deactivated) posts a completed check with the conclusion “action required” that says why. If you made the check required, GitHub’s branch-protection overrides still apply."
+        }
+      }
+    },
+    "closingCta": {
+      "heading": "Show the finding. Explain the verdict. Say what was skipped.",
+      "sub": "Unslop is in private beta. Sign-up is closed for now.",
+      "button": "Back to the findings",
+      "secondary": "Log in"
+    },
+    "waitlist": {
+      "emailLabel": "Email address",
+      "placeholder": "you@company.com",
+      "button": "Join the waitlist",
+      "sending": "Sending…",
+      "sent": "Check your inbox and confirm the link. Then you’re on the list.",
+      "invalidEmail": "Please enter a valid email address.",
+      "rateLimited": "Too many attempts from this network. Try again in an hour.",
+      "error": "That didn’t go through. Please try again in a moment.",
+      "consent": "Double opt-in. We email you when the private beta opens, nothing else. <privacy>Privacy policy</privacy>",
+      "confirmed": {
+        "title": "You’re on the list — Unslop",
+        "heading": "You’re on the list.",
+        "body": "Your email is confirmed. We’ll write when the private beta opens.",
+        "backLink": "Back to unslop.codes"
+      }
+    },
+    "footer": {
+
+      "tagline": "Review gate for AI-generated code.",
+      "languageLabel": "Language",
+      "languageEnglish": "English",
+      "languageGerman": "Deutsch",
+      "loginLink": "Log in",
+      "dashboardLink": "Dashboard",
+      "rights": "© {year} Unslop. All rights reserved."
+    },
+    "legal": {
+      "navLabel": "Legal",
+      "links": {
+        "impressum": "Legal Notice (Impressum)",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "refund": "Refunds",
+        "dpa": "DPA"
+      },
+      "titles": {
+        "impressum": "Legal Notice (Impressum)",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "refund": "Refund Policy",
+        "dpa": "Data Processing Agreement"
+      }
+    }
+  }
+}

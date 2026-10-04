@@ -1,0 +1,30 @@
+{
+  "name": "@unslopcodes/mcp",
+  "version": "0.1.0",
+  "description": "unslop MCP server — let your coding agent submit its uncommitted work to the Anti-AI-Slop Gatekeeper before it reaches a pull request.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "unslop-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && esbuild src/index.ts --bundle --platform=node --format=esm --external:@modelcontextprotocol/sdk --external:zod --outfile=dist/index.js --log-level=warning && tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@unslop/shared": "0.1.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5"
+  }
+}
