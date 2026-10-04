@@ -28,6 +28,9 @@ const nextConfig: NextConfig = {
       "./node_modules/web-tree-sitter/*.wasm",
       "./node_modules/tree-sitter-wasms/out/*.wasm",
     ],
+    // Rechtsseiten (LEGAL_PAGES_SPEC.md §5.3): die Markdown-Quellen werden
+    // zur Laufzeit per fs gelesen, nicht importiert.
+    "/[locale]/[legalSlug]": ["./src/content/legal/*.md"],
   },
 };
 

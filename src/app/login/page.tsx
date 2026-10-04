@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { MARKETING_SOURCES } from '@/app/(marketing)/marketing-sources';
+import { LegalLinks } from '@/app/(marketing)/components/LegalLinks';
+import { DEFAULT_LOCALE, isSupportedLocale } from '@/i18n/config';
 import { LocaleSwitcher } from '../components/LocaleSwitcher';
 import { GitHubLoginButton } from './GitHubLoginButton';
 
@@ -36,7 +38,8 @@ export default async function LoginPage() {
 async function AuthPanel() {
   const loginText = await getTranslations('login');
   const footerText = await getTranslations('marketing.footer');
-  const visitorLocale = await getLocale();
+  const requestLocale = await getLocale();
+  const visitorLocale = isSupportedLocale(requestLocale) ? requestLocale : DEFAULT_LOCALE;
 
   return (
     <div className="flex flex-col px-8 py-8 sm:px-12">
@@ -55,7 +58,8 @@ async function AuthPanel() {
       <div className="flex flex-1 items-center py-16">
         <AuthCard />
       </div>
-      <p className="text-xs text-zinc-600">
+      <LegalLinks locale={visitorLocale} className="flex flex-wrap gap-x-5 gap-y-1 text-xs" />
+      <p className="mt-3 text-xs text-zinc-600">
         {footerText('rights', { year: new Date().getFullYear() })}
       </p>
     </div>

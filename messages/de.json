@@ -15,7 +15,7 @@
     "back": "Zurück",
     "subtitle": "Melde dich an, um deine Repositories zu verbinden.",
     "loginWithGitHub": "Mit GitHub anmelden",
-    "scopesNotice": "Wir fordern die Scopes <repo>repo</repo>, <hook>admin:repo_hook</hook> und <org>read:org</org> an, um deine Repositories zu lesen, Webhooks zu verwalten und die Berechtigung für Organisations-Installationen zu prüfen."
+    "scopesNotice": "Wir fordern die Scopes <repo>repo</repo>, <hook>admin:repo_hook</hook> und <org>read:org</org> an, um deine Repositories zu lesen, Webhooks zu verwalten und die Berechtigung für Organisations-Installationen zu prüfen; die Anmeldung selbst liest deine GitHub-E-Mail-Adresse (user:email)."
   },
   "dashboardNav": {
     "brand": "Gatekeeper",
@@ -474,7 +474,7 @@
       "items": {
         "sourceCode": {
           "question": "Speichert oder trainiert ihr auf unserem Quellcode?",
-          "answer": "Nein, beides nicht. Die Repository-Indizierung extrahiert nur die API-Oberfläche — exportierte Signaturen, Interfaces, Typdefinitionen — niemals Implementierungscode. Reviews arbeiten auf dem Diff der Änderung, geladen zum Review-Zeitpunkt. Die Inferenz läuft auf Google Vertex AI, dessen Bedingungen Training auf Kunden-Prompts ausschließen, gepinnt auf die EU-Region (europe-west3) — mit einer dokumentierten Ausnahme: Das Pro-Eskalationsmodell läuft derzeit auf Vertex’ globalem Endpoint, bis Google es in der EU bereitstellt. GitHub-Tokens werden at rest mit AES-256-GCM verschlüsselt."
+          "answer": "Wir trainieren nicht darauf, und Google auch nicht: Die Inferenz läuft auf Google Vertex AI unter Bedingungen, die Training auf Kunden-Prompts ausschließen, über den EU-Endpunkt mit garantierter Verarbeitung in EU-Mitgliedstaaten. Gespeichert wird aber: Die Repository-Indizierung behält nur die API-Oberfläche — exportierte Signaturen, Interfaces, Typdefinitionen — niemals Implementierungscode; Reviews arbeiten auf dem Diff der Änderung, und die Findings (mit den zitierten Zeilen) sowie bei CLI- und MCP-Scans der übermittelte Diff bleiben als deine Scan-Historie erhalten. GitHub-Tokens werden at rest mit AES-256-GCM verschlüsselt. Details in der Datenschutzerklärung."
         },
         "ciSpeed": {
           "question": "Bremst das unsere CI/CD oder blockiert es unsere Merges?",
@@ -546,6 +546,23 @@
       "loginLink": "Anmelden",
       "dashboardLink": "Dashboard",
       "rights": "© {year} Unslop. Alle Rechte vorbehalten."
+    },
+    "legal": {
+      "navLabel": "Rechtliches",
+      "links": {
+        "impressum": "Impressum",
+        "privacy": "Datenschutz",
+        "terms": "Nutzungsbedingungen",
+        "refund": "Erstattung",
+        "dpa": "AVV"
+      },
+      "titles": {
+        "impressum": "Impressum",
+        "privacy": "Datenschutzerklärung",
+        "terms": "Nutzungsbedingungen",
+        "refund": "Erstattungsrichtlinie",
+        "dpa": "Auftragsverarbeitungsvertrag"
+      }
     }
   }
 }
