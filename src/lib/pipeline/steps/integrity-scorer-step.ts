@@ -7,6 +7,12 @@
  * KONFIDENZ DES REVIEWS, nicht die Code-Qualität — er gated nie den Check (D9).
  */
 import { claimIdForIssueIndex } from '@/lib/pipeline/claim-verification';
+import {
+    buildFinalStateSummary,
+    haveDraftFindingsChanged,
+    type VerdictOutcomeCounts,
+} from '@/lib/pipeline/final-summary';
+import { collectReportableIssues } from '@/lib/pipeline/helpers';
 import type { IssueVerification } from '@unslop/shared';
 import type {
     CascadeState,
@@ -28,6 +34,9 @@ const WARNING_SCORE_WEIGHT = 1;
  * unbestätigten Finding (ROADMAP To-Do §3, entschieden 2026-09-17).
  */
 const UNCERTAIN_CLAIM_CONFIDENCE = 50;
+
+/** Herkunft der verifizierten Draft-Claims; Second-Opinion-Issues sind verdict-los. */
+const DRAFT_ISSUE_SOURCE = 'draft-reviewer';
 
 // =============================================================================
 // Step Implementation
@@ -58,7 +67,7 @@ export const integrityScorerStep: PipelineStep = {
         // Second-Opinion-Issues zählen hier NICHT: sie sind bewusst verdict-los
         // und tragen self-reported Pro-Confidence (LLM_LANE_QUALITY_SPEC §4.4) —
         // ein Draft ohne Findings plus Pro-Zweitmeinung ist kein degradierter Lauf.
-        const draftIssues = context.issues.filter((issue) => issue.source === 'draft-reviewer');
+        const draftIssues = context.issues.filter((issue) => issue.source === DRAFT_ISSUE_SOURCE);
         if (draftIssues.length > 0 && context.cascade.verdicts.length === 0) {
             console.log(`[IntegrityScorer] Keine Verdicts vorhanden — Score n/a (Job ${context.jobId}).`);
             return {
@@ -74,7 +83,7 @@ export const integrityScorerStep: PipelineStep = {
             `${verdictApplication.downgradedCount} auf WARNING downgraded (Job ${context.jobId}).`,
         );
 
-        return finalizeScore(context, verdictApplication.survivingIssues);
+        return finalizeScore(context, verdictApplication.survivingIssues, verdictApplication);
     },
 };
 
@@ -220,6 +229,7 @@ function labelIssueWithoutVerdict(issue: PipelineIssue): PipelineIssue {
 function finalizeScore(
     context: PipelineContext,
     survivingIssues: readonly PipelineIssue[],
+    verdictOutcome: VerdictOutcomeCounts = NO_VERDICT_OUTCOME,
 ): PipelineContext {
     // D7: ein nur teilweise gelaufener Verifier hätte nur die verifizierten
     // Claims gezählt — die Zahl würde lügen. Ehrlich ist null.
@@ -230,19 +240,34 @@ function finalizeScore(
         `(${survivingIssues.length} Issues, Job ${context.jobId}).`,
     );
 
-    // Wurden ALLE Draft-Findings verworfen, ist die Draft-Summary
-    // ("AI slop detected: ...") faktisch falsch — ersetzen statt widersprechen.
-    const allDraftFindingsDismissed = context.issues.length > 0 && survivingIssues.length === 0;
-    const reviewSummary = allDraftFindingsDismissed
-        ? 'All draft findings were refuted during independent blind verification — no confirmed AI slop.'
-        : context.reviewSummary;
-
     return {
         ...context,
         issues: survivingIssues,
-        reviewSummary,
+        reviewSummary: resolveFinalSummary(context, survivingIssues, verdictOutcome),
         cascade: { ...context.cascade, integrityScore },
     };
+}
+
+const NO_VERDICT_OUTCOME: VerdictOutcomeCounts = { refutedCount: 0, downgradedCount: 0 };
+
+/**
+ * A12a (SPEC.md §12.4): die Draft-Summary (oder deren Second-Opinion-Ersatz)
+ * bleibt nur, solange jedes Draft-Finding unverändert überlebt hat. Sonst
+ * zählt das Template genau die Issues, die Reporter und Persister melden —
+ * inklusive der Prescan-Lane, sonst behauptete "no confirmed AI slop" das
+ * Gegenteil der deterministischen Findings daneben.
+ */
+function resolveFinalSummary(
+    context: PipelineContext,
+    survivingIssues: readonly PipelineIssue[],
+    verdictOutcome: VerdictOutcomeCounts,
+): string {
+    const draftIssuesBefore = context.issues.filter((issue) => issue.source === DRAFT_ISSUE_SOURCE);
+    const draftIssuesAfter = survivingIssues.filter((issue) => issue.source === DRAFT_ISSUE_SOURCE);
+    if (!haveDraftFindingsChanged(draftIssuesBefore, draftIssuesAfter)) return context.reviewSummary;
+
+    const reportableIssues = collectReportableIssues({ ...context, issues: [...survivingIssues] });
+    return buildFinalStateSummary(reportableIssues, verdictOutcome);
 }
 
 /**
