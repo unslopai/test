@@ -13,18 +13,16 @@ import {
     buildGate001VerificationQuestion,
     isGatekeeperRule,
     normalizeGatekeeperIssue,
+    orderGatekeeperClaimsFirst,
 } from '@/lib/pipeline/gatekeeper-rules';
 import { validateIssuesAgainstManifest } from '@/lib/pipeline/issue-validation';
-import { orderGatekeeperClaimsFirst } from '@/lib/pipeline/steps/escalation-reviewer-step';
 import { buildPullRequestFile, buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
 
-// Transitiv über claim-verification und den Eskalations-Step: Telemetrie,
-// Supabase, Vertex, Law und Billing werfen ohne Env-Variablen beim Import.
+// Transitiv über claim-verification (Envelope-Call und Telemetrie): Supabase
+// und Vertex werfen ohne Env-Variablen beim Import.
 vi.mock('@/lib/telemetry/llm-call-log', () => ({ recordLlmCall: vi.fn(() => Promise.resolve()) }));
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 vi.mock('@/lib/vertex', () => ({ getVertexClient: vi.fn(), getVertexEuClient: vi.fn(), getVertexGlobalClient: vi.fn() }));
-vi.mock('@/lib/law', () => ({ fetchRenderedLawBlock: vi.fn() }));
-vi.mock('@/lib/billing/entitlements', () => ({ consumeProEscalationBudget: vi.fn() }));
 
 const injectionIssue = buildReviewIssue({
     rule: 'GATE-001 (Instruction Override)',

@@ -912,5 +912,14 @@
         "ruleContains": "SEC-016"
       }
     ]
+  },
+  "r25-clean-system-prompt.diff": {
+    "description": "Negative control for GATE-001 Known Risk 2 (SPEC.md 12.4): a legitimate SYSTEM_PROMPT constant of a customer-support assistant, written the way LLM-product teams keep prompts in source; measures whether the fixed verification question confirms a system prompt as an instruction override (expected: 0 findings)",
+    "detectedEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
+    "negativeControl": true,
+    "expected": []
   }
 }

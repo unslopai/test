@@ -120,3 +120,19 @@ export function keepUnresolvedGatekeeperIssue(
         critique: `${draftIssue.critique}\n\n${presentation.note.replace('{reason}', skipReasonLabel)}`,
     };
 }
+
+/** Das, was den Eskalations-Batch für die Reihung interessiert: trägt der Claim die feste Prüffrage? */
+interface FixedQuestionBearer {
+    readonly fixedVerificationQuestion?: string;
+}
+
+/**
+ * A12c Regel 1: GATE-001-Claims (feste Prüffrage) zuerst — reicht das
+ * Zeitbudget nur für den ersten Eskalations-Batch, wird die Injection-Frage
+ * auf jeden Fall arbitriert. Sonst stabile Reihenfolge nach Claim-Index.
+ */
+export function orderGatekeeperClaimsFirst<TClaim extends FixedQuestionBearer>(markedClaims: readonly TClaim[]): TClaim[] {
+    const gatekeeperClaims = markedClaims.filter((markedClaim) => markedClaim.fixedVerificationQuestion !== undefined);
+    const otherClaims = markedClaims.filter((markedClaim) => markedClaim.fixedVerificationQuestion === undefined);
+    return [...gatekeeperClaims, ...otherClaims];
+}

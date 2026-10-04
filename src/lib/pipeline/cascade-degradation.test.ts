@@ -573,6 +573,27 @@ describe('cascade replay — GATE-001 instruction override (SPEC.md §12.4 A12c)
         expect(injectionIssue?.critique, 'the annotation names the skip reason').toContain('escalation budget exhausted');
     });
 
+    it('keeps a low-confidence CONFIRMED injection claim CRITICAL when the arbiter does not run (rule 6, Nachreview 2026-09-28)', async () => {
+        // CONFIRMED unter confidenceThreshold (70) markiert den CRITICAL-Claim
+        // zur Eskalation; fällt der Arbiter aus, lief der Claim vorher in den
+        // generischen escalation_skipped-Downgrade — und wurde WARNING.
+        consumeProEscalationBudgetMock.mockResolvedValue(false);
+        generateContentMock.mockResolvedValueOnce(buildVerdictLlmResponse([
+            { claim_id: 'c1', verdict: 'CONFIRMED', confidence: 55 },
+            { claim_id: 'c2', verdict: 'CONFIRMED', confidence: 80 },
+        ]));
+
+        const finalContext = await runCascadeTail(buildInjectionContext());
+        const injectionIssue = finalContext.issues.find((issue) => issue.rule.startsWith('GATE-001'));
+
+        expect(finalContext.cascade.escalationClaimIds, 'the low-confidence claim was marked').toContain('c1');
+        expect(finalContext.cascade.degradations).toContain('pro_budget_exhausted');
+        expect(injectionIssue?.severity, 'a confirmed instruction override is never WARNING').toBe('CRITICAL');
+        expect(injectionIssue?.verification).toBe('confirmed');
+        expect(injectionIssue?.confidence, 'carries the Flash verifier confidence').toBe(55);
+        expect(injectionIssue?.critique).not.toContain('Downgraded to WARNING');
+    });
+
     it('drops an injection claim only when the arbiter also refutes the fixed question', async () => {
         generateContentMock
             .mockResolvedValueOnce(buildVerdictLlmResponse([
