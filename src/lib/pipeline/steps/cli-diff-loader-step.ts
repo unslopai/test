@@ -9,6 +9,7 @@
 import { supabase } from '@/lib/supabase';
 import { isReviewableFile, buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { trimReviewableFiles } from '@/lib/pipeline/diff-utils';
+import { planUnreviewableDiff } from '@/lib/pipeline/review-scope';
 import type { PullRequestFile } from '@/lib/github';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
@@ -43,10 +44,9 @@ export const cliDiffLoaderStep: PipelineStep = {
                 ...context,
                 prFiles: parsedFiles,
                 omittedFiles: omittedFilePaths,
-                shouldAbort: true,
-                abortReason: omittedFilePaths.length > 0
-                    ? 'All changed code files exceed the review size cap.'
-                    : 'No reviewable code files in this diff.',
+                ...planUnreviewableDiff({
+                    changedFiles: parsedFiles, omittedFilePaths, surface: 'local_diff',
+                }),
             };
         }
 

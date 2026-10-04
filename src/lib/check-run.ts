@@ -193,3 +193,21 @@ export function deriveReviewConclusion(
         summary: 'This code meets the quality standards of the Anti-Slop Gatekeeper.',
     };
 }
+
+/**
+ * Urteil für einen Lauf ohne Modell-Review (LANGUAGE_COVERAGE_SPEC §6.2, E2).
+ * CRITICAL bleibt `failure` wie im vollen Review. Ohne Findings gibt es kein
+ * `success`: kein Modell hat die Dateien gelesen, der Check ist `neutral` und
+ * heißt „Deterministic checks only“. Das Score-Gate greift nicht, es gibt
+ * keinen Score.
+ */
+export function deriveDeterministicOnlyConclusion(
+    issues: readonly PipelineIssue[],
+    deterministicOnlySummary: string,
+): CheckRunResult {
+    if (issues.length === 0) {
+        return { conclusion: 'neutral', title: 'Deterministic checks only', summary: deterministicOnlySummary };
+    }
+    const findingsResult = deriveReviewConclusion(issues);
+    return { ...findingsResult, summary: `${findingsResult.summary}\n\n${deterministicOnlySummary}` };
+}

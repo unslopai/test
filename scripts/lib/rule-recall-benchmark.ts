@@ -30,7 +30,8 @@
  *
  * Zwei Pfade (LANGUAGE_COVERAGE_SPEC §7.1):
  *  - Produktionspfad (Default): das Modell bekommt nur, was `isReviewableFile`
- *    durchlaesst; eine Fixture ohne reviewbare Datei bricht ab wie der Webhook.
+ *    durchlaesst; eine Fixture ohne reviewbare Datei bekommt wie im Webhook nur
+ *    den Pre-Scan (Route `deterministic`) oder bricht ab (nur Prosa).
  *  - Modell-Potenzial (`--bypass-filter`): jede Fixture-Datei erreicht das
  *    Modell. Das ist der Modus aller Laeufe bis 2026-09-30.
  * Jeder Report nennt seinen Pfad und zaehlt die Treffer getrennt nach der
@@ -356,6 +357,7 @@ function resolveFixtureEcosystems(
 
 function resolveRoute(cascadeLane: CascadeLaneResult | null, pathPlan: ProductionPathPlan): string {
     if (pathPlan.aborted) return 'aborted';
+    if (pathPlan.reviewableFiles.length === 0) return 'deterministic';
     return cascadeLane?.route ?? 'prescan-only';
 }
 
@@ -370,8 +372,8 @@ async function runFixture(
     const pathPlan = runOptions.pathMode === 'production' ? productionPlan : planModelPotentialPath(fixtureFiles);
 
     const prescanLane = await runPrescanLane(pathPlan.prescanFiles);
-    // Abbruch wie im Webhook: ohne reviewbare Datei laeuft keine Kaskade.
-    const cascadeLane = runOptions.ownerUserId === null || pathPlan.aborted
+    // Wie im Webhook: ohne reviewbare Datei laeuft keine Kaskade.
+    const cascadeLane = runOptions.ownerUserId === null || pathPlan.reviewableFiles.length === 0
         ? null
         : await runCascadeLane(
             fixtureName,
@@ -510,7 +512,7 @@ function pct(part: number, whole: number): string {
 }
 
 const PATH_MODE_LABELS: Readonly<Record<BenchmarkPathMode, string>> = {
-    production: 'PRODUKTIONSPFAD (Filter wie diff-loader, Abbruch ohne reviewbare Datei)',
+    production: 'PRODUKTIONSPFAD (Filter wie diff-loader; ohne reviewbare Datei nur Pre-Scan oder Abbruch)',
     'model-potential': 'MODELL-POTENZIAL (--bypass-filter: jede Datei erreicht das Modell)',
 };
 

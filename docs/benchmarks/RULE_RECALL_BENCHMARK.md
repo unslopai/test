@@ -1,5 +1,18 @@
 # Rule-Recall Benchmark
 
+## Sprachabdeckung Stufe 1 (2026-09-30): Produktionspfad Prescan-only wieder 68/177, neue Config-Kontrolle r26, 0 FP auf 7 Kontrollen
+
+Bau-Nachweis für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.2 Stufe 1, Gate G3 (Branch `feat/langcov-stufe1`, setzt auf Stufe 0 auf). 0 Token.
+
+| Messung | Wert |
+|---|---|
+| Prescan-only, Produktionspfad | **68/177** (Stufe 0: 43/177). r01–r04, r09–r13 laufen jetzt als Route `deterministic` statt `aborted`; nach Produktions-Lane: Modell + Pre-Scan 41/108, nur Pre-Scan 27/69, keine Lane 0/0 |
+| Prescan-only, Modell-Potenzial (`--bypass-filter`) | **68/177**, unverändert |
+| Negativ-Kontrollen | 7 Fixtures, **0 CRITICAL, 0 WARNING**; neu `r26-clean-config.diff`: gehärtetes Kubernetes-Manifest, Terraform-Bucket, `package.json` mit vier echten Paketen, Markdown-Runbook, das `verify=False` und `Access-Control-Allow-Origin: *` zitiert |
+| Reports | `results/2026-09-30-langcov-stufe1-prescan-only-production.json`, `-prescan-only-bypass.json` |
+
+**Lesart:** 27/69 auf den Nicht-JS/TS-Dateien ist die Zahl aus Spec §4.2, jetzt auf dem Produktionspfad gefahren statt gerechnet. Der Deckel E4 sitzt im Pipeline-Step, nicht im Runner: der Benchmark zählt weiter jeden Treffer einzeln. r26 erreicht im Modell-Potenzial-Lauf auch das Modell und ist dort noch nicht gefahren.
+
 ## Sprachabdeckung Stufe 0 (2026-09-30): Runner auf dem Produktionspfad, Prescan-only 43/177 dort und weiter 68/177 als Modell-Potenzial; Korpus-Gate G1 mit 0 CRITICAL aus SEC-035
 
 Bau-Nachweis für `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.2 Stufe 0 (Branch `feat/langcov-stufe0` auf `main` `b8ac78e`).

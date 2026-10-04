@@ -210,6 +210,70 @@ describe('githubReporterStep', () => {
         expect(createPullRequestReviewMock.mock.calls[0][6]).toBe('COMMENT');
     });
 
+    it('sagt bei einem Lauf ohne Modell-Review, dass kein Modell gelesen hat — kein Häkchen, kein Score-Block', async () => {
+        const deterministicOnlyContext = buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(deterministicOnlyContext);
+
+        const postedBody = createPullRequestReviewMock.mock.calls[0][4];
+        expect(postedBody).toBe(
+            'ℹ️ **Anti-Slop Gatekeeper**: Deterministic checks only: this pull request changes no TypeScript or '
+            + 'JavaScript file, so no model reviewed it. The pre-scanner checked 2 files and found nothing.',
+        );
+        expect(createPullRequestReviewMock.mock.calls[0][6]).toBe('COMMENT');
+        expect(postPRCommentMock).not.toHaveBeenCalled();
+    });
+
+    it('nennt den fehlenden Modell-Review auch neben deterministischen Findings', async () => {
+        const scannedFile = buildPullRequestFile({ filename: 'services/report_job.py', patch: '@@ -0,0 +1,3 @@\n+import os\n+import hallucinated_kit\n+' });
+        const deterministicFindingContext = buildPipelineContext({
+            prFiles: [scannedFile],
+            prescanIssues: [buildReviewIssue({
+                rule: 'SEC-005 (Hardcoded secret)', path: scannedFile.filename, line: 2, endLine: 2, source: 'pre-scanner',
+            })],
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: false,
+                degradedReason: null,
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 42,
+                rulesDisabled: [],
+                filesScanned: 2,
+                filesSkipped: [],
+                skippedChecks: [],
+                llmSkipped: true,
+                durationMs: 120,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(deterministicFindingContext);
+
+        const postedBody = createPullRequestReviewMock.mock.calls[0][4];
+        expect(postedBody).toContain('so no model reviewed it. The deterministic pre-scanner found 1 critical and 0 warning findings.');
+        expect(postedBody).not.toContain('Cognitive Integrity Score');
+    });
+
     // Check Runs gehören dem Worker (nach der Persistenz), nicht dem Reporter:
     // der Reporter ist abschaltbar, und ein Fehler beim Check-Run-Abschluss darf
     // das bereits gepostete Review nicht mehr aus der DB kippen.

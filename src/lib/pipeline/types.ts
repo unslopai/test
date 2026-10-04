@@ -270,6 +270,13 @@ interface PipelineContext {
     /** Ob die Pipeline nach diesem Step abbrechen soll. */
     readonly shouldAbort: boolean;
     readonly abortReason?: string;
+    /**
+     * Gesetzt, wenn keine Datei die LLM-Lane erreicht, der Pre-Scanner aber
+     * läuft (LANGUAGE_COVERAGE_SPEC §6.2): der Satz, der auf jeder Oberfläche
+     * sagt, dass kein Modell gelesen hat und warum. `llmSkipped` ist dann true.
+     * Das Urteil des Laufs liefert `resolveReviewOutcome`.
+     */
+    readonly deterministicOnlyReason?: string;
 }
 
 // =============================================================================
