@@ -14,8 +14,16 @@
  * Dies ist der einzige Test, der das echte Remote-Projekt anspricht (INFRA-001:
  * es gibt keinen lokalen Stack). Ohne Credentials im Env ueberspringt er sich
  * selbst, damit `npm test` hermetisch bleibt; in CI werden sie injiziert.
+ *
+ * Seit Migration 050 (SERVER_AUDIT_2026-09.md L9) prueft ein zweiter Block die
+ * SPALTENRECHTE von `authenticated` auf repositories: nur id, github_repo_id,
+ * status und updated_at sind lesbar, webhook_secret und pipeline_config
+ * antworten 42501. Er braucht zusaetzlich SUPABASE_JWT_SECRET (Legacy-JWT-
+ * Secret, Dashboard -> Settings -> API), um sich einen Session-JWT zu praegen:
+ * der Login ist reines GitHub-OAuth, einen Passwort-Nutzer gibt es nicht.
  */
-import { describe, expect, it } from 'vitest';
+import { createHmac, randomUUID } from 'node:crypto';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -26,8 +34,9 @@ const INSUFFICIENT_PRIVILEGE = '42501';
 
 /**
  * Tabellen, die fuer BEIDE Client-Rollen dicht sein muessen. `repositories`
- * fehlt bewusst: authenticated braucht dort SELECT fuers Realtime-Abo des
- * Dashboards (Migration 038) — der anon-Pfad wird separat geprueft.
+ * fehlt bewusst: authenticated behaelt dort ein SELECT auf vier Spalten fuers
+ * Realtime-Abo des Dashboards (Migration 038, seit 050 spaltenweise) — der
+ * anon-Pfad und die Spaltenrechte werden separat geprueft.
  */
 const PRIVATE_TABLES: readonly string[] = [
     'golden_standards',
@@ -65,12 +74,9 @@ const PRIVATE_RPCS: readonly { readonly name: string; readonly arguments: Record
         name: 'match_reference_practices',
         arguments: { query_embedding: '[0.1,0.2]', target_ecosystem: 'react', match_threshold: 0.5, match_count: 1 },
     },
-    {
-        name: 'match_code_chunks',
-        arguments: { query_embedding: '[0.1,0.2]', match_threshold: 0.5, match_count: 1 },
-    },
-    // Migration 038 revoked BEIDE Ueberladungen — ohne den repo-scoped Eintrag
-    // waere ein Grant-Regress auf ihr fuer diesen Guard unsichtbar.
+    // Seit Migration 051 gibt es nur noch den repo-gefilterten Overload; die
+    // mandantenblinde 3-Parameter-Variante ist gedroppt und antwortet PGRST202
+    // statt 42501 — deshalb hier nicht mehr gelistet.
     {
         name: 'match_code_chunks',
         arguments: {
@@ -120,15 +126,21 @@ function anonHeaders(): Record<string, string> {
     };
 }
 
+type ClientRole = 'anon' | 'authenticated';
+
 /** Erzwingt: die Antwort ist eine Privilegien-Ablehnung, kein leeres Ergebnis. */
-async function expectPrivilegeDenied(response: Response, relationName: string): Promise<void> {
+async function expectPrivilegeDenied(
+    response: Response,
+    relationName: string,
+    clientRole: ClientRole = 'anon',
+): Promise<void> {
     const errorBody = await readPostgrestError(response);
 
     expect(
         response.status,
-        `${relationName}: HTTP ${response.status}. Status 200 bedeutet, dass das Grant fuer anon `
+        `${relationName}: HTTP ${response.status}. Status 200 bedeutet, dass das Grant fuer ${clientRole} `
         + 'wieder existiert — dann schuetzt nur noch die Abwesenheit einer RLS-Policy. '
-        + 'Grant entziehen (siehe Migration 038), nicht die Policy nachruesten.',
+        + 'Grant entziehen (siehe Migrationen 038/050), nicht die Policy nachruesten.',
     ).not.toBe(200);
 
     expect(
@@ -160,13 +172,86 @@ describe.skipIf(!credentialsPresent)(
             await expectPrivilegeDenied(rpcResponse, `rpc/${privateRpc.name}`);
         });
 
-        it('verweigert anon auch repositories (authenticated behaelt SELECT fuer Realtime)', async () => {
+        it('verweigert anon auch repositories (authenticated behaelt vier Spalten fuer Realtime, Migration 050)', async () => {
             const restResponse = await fetch(
                 `${supabaseUrl}/rest/v1/repositories?select=full_name&limit=1`,
                 { headers: anonHeaders() },
             );
 
             await expectPrivilegeDenied(restResponse, 'repositories');
+        });
+    },
+);
+
+// =============================================================================
+// Spaltenrechte von authenticated auf repositories (Audit L9, Migration 050)
+// =============================================================================
+
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+const authenticatedGuardPossible = credentialsPresent && Boolean(jwtSecret);
+
+/** Die vier Spalten aus Migration 050 — das Realtime-Abo liest id, github_repo_id, status. */
+const REPOSITORY_COLUMNS_GRANTED = 'id,github_repo_id,status,updated_at';
+/** Die beiden Spalten, deren Sichtbarkeit L9 ausgemacht hat, plus die Wildcard. */
+const REPOSITORY_SELECTS_DENIED: readonly string[] = ['webhook_secret', 'pipeline_config', '*'];
+const SESSION_JWT_LIFETIME_SECONDS = 300;
+
+/**
+ * Session-JWT, wie GoTrue ihn ausstellt, nur ohne Login: HS256 mit dem Legacy-
+ * JWT-Secret des Projekts. `sub` ist ein zufaelliger Nutzer ohne eigene Zeilen:
+ * gemessen werden Spaltenrechte (42501 vs. 200), nicht die Policy — fuer die
+ * erlaubten Spalten ist `200 []` das erwartete Ergebnis.
+ */
+function mintAuthenticatedSessionJwt(signingSecret: string): string {
+    const issuedAtSeconds = Math.floor(Date.now() / 1000);
+    const encodedHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const encodedClaims = Buffer.from(JSON.stringify({
+        aud: 'authenticated',
+        role: 'authenticated',
+        sub: randomUUID(),
+        iat: issuedAtSeconds,
+        exp: issuedAtSeconds + SESSION_JWT_LIFETIME_SECONDS,
+    })).toString('base64url');
+    const hmacSignature = createHmac('sha256', signingSecret)
+        .update(`${encodedHeader}.${encodedClaims}`)
+        .digest('base64url');
+    return `${encodedHeader}.${encodedClaims}.${hmacSignature}`;
+}
+
+function authenticatedHeaders(sessionJwt: string): Record<string, string> {
+    return { ...anonHeaders(), Authorization: `Bearer ${sessionJwt}` };
+}
+
+describe.skipIf(!authenticatedGuardPossible)(
+    'Supabase repositories — authenticated liest nur die vier Realtime-Spalten (Audit L9, Migration 050)',
+    () => {
+        let sessionJwt = '';
+        beforeAll(() => {
+            sessionJwt = mintAuthenticatedSessionJwt(jwtSecret!);
+        });
+
+        it.each(REPOSITORY_SELECTS_DENIED)('verweigert authenticated select=%s', async (selectClause) => {
+            const restResponse = await fetch(
+                `${supabaseUrl}/rest/v1/repositories?select=${selectClause}&limit=1`,
+                { headers: authenticatedHeaders(sessionJwt) },
+            );
+
+            await expectPrivilegeDenied(restResponse, `repositories?select=${selectClause}`, 'authenticated');
+        });
+
+        it('erlaubt authenticated die vier gewaehrten Spalten (200, RLS-gefiltert)', async () => {
+            const restResponse = await fetch(
+                `${supabaseUrl}/rest/v1/repositories?select=${REPOSITORY_COLUMNS_GRANTED}&limit=1`,
+                { headers: authenticatedHeaders(sessionJwt) },
+            );
+            const responseBody: unknown = await restResponse.json();
+
+            expect(
+                restResponse.status,
+                `repositories?select=${REPOSITORY_COLUMNS_GRANTED}: HTTP ${restResponse.status} — ein 42501 hier `
+                + 'heisst, das Spalten-Grant aus Migration 050 fehlt und das Dashboard-Realtime-Abo bekommt "Error 401".',
+            ).toBe(200);
+            expect(Array.isArray(responseBody), 'PostgREST antwortet mit einer (ggf. leeren) Zeilenliste').toBe(true);
         });
     },
 );
