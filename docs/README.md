@@ -14,6 +14,6 @@ Wenn irgendwo (ROADMAP, Code-Kommentare, ältere Docs) eine Spec nur mit Dateina
 | `seo/` | GEO/SEO-Guide und Regeln für die Landing Page |
 | `research/` | Die beiden Grundlagen-PDFs, `fetch_papers.js` mit `asta_queries.json` / `asta_results.json` (Paper-Recherche für die Golden Database) |
 | `design-refs/` | Referenzbilder für Logo und Typografie |
-| `company/` | Gründungsunterlagen der unslop UG (Checkliste, Nutzungsüberlassung). Nicht produktrelevant. |
+| `company/` | Gründungsunterlagen der unslop UG (Checkliste, Nutzungsüberlassung, Buchhaltungs-Stack `buchhaltung-software.md`, Fristenkalender `fristenkalender.md` + `fristen-unslop-ug.ics` für Google Calendar). Nicht produktrelevant. |
 
 Daten, die Skripte lesen, liegen nicht hier, sondern unter `data/` (Golden-Database-CSV, Reference-Practices) und `fixtures/`.

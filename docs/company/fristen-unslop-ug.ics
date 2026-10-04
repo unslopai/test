@@ -1,0 +1,1543 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//unslop UG//Fristenkalender//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:unslop UG Fristen
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-15-0@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261015
+DTEND;VALUE=DATE:20261016
+SUMMARY:UG-Frist: T = Beurkundung (Platzhalter\, echtes Datum eintragen)
+DESCRIPTION:Notartermin Musterprotokoll. Ab heute Vor-UG: Handelndenhaftung
+  bis zur Eintragung (§ 11 Abs. 2 GmbHG). Alle T+x-Termine neu berechnen.\
+ nRechtsgrundlage: § 2 Abs. 1a GmbHG
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: T = Beurkundung (Platzhalter\, echtes Datum eintragen
+ )
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-15-1@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261015
+DTEND;VALUE=DATE:20261016
+SUMMARY:UG-Frist: Geschäftskonto i.G. eröffnen\, 2.500 € Stammkapital e
+ inzahlen\, Beleg an Notar (T)
+DESCRIPTION:Bareinlage voll einzahlen\, Verwendungszweck 'Stammeinlage unsl
+ op UG'. Erst danach meldet der Notar zum Handelsregister an.\nRechtsgrundl
+ age: § 5a Abs. 2\, § 7 Abs. 2\, § 8 Abs. 2 GmbHG\nBei Versaeumnis: Ohne
+  Nachweis keine Registeranmeldung\; falsche Versicherung strafbar (§ 82 G
+ mbHG)
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Geschäftskonto i.G. eröffnen\, 2.500 € Stammkapit
+ al einzahlen\, Beleg an Notar (T)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-15-2@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261015
+DTEND;VALUE=DATE:20261016
+SUMMARY:UG-Frist: Gewerbeanzeige Stadt Bebra (T)
+DESCRIPTION:Gleichzeitig mit Beginn der Tätigkeit. Informiert IHK\, Finanz
+ amt\, Unfallversicherung automatisch. Vorher fragen\, ob die Stadt die UG 
+ i.G. schon annimmt.\nRechtsgrundlage: § 14 Abs. 1 GewO\nBei Versaeumnis: 
+ Bußgeld bis 1.000 € (§ 146 GewO)
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gewerbeanzeige Stadt Bebra (T)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-15-3@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261015
+DTEND;VALUE=DATE:20261016
+SUMMARY:UG-Frist: Buchführung starten: Kontolino-Test anlegen\, GoBD-Verfa
+ hrensdokumentation (T)
+DESCRIPTION:Verfahrensdokumentation vor der ersten Buchung. E-Rechnungs-Emp
+ fang per E-Mail-Postfach sicherstellen. Stack: siehe docs/company/buchhalt
+ ung-software.md\nRechtsgrundlage: §§ 238\, 242 HGB\; §§ 140\, 145 ff. 
+ AO\; GoBD\nBei Versaeumnis: Schätzung bei formellen Mängeln (§ 162 AO)
+CATEGORIES:Buchhaltung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Buchführung starten: Kontolino-Test anlegen\, GoBD-V
+ erfahrensdokumentation (T)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-22-4@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261022
+DTEND;VALUE=DATE:20261023
+SUMMARY:UG-Frist: VBG-Anmeldung des Unternehmens (T+7 Tage)
+DESCRIPTION:Gilt als erfüllt\, wenn die Gewerbeanzeige binnen einer Woche 
+ erstattet wurde. GF ohne Pflichtversicherung\, ohne Beschäftigte kein Loh
+ nnachweis.\nRechtsgrundlage: § 192 Abs. 1 SGB VII\nBei Versaeumnis: Ordnu
+ ngswidrigkeit (§ 209 SGB VII)
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: VBG-Anmeldung des Unternehmens (T+7 Tage)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: VBG-Anmeldung des Unternehmens (T+7 Tage)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-10-31-5@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261031
+DTEND;VALUE=DATE:20261101
+SUMMARY:UG-Frist: Eröffnungsbilanz auf Tag T aufstellen (Empfehlung)
+DESCRIPTION:Bank an Gezeichnetes Kapital 2.500 €. Als E-Bilanz übermitte
+ ln (eBilanz+ kostenlos). 10 Jahre aufbewahren.\nRechtsgrundlage: § 242 Ab
+ s. 1 HGB\; § 5b EStG
+CATEGORIES:Buchhaltung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Eröffnungsbilanz auf Tag T aufstellen (Empfehlung)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Eröffnungsbilanz auf Tag T aufstellen (Empfehlung)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-11-10-6@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261110
+DTEND;VALUE=DATE:20261111
+SUMMARY:UG-Frist: USt-VA Okt 2026 [nur M26\, unwahrscheinlich]
+DESCRIPTION:Nur wenn das Finanzamt für 2026 monatliche Abgabe festlegt. Oh
+ ne Steuernummer nachholen\, sobald sie vorliegt.\nRechtsgrundlage: § 18 A
+ bs. 1\, 2 UStG\nBei Versaeumnis: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Okt 2026 [nur M26\, unwahrscheinlich]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-11-16-7@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261117
+SUMMARY:UG-Frist: Fragebogen steuerliche Erfassung über ELSTER (T+1 Monat\
+ , sichere Lesart)
+DESCRIPTION:Formular 'Gründung einer Kapitalgesellschaft'. Regelbesteuerun
+ g wählen (kein Kleinunternehmer)\, USt-IdNr. mit beantragen\, ggf. Dauerf
+ ristverlängerung. Voraussichtliche USt 2026 realistisch niedrig schätzen
+  (Paddle nicht steuerbar\, Reverse Charge neutral).\nRechtsgrundlage: § 1
+ 38 Abs. 1\, 1b\, 4 AO\nBei Versaeumnis: Erinnerung\, Zwangsgeld\, geschät
+ zte Vorauszahlungen
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Fragebogen steuerliche Erfassung über ELSTER (T+1 Mo
+ nat\, sichere Lesart)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Fragebogen steuerliche Erfassung über ELSTER (T+1 Mo
+ nat\, sichere Lesart)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-11-16-8@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261117
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q4/2026 [nur wenn festgesetzt]
+DESCRIPTION:Bescheid und Zahlung: Stadt Bebra. Unter 50 € keine Festsetzu
+ ng.\nRechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschlag 1 %/
+ Monat
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q4/2026 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-11-19-9@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261119
+DTEND;VALUE=DATE:20261120
+SUMMARY:UG-Frist: Transparenzregister: wirtschaftlich Berechtigten eintrage
+ n (E+2 Wochen\, Platzhalter)
+DESCRIPTION:Unverzüglich nach Eintragung. Die Gesellschafterliste reicht n
+ icht mehr aus. transparenzregister.de\nRechtsgrundlage: § 20 Abs. 1 GwG\n
+ Bei Versaeumnis: Bußgeld nach § 56 GwG\, Nichtmeldung strenger als Versp
+ ätung
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Transparenzregister: wirtschaftlich Berechtigten eint
+ ragen (E+2 Wochen\, Platzhalter)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Transparenzregister: wirtschaftlich Berechtigten eint
+ ragen (E+2 Wochen\, Platzhalter)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-11-19-10@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261119
+DTEND;VALUE=DATE:20261120
+SUMMARY:UG-Frist: Rundfunkbeitrag: Betriebsstätte anzeigen\, Beitragsfreih
+ eit beantragen (E+2 Wochen)
+DESCRIPTION:Beitragsfrei\, weil Betriebsstätte in beitragspflichtiger Wohn
+ ung der Eltern liegt (Hegenstraße 8).\nRechtsgrundlage: § 5 Abs. 5 Nr. 3
+ \, § 8 RBStV\nBei Versaeumnis: Nachforderung
+CATEGORIES:Sonstiges
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Rundfunkbeitrag: Betriebsstätte anzeigen\, Beitragsf
+ reiheit beantragen (E+2 Wochen)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Rundfunkbeitrag: Betriebsstätte anzeigen\, Beitragsf
+ reiheit beantragen (E+2 Wochen)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-12-01-11@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+SUMMARY:UG-Frist: Gesetzesstand prüfen: Neugründer-Monatspflicht USt-VA 2
+ 027 verlängert?
+DESCRIPTION:§ 18 Abs. 2 S. 6 UStG setzt die Monatspflicht nur bis 2026 aus
+ . Stand 26.09.2026 keine Verlängerung. Falls verlängert: Kalender auf [Q
+ 27] umstellen. Siehe docs/company/fristenkalender.md B.1\nRechtsgrundlage:
+  § 18 Abs. 2 S. 4\, 6 UStG
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesetzesstand prüfen: Neugründer-Monatspflicht USt-
+ VA 2027 verlängert?
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesetzesstand prüfen: Neugründer-Monatspflicht USt-
+ VA 2027 verlängert?
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-12-07-12@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261207
+DTEND;VALUE=DATE:20261208
+SUMMARY:UG-Frist: Fragebogen steuerliche Erfassung spätestens (E+1 Monat\,
+  Auffangdatum)
+DESCRIPTION:Nur relevant\, falls die Frist erst ab Eintragung läuft. Norma
+ lerweise längst erledigt.\nRechtsgrundlage: § 138 Abs. 4 AO
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Fragebogen steuerliche Erfassung spätestens (E+1 Mon
+ at\, Auffangdatum)
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-12-10-13@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261210
+DTEND;VALUE=DATE:20261211
+SUMMARY:UG-Frist: USt-VA Nov 2026 [M26]\; Okt 2026 [M26+DFV]
+DESCRIPTION:Nur bei Monatszahlern 2026.\nRechtsgrundlage: § 18 UStG\; § 4
+ 6 UStDV\nBei Versaeumnis: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Nov 2026 [M26]\; Okt 2026 [M26+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-12-10-14@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261210
+DTEND;VALUE=DATE:20261211
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q4/2026 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Nur ab 400 €/Jahr bzw. 100 € je Termin.\nRechtsgrundlage: 
+ § 31 KStG i.V.m. § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q4/2026 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2026-12-31-15@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20261231
+DTEND;VALUE=DATE:20270101
+SUMMARY:UG-Frist: Stichtag Rumpfgeschäftsjahr 2026: Inventur\, Paddle-Ford
+ erung\, Fortführungsprognose
+DESCRIPTION:Offenes Paddle-Guthaben als Forderung erfassen (Balance-Report)
+ . Fortführungsprognose 12 Monate schriftlich (§ 19 Abs. 2 InsO). Kapital
+ rücklage statt Darlehen (§ 272 Abs. 2 Nr. 4 HGB).\nRechtsgrundlage: §§
+  240\, 242 HGB\; § 19 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag Rumpfgeschäftsjahr 2026: Inventur\, Paddle-
+ Forderung\, Fortführungsprognose
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag Rumpfgeschäftsjahr 2026: Inventur\, Paddle-
+ Forderung\, Fortführungsprognose
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-01-11-16@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270111
+DTEND;VALUE=DATE:20270112
+SUMMARY:UG-Frist: USt-VA Q4/2026 [Q26\, wahrscheinlich]\; Dez 2026 [M26]\; 
+ Nov 2026 [M26+DFV]. Letzter Tag DFV-Antrag als Quartalszahler
+DESCRIPTION:Paddle: Kennzahl 45 (nicht steuerbar). Reverse Charge: 84/85 Dr
+ ittland\, 46/47 EU\, Vorsteuer 67. Dauerfristverlängerung ohne Sondervora
+ uszahlung beantragen.\nRechtsgrundlage: § 18 UStG\; § 48 Abs. 1 UStDV\nB
+ ei Versaeumnis: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Q4/2026 [Q26\, wahrscheinlich]\; Dez 2026 [M26
+ ]\; Nov 2026 [M26+DFV]. Letzter Tag DFV-Antrag als Quartalszahler
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Q4/2026 [Q26\, wahrscheinlich]\; Dez 2026 [M26
+ ]\; Nov 2026 [M26+DFV]. Letzter Tag DFV-Antrag als Quartalszahler
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-01-15-17@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270115
+DTEND;VALUE=DATE:20270116
+SUMMARY:UG-Frist: Kontrolle: Handelsregister-Anmeldung erfolgt? (T+3 Monate
+ )
+DESCRIPTION:Sonst müsste auch die UG i.G. ins Transparenzregister (BVA-FAQ
+  A.7). In der Regel längst erledigt.\nRechtsgrundlage: § 20 GwG
+CATEGORIES:Gründung
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Kontrolle: Handelsregister-Anmeldung erfolgt? (T+3 Mo
+ nate)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-02-10-18@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270210
+DTEND;VALUE=DATE:20270211
+SUMMARY:UG-Frist: USt-VA Jan 2027 [M27]\; Q4/2026 [Q26+DFV]\; Dez 2026 [M26
+ +DFV]. Letzter Tag DFV-Antrag + Sondervorauszahlung 2027
+DESCRIPTION:2027 nach geltendem Recht monatlich. Sondervorauszahlung 1/11 d
+ er hochgerechneten Vorauszahlungen 2026 anmelden und zahlen.\nRechtsgrundl
+ age: § 18 UStG\; §§ 46–48 UStDV\nBei Versaeumnis: Verspätungszuschla
+ g\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jan 2027 [M27]\; Q4/2026 [Q26+DFV]\; Dez 2026 
+ [M26+DFV]. Letzter Tag DFV-Antrag + Sondervorauszahlung 2027
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jan 2027 [M27]\; Q4/2026 [Q26+DFV]\; Dez 2026 
+ [M26+DFV]. Letzter Tag DFV-Antrag + Sondervorauszahlung 2027
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-02-15-19@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270215
+DTEND;VALUE=DATE:20270216
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q1/2027 [nur wenn festgesetzt]
+DESCRIPTION:Stadt Bebra. SEPA-Lastschrift erteilen.\nRechtsgrundlage: § 19
+  GewStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q1/2027 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-02-16-20@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270216
+DTEND;VALUE=DATE:20270217
+SUMMARY:UG-Frist: VBG-Lohnnachweis 2026 [entfällt ohne Beschäftigte]
+DESCRIPTION:Nur relevant\, sobald jemand angestellt ist. Sonst Kontaktformu
+ lar der VBG.\nRechtsgrundlage: § 99 SGB IV
+CATEGORIES:Sonstiges
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: VBG-Lohnnachweis 2026 [entfällt ohne Beschäftigte]
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-03-10-21@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270310
+DTEND;VALUE=DATE:20270311
+SUMMARY:UG-Frist: USt-VA Feb 2027 [M27]\; Jan 2027 [M27+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Feb 2027 [M27]\; Jan 2027 [M27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-03-10-22@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270310
+DTEND;VALUE=DATE:20270311
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q1/2027 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG i.V.m. § 31 KStG\nBei Versaeumnis:
+  Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q1/2027 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-03-31-23@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270331
+DTEND;VALUE=DATE:20270401
+SUMMARY:UG-Frist: JA 2026: Aufstellung Regelfrist (Kleinst bis 30.06. zulä
+ ssig). Fortführungsprognose Q1
+DESCRIPTION:Bilanz + GuV Rumpfjahr 2026 in Kontolino abschließen. Liquidit
+ ätsplanung 12 Monate schriftlich.\nRechtsgrundlage: § 264 Abs. 1 S. 3 HG
+ B\; § 19 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2026: Aufstellung Regelfrist (Kleinst bis 30.06. z
+ ulässig). Fortführungsprognose Q1
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2026: Aufstellung Regelfrist (Kleinst bis 30.06. z
+ ulässig). Fortführungsprognose Q1
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-04-12-24@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270412
+DTEND;VALUE=DATE:20270413
+SUMMARY:UG-Frist: USt-VA Mär 2027 [M27]\; Feb 2027 [M27+DFV]\; Q1/2027 [Q2
+ 7]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Mär 2027 [M27]\; Feb 2027 [M27+DFV]\; Q1/2027
+  [Q27]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-05-10-25@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270510
+DTEND;VALUE=DATE:20270511
+SUMMARY:UG-Frist: USt-VA Apr 2027 [M27]\; Mär 2027 [M27+DFV]\; Q1/2027 [Q2
+ 7+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Apr 2027 [M27]\; Mär 2027 [M27+DFV]\; Q1/2027
+  [Q27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-05-18-26@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270518
+DTEND;VALUE=DATE:20270519
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q2/2027 [nur wenn festgesetzt]
+DESCRIPTION:15.05. Samstag\, 17.05. Pfingstmontag.\nRechtsgrundlage: § 19 
+ GewStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q2/2027 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-06-10-27@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270610
+DTEND;VALUE=DATE:20270611
+SUMMARY:UG-Frist: USt-VA Mai 2027 [M27]\; Apr 2027 [M27+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Mai 2027 [M27]\; Apr 2027 [M27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-06-10-28@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270610
+DTEND;VALUE=DATE:20270611
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q2/2027 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q2/2027 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-06-30-29@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270630
+DTEND;VALUE=DATE:20270701
+SUMMARY:UG-Frist: JA 2026 SPÄTESTENS aufstellen\, unterschreiben\, datiere
+ n. Fortführungsprognose Q2
+DESCRIPTION:Kleinst: verkürzte Bilanz + GuV\, kein Anhang (Angaben unter d
+ er Bilanz). 25 % Rücklage nur bei Jahresüberschuss. Grundlage für E-Bil
+ anz und Hinterlegung.\nRechtsgrundlage: § 264 Abs. 1 S. 4\, § 245 HGB\; 
+ § 5a Abs. 3 GmbHG\nBei Versaeumnis: Bilanzdelikt\, Folgefristen nicht ein
+ haltbar
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2026 SPÄTESTENS aufstellen\, unterschreiben\, dat
+ ieren. Fortführungsprognose Q2
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2026 SPÄTESTENS aufstellen\, unterschreiben\, dat
+ ieren. Fortführungsprognose Q2
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2026 SPÄTESTENS aufstellen\, unterschreiben\, dat
+ ieren. Fortführungsprognose Q2
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-07-12-30@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270712
+DTEND;VALUE=DATE:20270713
+SUMMARY:UG-Frist: USt-VA Jun 2027 [M27]\; Mai 2027 [M27+DFV]\; Q2/2027 [Q27
+ ]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jun 2027 [M27]\; Mai 2027 [M27+DFV]\; Q2/2027 
+ [Q27]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-08-02-31@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270802
+DTEND;VALUE=DATE:20270803
+SUMMARY:UG-Frist: JAHRESERKLÄRUNGEN 2026: KSt (inkl. KSt 1 F Einlagekonto\
+ , Verlustvortrag)\, E-Bilanz\, GewSt\, USt-Jahreserklärung
+DESCRIPTION:Ohne Steuerberater: 31.07. (Samstag) → 02.08.2027. E-Bilanz 
+ über eBilanz+ (35 €)\, KSt 1 / GewSt 1 A / USt 2 A in Mein ELSTER. Kein
+ e Corona-Verlängerung mehr. Fristverlängerung nach § 109 AO auf Antrag 
+ möglich.\nRechtsgrundlage: § 149 Abs. 2 AO\; § 31 Abs. 1a KStG\; § 14a
+  GewStG\; § 18 Abs. 3 UStG\; § 5b EStG\nBei Versaeumnis: Verspätungszus
+ chlag nach Ermessen\, ab 01.03.2028 automatisch (GewSt pauschal 25 €/Mon
+ at auch bei 0 €)
+CATEGORIES:Jahreserklärungen
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2026: KSt (inkl. KSt 1 F Einlageko
+ nto\, Verlustvortrag)\, E-Bilanz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P30D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2026: KSt (inkl. KSt 1 F Einlageko
+ nto\, Verlustvortrag)\, E-Bilanz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2026: KSt (inkl. KSt 1 F Einlageko
+ nto\, Verlustvortrag)\, E-Bilanz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2026: KSt (inkl. KSt 1 F Einlageko
+ nto\, Verlustvortrag)\, E-Bilanz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-08-10-32@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270810
+DTEND;VALUE=DATE:20270811
+SUMMARY:UG-Frist: USt-VA Jul 2027 [M27]\; Jun 2027 [M27+DFV]\; Q2/2027 [Q27
+ +DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jul 2027 [M27]\; Jun 2027 [M27+DFV]\; Q2/2027 
+ [Q27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-08-16-33@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270816
+DTEND;VALUE=DATE:20270817
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q3/2027 [nur wenn festgesetzt]
+DESCRIPTION:15.08. ist Sonntag.\nRechtsgrundlage: § 19 GewStG\nBei Versaeu
+ mnis: Säumniszuschlag
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q3/2027 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-09-10-34@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270910
+DTEND;VALUE=DATE:20270911
+SUMMARY:UG-Frist: USt-VA Aug 2027 [M27]\; Jul 2027 [M27+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Aug 2027 [M27]\; Jul 2027 [M27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-09-10-35@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270910
+DTEND;VALUE=DATE:20270911
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q3/2027 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q3/2027 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-09-30-36@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20270930
+DTEND;VALUE=DATE:20271001
+SUMMARY:UG-Frist: Fortführungsprognose Q3 schriftlich (Überschuldungs-Che
+ ck)
+DESCRIPTION:Liquiditätsplanung 12 Monate. Bei Bedarf Zuzahlung in die Kapi
+ talrücklage dokumentieren.\nRechtsgrundlage: § 19 Abs. 2 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Fortführungsprognose Q3 schriftlich (Überschuldungs
+ -Check)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-10-11-37@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271011
+DTEND;VALUE=DATE:20271012
+SUMMARY:UG-Frist: USt-VA Sep 2027 [M27]\; Aug 2027 [M27+DFV]\; Q3/2027 [Q27
+ ]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Sep 2027 [M27]\; Aug 2027 [M27+DFV]\; Q3/2027 
+ [Q27]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-11-10-38@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271110
+DTEND;VALUE=DATE:20271111
+SUMMARY:UG-Frist: USt-VA Okt 2027 [M27]\; Sep 2027 [M27+DFV]\; Q3/2027 [Q27
+ +DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Okt 2027 [M27]\; Sep 2027 [M27+DFV]\; Q3/2027 
+ [Q27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-11-15-39@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271115
+DTEND;VALUE=DATE:20271116
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q4/2027 [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschla
+ g
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q4/2027 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-11-30-40@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271130
+DTEND;VALUE=DATE:20271201
+SUMMARY:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2026 + Ergebnisv
+ erwendung\, Niederschrift unterschreiben
+DESCRIPTION:11-Monats-Frist. Zugleich jährliche Gesellschafterversammlung.
+  Niederschrift ablegen.\nRechtsgrundlage: § 42a Abs. 2\, § 48 Abs. 3 Gmb
+ HG\nBei Versaeumnis: Kein festgestellter Abschluss für die Hinterlegung
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2026 + Ergeb
+ nisverwendung\, Niederschrift unterschreiben
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2026 + Ergeb
+ nisverwendung\, Niederschrift unterschreiben
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-12-10-41@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271210
+DTEND;VALUE=DATE:20271211
+SUMMARY:UG-Frist: USt-VA Nov 2027 [M27]\; Okt 2027 [M27+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Nov 2027 [M27]\; Okt 2027 [M27+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-12-10-42@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271210
+DTEND;VALUE=DATE:20271211
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q4/2027 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q4/2027 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-12-31-43@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271231
+DTEND;VALUE=DATE:20280101
+SUMMARY:UG-Frist: HINTERLEGUNG JA 2026 beim Unternehmensregister (Kleinst: 
+ nur Bilanz)
+DESCRIPTION:XML aus eBilanz+ über publikations-plattform.de\, Kleinst-Stat
+ us mitteilen\, Feststellungsdatum angeben. Gebühr ca. 21\,50 €. Besser 
+ Mitte Dezember erledigen.\nRechtsgrundlage: § 325 Abs. 1a\, § 326 Abs. 2
+  HGB\nBei Versaeumnis: Ordnungsgeldverfahren BfJ: Androhung\, 6 Wochen\, O
+ rdnungsgeld 2.500 € (Kleinst bei Nachholung 500 €) plus Verfahrenskost
+ en
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2026 beim Unternehmensregister (Klein
+ st: nur Bilanz)
+TRIGGER:-P30D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2026 beim Unternehmensregister (Klein
+ st: nur Bilanz)
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2026 beim Unternehmensregister (Klein
+ st: nur Bilanz)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2026 beim Unternehmensregister (Klein
+ st: nur Bilanz)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2027-12-31-44@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20271231
+DTEND;VALUE=DATE:20280101
+SUMMARY:UG-Frist: Stichtag JA 2027: Inventur\, Paddle-Forderung\, Fortführ
+ ungsprognose Q4
+DESCRIPTION:Rechtsgrundlage: §§ 240\, 242 HGB\; § 19 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag JA 2027: Inventur\, Paddle-Forderung\, Fortf
+ ührungsprognose Q4
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag JA 2027: Inventur\, Paddle-Forderung\, Fortf
+ ührungsprognose Q4
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-01-01-45@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280101
+DTEND;VALUE=DATE:20280102
+SUMMARY:UG-Frist: Ab heute: E-Rechnung Pflicht für alle inländischen B2B-
+ Umsätze\; KSt-Satz 14 %
+DESCRIPTION:Paddle (UK) und ausländische Lieferanten nicht betroffen. Rele
+ vant nur bei deutschen Firmenkunden/Lieferanten.\nRechtsgrundlage: § 27 A
+ bs. 38 UStG\; § 23 Abs. 1 KStG
+CATEGORIES:Sonstiges
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Ab heute: E-Rechnung Pflicht für alle inländischen 
+ B2B-Umsätze\; KSt-Satz 14 %
+TRIGGER:-P7D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-01-10-46@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280110
+DTEND;VALUE=DATE:20280111
+SUMMARY:UG-Frist: USt-VA Dez 2027 [M27]\; Nov 2027 [M27+DFV]\; Q4/2027 [Q27
+ ]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Dez 2027 [M27]\; Nov 2027 [M27+DFV]\; Q4/2027 
+ [Q27]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-02-10-47@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280210
+DTEND;VALUE=DATE:20280211
+SUMMARY:UG-Frist: USt-VA Dez 2027 [M27+DFV]\; Q4/2027 [Q27+DFV]\; Jan 2028 
+ [M28]. DFV-Antrag + Sondervorauszahlung 2028
+DESCRIPTION:Voranmeldungszeitraum 2028 hängt von der Steuer 2027 ab (über
+  9.000 € monatlich\, sonst quartalsweise\, bis 2.000 € Befreiung). Wah
+ lrecht monatlich bei Vorsteuerüberschuss über 9.000 € (§ 18 Abs. 2a U
+ StG).\nRechtsgrundlage: § 18 UStG\; § 48 Abs. 2 UStDV\nBei Versaeumnis: 
+ Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Dez 2027 [M27+DFV]\; Q4/2027 [Q27+DFV]\; Jan 2
+ 028 [M28]. DFV-Antrag + Sondervorauszahlung 2028
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Dez 2027 [M27+DFV]\; Q4/2027 [Q27+DFV]\; Jan 2
+ 028 [M28]. DFV-Antrag + Sondervorauszahlung 2028
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-02-15-48@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280215
+DTEND;VALUE=DATE:20280216
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q1/2028 [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschla
+ g
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q1/2028 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-02-16-49@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280216
+DTEND;VALUE=DATE:20280217
+SUMMARY:UG-Frist: VBG-Lohnnachweis 2027 [entfällt ohne Beschäftigte]
+DESCRIPTION:Rechtsgrundlage: § 99 SGB IV
+CATEGORIES:Sonstiges
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: VBG-Lohnnachweis 2027 [entfällt ohne Beschäftigte]
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-03-01-50@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280301
+DTEND;VALUE=DATE:20280302
+SUMMARY:UG-Frist: Ab heute automatischer Verspätungszuschlag für fehlende
+  Jahreserklärungen 2026
+DESCRIPTION:KSt/USt 0\,25 % je Monat\, mind. 25 €/Monat\, ab Fristende 02
+ .08.2027 gerechnet. GewSt-Messbetragserklärung pauschal 25 €/Monat auch
+  bei 0 €.\nRechtsgrundlage: § 152 Abs. 2 Nr. 1\, Abs. 5\, 6 AO
+CATEGORIES:Jahreserklärungen
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Ab heute automatischer Verspätungszuschlag für fehl
+ ende Jahreserklärungen 2026
+TRIGGER:-P7D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-03-10-51@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280310
+DTEND;VALUE=DATE:20280311
+SUMMARY:UG-Frist: USt-VA Feb 2028 [M28]\; Jan 2028 [M28+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Feb 2028 [M28]\; Jan 2028 [M28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-03-10-52@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280310
+DTEND;VALUE=DATE:20280311
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q1/2028 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q1/2028 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-03-31-53@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280331
+DTEND;VALUE=DATE:20280401
+SUMMARY:UG-Frist: JA 2027: Aufstellung Regelfrist (spätestens 30.06.). For
+ tführungsprognose Q1
+DESCRIPTION:Rechtsgrundlage: § 264 Abs. 1 S. 3 HGB\; § 19 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2027: Aufstellung Regelfrist (spätestens 30.06.).
+  Fortführungsprognose Q1
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2027: Aufstellung Regelfrist (spätestens 30.06.).
+  Fortführungsprognose Q1
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-04-10-54@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280410
+DTEND;VALUE=DATE:20280411
+SUMMARY:UG-Frist: USt-VA Mär 2028 [M28]\; Feb 2028 [M28+DFV]\; Q1/2028 [Q2
+ 8]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Mär 2028 [M28]\; Feb 2028 [M28+DFV]\; Q1/2028
+  [Q28]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-05-10-55@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280510
+DTEND;VALUE=DATE:20280511
+SUMMARY:UG-Frist: USt-VA Apr 2028 [M28]\; Mär 2028 [M28+DFV]\; Q1/2028 [Q2
+ 8+DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Apr 2028 [M28]\; Mär 2028 [M28+DFV]\; Q1/2028
+  [Q28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-05-15-56@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280515
+DTEND;VALUE=DATE:20280516
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q2/2028 [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschla
+ g
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q2/2028 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-06-12-57@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280612
+DTEND;VALUE=DATE:20280613
+SUMMARY:UG-Frist: USt-VA Mai 2028 [M28]\; Apr 2028 [M28+DFV]
+DESCRIPTION:10.06. ist Samstag.\nRechtsgrundlage: § 18 UStG\nBei Versaeumn
+ is: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Mai 2028 [M28]\; Apr 2028 [M28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-06-12-58@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280612
+DTEND;VALUE=DATE:20280613
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q2/2028 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q2/2028 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-06-30-59@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280630
+DTEND;VALUE=DATE:20280701
+SUMMARY:UG-Frist: JA 2027 SPÄTESTENS aufstellen\, 25 % Rücklage bilden. F
+ ortführungsprognose Q2
+DESCRIPTION:Rechtsgrundlage: § 264 Abs. 1 HGB\; § 5a Abs. 3 GmbHG\nBei Ve
+ rsaeumnis: Bilanzdelikt\, Folgefristen nicht einhaltbar
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2027 SPÄTESTENS aufstellen\, 25 % Rücklage bilde
+ n. Fortführungsprognose Q2
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2027 SPÄTESTENS aufstellen\, 25 % Rücklage bilde
+ n. Fortführungsprognose Q2
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JA 2027 SPÄTESTENS aufstellen\, 25 % Rücklage bilde
+ n. Fortführungsprognose Q2
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-07-10-60@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280710
+DTEND;VALUE=DATE:20280711
+SUMMARY:UG-Frist: USt-VA Jun 2028 [M28]\; Mai 2028 [M28+DFV]\; Q2/2028 [Q28
+ ]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jun 2028 [M28]\; Mai 2028 [M28+DFV]\; Q2/2028 
+ [Q28]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-07-31-61@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280731
+DTEND;VALUE=DATE:20280801
+SUMMARY:UG-Frist: JAHRESERKLÄRUNGEN 2027: KSt (inkl. KSt 1 F)\, E-Bilanz\,
+  GewSt\, USt-Jahreserklärung
+DESCRIPTION:Montag\, keine Verschiebung. E-Bilanz über eBilanz+\, Erkläru
+ ngen in Mein ELSTER.\nRechtsgrundlage: § 149 Abs. 2 AO\; § 5b EStG\nBei 
+ Versaeumnis: Verspätungszuschlag\, automatisch ab 01.03.2029
+CATEGORIES:Jahreserklärungen
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2027: KSt (inkl. KSt 1 F)\, E-Bila
+ nz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P30D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2027: KSt (inkl. KSt 1 F)\, E-Bila
+ nz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2027: KSt (inkl. KSt 1 F)\, E-Bila
+ nz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: JAHRESERKLÄRUNGEN 2027: KSt (inkl. KSt 1 F)\, E-Bila
+ nz\, GewSt\, USt-Jahreserklärung
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-08-10-62@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280810
+DTEND;VALUE=DATE:20280811
+SUMMARY:UG-Frist: USt-VA Jul 2028 [M28]\; Jun 2028 [M28+DFV]\; Q2/2028 [Q28
+ +DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Jul 2028 [M28]\; Jun 2028 [M28+DFV]\; Q2/2028 
+ [Q28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-08-15-63@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280815
+DTEND;VALUE=DATE:20280816
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q3/2028 [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschla
+ g
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q3/2028 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-09-11-64@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280911
+DTEND;VALUE=DATE:20280912
+SUMMARY:UG-Frist: USt-VA Aug 2028 [M28]\; Jul 2028 [M28+DFV]
+DESCRIPTION:10.09. ist Sonntag.\nRechtsgrundlage: § 18 UStG\nBei Versaeumn
+ is: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Aug 2028 [M28]\; Jul 2028 [M28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-09-11-65@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280911
+DTEND;VALUE=DATE:20280912
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q3/2028 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q3/2028 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-09-30-66@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20280930
+DTEND;VALUE=DATE:20281001
+SUMMARY:UG-Frist: Fortführungsprognose Q3 schriftlich (Überschuldungs-Che
+ ck)
+DESCRIPTION:Rechtsgrundlage: § 19 Abs. 2 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Fortführungsprognose Q3 schriftlich (Überschuldungs
+ -Check)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-10-10-67@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281010
+DTEND;VALUE=DATE:20281011
+SUMMARY:UG-Frist: USt-VA Sep 2028 [M28]\; Aug 2028 [M28+DFV]\; Q3/2028 [Q28
+ ]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Sep 2028 [M28]\; Aug 2028 [M28+DFV]\; Q3/2028 
+ [Q28]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-11-10-68@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281110
+DTEND;VALUE=DATE:20281111
+SUMMARY:UG-Frist: USt-VA Okt 2028 [M28]\; Sep 2028 [M28+DFV]\; Q3/2028 [Q28
+ +DFV]
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Okt 2028 [M28]\; Sep 2028 [M28+DFV]\; Q3/2028 
+ [Q28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-11-15-69@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281115
+DTEND;VALUE=DATE:20281116
+SUMMARY:UG-Frist: GewSt-Vorauszahlung Q4/2028 [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 19 GewStG\nBei Versaeumnis: Säumniszuschla
+ g
+CATEGORIES:Gewerbesteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: GewSt-Vorauszahlung Q4/2028 [nur wenn festgesetzt]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-11-30-70@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281130
+DTEND;VALUE=DATE:20281201
+SUMMARY:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2027 + Ergebnisv
+ erwendung\, Niederschrift
+DESCRIPTION:Rechtsgrundlage: § 42a Abs. 2\, § 48 Abs. 3 GmbHG\nBei Versae
+ umnis: Kein festgestellter Abschluss für die Hinterlegung
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2027 + Ergeb
+ nisverwendung\, Niederschrift
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Gesellschafterbeschluss: Feststellung JA 2027 + Ergeb
+ nisverwendung\, Niederschrift
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-12-11-71@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281211
+DTEND;VALUE=DATE:20281212
+SUMMARY:UG-Frist: USt-VA Nov 2028 [M28]\; Okt 2028 [M28+DFV]
+DESCRIPTION:10.12. ist Sonntag.\nRechtsgrundlage: § 18 UStG\nBei Versaeumn
+ is: Verspätungszuschlag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Nov 2028 [M28]\; Okt 2028 [M28+DFV]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-12-11-72@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281211
+DTEND;VALUE=DATE:20281212
+SUMMARY:UG-Frist: KSt-Vorauszahlung Q4/2028 + Soli [nur wenn festgesetzt]
+DESCRIPTION:Rechtsgrundlage: § 37 EStG\nBei Versaeumnis: Säumniszuschlag
+CATEGORIES:Körperschaftsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: KSt-Vorauszahlung Q4/2028 + Soli [nur wenn festgesetz
+ t]
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-12-29-73@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281229
+DTEND;VALUE=DATE:20281230
+SUMMARY:UG-Frist: HINTERLEGUNG JA 2027 beim Unternehmensregister (letzter s
+ icherer Termin)
+DESCRIPTION:Gesetzliches Fristende 31.12.2028 ist Sonntag\, Verschiebung ni
+ cht gesichert. XML aus eBilanz+ über publikations-plattform.de.\nRechtsgr
+ undlage: § 325 Abs. 1a\, § 326 Abs. 2 HGB\nBei Versaeumnis: Ordnungsgeld
+ verfahren BfJ (§ 335 HGB)
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2027 beim Unternehmensregister (letzt
+ er sicherer Termin)
+TRIGGER:-P30D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2027 beim Unternehmensregister (letzt
+ er sicherer Termin)
+TRIGGER:-P14D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2027 beim Unternehmensregister (letzt
+ er sicherer Termin)
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: HINTERLEGUNG JA 2027 beim Unternehmensregister (letzt
+ er sicherer Termin)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2028-12-31-74@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20281231
+DTEND;VALUE=DATE:20290101
+SUMMARY:UG-Frist: Stichtag JA 2028: Inventur\, Fortführungsprognose Q4
+DESCRIPTION:Rechtsgrundlage: §§ 240\, 242 HGB\; § 19 InsO
+CATEGORIES:Jahresabschluss
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag JA 2028: Inventur\, Fortführungsprognose Q4
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: Stichtag JA 2028: Inventur\, Fortführungsprognose Q4
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:unslop-ug-frist-2029-01-10-75@unslop.codes
+DTSTAMP:20260926T135705Z
+DTSTART;VALUE=DATE:20290110
+DTEND;VALUE=DATE:20290111
+SUMMARY:UG-Frist: USt-VA Dez 2028 [M28]\; Q4/2028 [Q28] (mit DFV: 12.02.202
+ 9)
+DESCRIPTION:Rechtsgrundlage: § 18 UStG\nBei Versaeumnis: Verspätungszusch
+ lag\, Säumniszuschlag
+CATEGORIES:Umsatzsteuer
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:UG-Frist: USt-VA Dez 2028 [M28]\; Q4/2028 [Q28] (mit DFV: 12.02
+ .2029)
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+END:VCALENDAR
