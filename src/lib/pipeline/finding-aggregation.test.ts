@@ -132,6 +132,24 @@ describe('subtractPrescanOverlaps — occurrence-genaue Dedupe am Merge-Punkt', 
         expect(subtractPrescanOverlaps(unrelatedIssue, [prescanCollision])).toBe(unrelatedIssue);
     });
 
+    it('erkennt "Condition 11 (…)" der Modell-Lane als Dublette des Pre-Scan-Treffers COND-011', () => {
+        const prescanGodComponent = buildReviewIssue({
+            rule: 'COND-011 (Cyclomatic Explosion / God Component)',
+            path: 'src/components/Orders.tsx',
+            line: 20,
+            endLine: 40,
+            source: 'pre-scanner',
+        });
+        const modelGodComponent = buildReviewIssue({
+            rule: 'Condition 11 (Cyclomatic Explosion / God Component)',
+            path: 'src/components/Orders.tsx',
+            line: 24,
+            endLine: 24,
+        });
+
+        expect(subtractPrescanOverlaps(modelGodComponent, [prescanGodComponent])).toBeNull();
+    });
+
     it('entfernt aus einem Aggregat NUR das kollidierende Vorkommen und re-verankert', () => {
         const reducedIssue = subtractPrescanOverlaps(buildAggregate(), [prescanCollision]);
 

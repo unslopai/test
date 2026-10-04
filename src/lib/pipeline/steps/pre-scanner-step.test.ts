@@ -415,7 +415,8 @@ describe('collectReportableIssues — lane merge (§5.1)', () => {
         // Der Merge-Punkt vergibt zusätzlich die stabilen Finding-IDs (§4.2).
         expect(mergedIssues).toHaveLength(2);
         expect(mergedIssues[0]).toMatchObject(prescanIssue);
-        expect(mergedIssues[1]).toMatchObject(independentLlmIssue);
+        // Condition-Referenzen tragen ab dem Merge-Punkt das Nutzer-Label (ROADMAP §3).
+        expect(mergedIssues[1]).toMatchObject({ ...independentLlmIssue, rule: 'COND-003 (Lexical Slop)' });
     });
 
     it('drops an LLM issue that matches a prescan finding exactly on (path, line, ruleId)', () => {

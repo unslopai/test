@@ -18,9 +18,12 @@ import {
     submitScan, pollUntilDone, connectRepo, waitForRepoActive, ApiError,
     findDiffUploadRefusal, applyFixes, SecretUploadBlockedError,
 } from '@unslop/shared/node';
-import type { CliConfig, DiffUploadRefusal, FixReport } from '@unslop/shared/node';
+import type { CliConfig, DiffOptions, DiffUploadRefusal, FixReport } from '@unslop/shared/node';
 import { printFixReport, printHumanResult } from './format.js';
 import { isInteractive, confirm, openBrowser, green, yellow, dim } from './ui.js';
+
+/** The CLI (and the VS Code extension, which runs it) scans new untracked files too. */
+const SCAN_DIFF_OPTIONS: DiffOptions = { includeUntracked: true };
 
 const DEFAULT_TIMEOUT_SECONDS = 120;
 const CONNECT_TIMEOUT_MS = 180_000;
@@ -136,19 +139,20 @@ export async function runScan(options: ScanOptions): Promise<number> {
         // Destructive-write guard (ROADMAP §3): --fix rewrites workspace files,
         // so uncommitted work must be safe in git first — checked BEFORE the
         // scan so no quota is burned on a run that would refuse anyway.
-        // --dry-run never writes and needs no guard.
-        if (options.fixMode === 'apply' && !options.allowDirty && isWorkingTreeDirty()) {
+        // --dry-run never writes and needs no guard. Untracked files count:
+        // the scan includes them, and their content is not in git yet.
+        if (options.fixMode === 'apply' && !options.allowDirty && isWorkingTreeDirty(undefined, SCAN_DIFF_OPTIONS)) {
             console.error(
-                'Refusing --fix: the working tree has uncommitted changes. Commit or stash them first '
-                + '(so applied fixes stay revertible via git), pass --allow-dirty to override, '
-                + 'or use --dry-run to preview without writing.',
+                'Refusing --fix: the working tree has uncommitted changes or untracked files. '
+                + 'Commit or stash them first (so applied fixes stay revertible via git), '
+                + 'pass --allow-dirty to override, or use --dry-run to preview without writing.',
             );
             return 2;
         }
 
         const repoFullName = resolveRepoFullName();
         const mergeBaseSha = resolveMergeBase(options.explicitBaseRef);
-        const diff = computeDiff(mergeBaseSha);
+        const diff = computeDiff(mergeBaseSha, undefined, undefined, SCAN_DIFF_OPTIONS);
 
         // Shared upload policy (ROADMAP §13): identical rules to the MCP server,
         // including the secret filter this path was missing entirely.
@@ -224,7 +228,8 @@ export function reportUploadRefusal(uploadRefusal: DiffUploadRefusal, options: S
 
     console.error(
         `Diff is ${Math.ceil(uploadRefusal.diffBytes / 1024)} KB; the limit is `
-        + `${uploadRefusal.limitBytes / 1024} KB. Split the change or scan via a pull request.`,
+        + `${uploadRefusal.limitBytes / 1024} KB (untracked files not in .gitignore count too). `
+        + 'Split the change or scan via a pull request.',
     );
     return 2;
 }

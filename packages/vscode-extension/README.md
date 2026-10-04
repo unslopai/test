@@ -1,10 +1,10 @@
 # Anti-AI-Slop Gatekeeper
 
-Deterministic review for AI-generated code, before it reaches a pull request. The extension scans your **uncommitted local changes** against Unslop's rule corpus — 119 research-backed rules with verdicts no single LLM votes on — and surfaces confirmed findings right in the editor.
+Review for AI-generated code, before it reaches a pull request. The extension sends the diff of your **local work** (commits not yet on the default branch plus uncommitted changes) to Unslop's hosted review and shows each finding in the editor with the ID of the rule it violates. Rule-based detectors check the diff first, without a model. A model then reviews the JavaScript and TypeScript files, and a second model re-checks its findings blind. Not every finding gets that re-check (a stage can be skipped for time, and some routes report the reviewing model's own confidence), so the status bar tooltip states for every scan how many findings passed the re-check, stayed uncertain, carry only the model's own confidence, could not be verified, or came from a rule detector.
 
 ## What it does
 
-- **One-click scan of your working tree**: the status bar shield scans the diff between your working tree and the merge-base with your default branch — exactly what a PR reviewer would see.
+- **One-click scan of your working tree**: the status bar shield scans the diff between your working tree and the merge-base with your default branch — exactly what a PR reviewer would see. New files you have not added to git yet are included unless `.gitignore` excludes them.
 - **Findings as native diagnostics**: confirmed findings land in the Problems panel at the offending line, with the violated rule and a customer-safe explanation. Ranges track your edits; findings on lines you have since rewritten are marked stale instead of pointing at the wrong code.
 - **Approved fixes, applied locally**: findings that carry a verified fix offer an *Apply fix* action. Nothing is written without your click, and never outside the workspace folder.
 - **Guided setup instead of dead ends**: no git repo, no origin, no commits yet, signed out, CLI missing — each state gets a status-bar action that fixes it (`git init`, GitHub publish, fetch, sign-in) rather than an error toast.

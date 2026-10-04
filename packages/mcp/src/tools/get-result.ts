@@ -68,6 +68,12 @@ function buildResultResponse(jobId: string, pollResponse: ScanPollResponse): Mcp
             ?? (pollResponse.phase === 'complete' && scanResult?.outcome === 'reviewed'),
         omittedFiles: scanResult?.omittedFiles ?? [],
         cognitiveIntegrityScore: scanResult?.cognitiveIntegrityScore ?? null,
+        // Why a score can be null or a stage is missing (ROADMAP §3): server
+        // codes, stage enums and diff paths only, no model text. Empty =
+        // nothing degraded, or a result from a server predating the fields.
+        degradations: scanResult?.degradations ?? [],
+        skippedStages: scanResult?.skippedStages ?? [],
+        draftUnreviewedFiles: scanResult?.draftUnreviewedFiles ?? [],
         ...(pollResponse.rerollNotice ? { rerollNotice: pollResponse.rerollNotice } : {}),
         ...(pollResponse.phase !== 'complete'
             ? { nextStep: 'The LLM analysis is still running. Call unslop_get_result again with this jobId.' }

@@ -12,6 +12,7 @@
  * und Apply-/Suppression-Anker deterministisch — unabhängig davon, wie viele
  * weitere Vorkommen ein späterer Scan findet.
  */
+import { presentConditionRule } from '@/lib/pipeline/conditions';
 import { listHitLocations } from '@/lib/pipeline/prescan-hit-cap';
 import type { IssueOccurrence } from '@unslop/shared';
 import type { PipelineIssue, PrescanHitLocation } from '@/lib/pipeline/types';
@@ -129,10 +130,15 @@ function expandToPrescanHits(prescanIssue: PipelineIssue): PrescanHit[] {
     return listHitLocations(prescanIssue).map((hitLocation) => ({ ...hitLocation, rule: prescanIssue.rule }));
 }
 
+/**
+ * Die Modell-Lane nennt Conditions "Condition N (…)", der Pre-Scanner
+ * "COND-00N (…)" — verglichen wird über das Nutzer-Label, sonst stünden zwei
+ * gleich benannte Findings auf derselben Zeile (ROADMAP §3, COND-011).
+ */
 function matchesPrescanRuleAndFile(llmIssue: PipelineIssue, prescanHit: PrescanHit): boolean {
     if (llmIssue.path !== prescanHit.path) return false;
     const prescanRuleId = prescanHit.rule.split(' ')[0];
-    return Boolean(prescanRuleId) && llmIssue.rule.includes(prescanRuleId);
+    return Boolean(prescanRuleId) && presentConditionRule(llmIssue.rule).includes(prescanRuleId);
 }
 
 function rangesOverlap(

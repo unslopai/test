@@ -145,7 +145,7 @@ const RULE_LIST: readonly RuleDescriptor[] = [
         explanation: 'volatile provides neither atomicity nor memory ordering between threads — a flag like this can be torn, reordered, or never observed by the other thread. Use C11 atomics or a mutex (sig_atomic_t is only correct for signal handlers).',
     },
     {
-        ruleId: 'COND-011', title: 'Condition 11: JSX nesting deeper than 4 levels', severity: 'WARNING', engine: 'tree-sitter',
+        ruleId: 'COND-011', title: 'Cyclomatic Explosion / God Component', severity: 'WARNING', engine: 'tree-sitter',
         explanation: 'The JSX return contains conditional nesting (elements, ternaries, logical ANDs) deeper than 4 levels, or the component declares more than 2 useEffect hooks — a god component. Extract the deeply nested branches into named child components.',
     },
     // ── ESLint-Engine (TS/JS) ────────────────────────────────────────────────

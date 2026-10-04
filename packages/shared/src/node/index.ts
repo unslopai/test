@@ -39,6 +39,7 @@ export {
     resolveMergeBase,
     resolveRepoFullName,
 } from './git.js';
+export type { DiffOptions } from './git.js';
 
 export { HIGH_ENTROPY_PATTERN_CLASS, classifySecretText, findSecretsInDiff } from './secret-filter.js';
 export type { SecretMatch } from './secret-filter.js';

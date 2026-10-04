@@ -1,13 +1,14 @@
 /**
  * Git-Helper-Tests (MCP_SPEC.md §10) gegen ECHTE Wegwerf-Repos in Temp-
  * Verzeichnissen: Merge-Base-Auflösung, Detached HEAD, fehlendes Origin,
- * leerer Diff, Pfad-Filter und Dirty-Erkennung.
+ * leerer Diff, Pfad-Filter, Dirty-Erkennung und untracked Dateien im Diff.
  */
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { MAX_DIFF_UPLOAD_BYTES, findDiffUploadRefusal } from './diff-upload-guard.js';
 import {
     GitError,
     computeDiff,
@@ -254,5 +255,104 @@ describe('resolveMergeBase failure diagnosis (Z1–Z5)', () => {
     it('keeps the generic fallback for a non-origin explicit base (no remote probe)', () => {
         expect(() => resolveMergeBase('upstream/main', connectedRepo))
             .toThrow(/Cannot compute merge-base with 'upstream\/main'\. Fetch the remote first/);
+    });
+});
+
+/**
+ * Untracked files in the CLI/extension scan (ROADMAP §3): a freshly generated,
+ * never-added file is the most common AI-code case and used to be dropped
+ * silently. They enter the SAME diff string, so the upload policy (secret
+ * filter, size limit) must refuse them exactly like tracked changes.
+ */
+describe('computeDiff with includeUntracked', () => {
+    const INCLUDE_UNTRACKED = { includeUntracked: true } as const;
+
+    function createScanRepo(repoName: string): { readonly repoPath: string; readonly headSha: string } {
+        const repoPath = path.join(fixtureRoot, repoName);
+        createRepoWithCommit(repoPath);
+        return { repoPath, headSha: resolveHeadSha(repoPath) };
+    }
+
+    it('diffs a new untracked file as a new file, skips ignored ones, and leaves the staging area alone', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-basic');
+        fs.writeFileSync(path.join(repoPath, '.gitignore'), 'build/\n');
+        fs.mkdirSync(path.join(repoPath, 'build'));
+        fs.writeFileSync(path.join(repoPath, 'build', 'bundle.js'), 'export const bundled = 1;\n');
+        fs.writeFileSync(path.join(repoPath, 'generated.ts'), 'export const generated = 42;\n');
+
+        const untrackedDiff = computeDiff(headSha, repoPath, undefined, INCLUDE_UNTRACKED);
+
+        expect(untrackedDiff).toContain('diff --git a/generated.ts b/generated.ts');
+        expect(untrackedDiff).toContain('new file mode');
+        expect(untrackedDiff).toContain('+export const generated = 42;');
+        expect(untrackedDiff).not.toContain('bundle.js');
+        expect(computeDiff(headSha, repoPath)).toBe('');
+        expect(runGitInFixture(['status', '--porcelain'], repoPath)).toContain('?? generated.ts');
+        expect(runGitInFixture(['diff', '--cached', '--name-only'], repoPath)).toBe('');
+    });
+
+    it('includes bracketed Next.js route paths and lists repo-root paths from a subdirectory', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-next-route');
+        const routeDir = path.join(repoPath, 'app', '[id]');
+        fs.mkdirSync(routeDir, { recursive: true });
+        fs.writeFileSync(path.join(routeDir, 'page.tsx'), 'export default function RoutePage() { return null; }\n');
+        fs.writeFileSync(path.join(repoPath, 'root-level.ts'), 'export const rootLevel = true;\n');
+
+        const subdirectoryDiff = computeDiff(headSha, routeDir, undefined, INCLUDE_UNTRACKED);
+
+        expect(subdirectoryDiff).toContain('diff --git a/app/[id]/page.tsx b/app/[id]/page.tsx');
+        expect(subdirectoryDiff).toContain('diff --git a/root-level.ts b/root-level.ts');
+    });
+
+    it('lets the secret filter refuse a secret that only exists in an untracked file', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-secret');
+        fs.writeFileSync(path.join(repoPath, 'config.env'), 'API_KEY=supersecretvalue123\n');
+
+        const uploadRefusal = findDiffUploadRefusal(computeDiff(headSha, repoPath, undefined, INCLUDE_UNTRACKED));
+
+        expect(uploadRefusal?.kind).toBe('secret_detected');
+        if (uploadRefusal?.kind !== 'secret_detected') throw new Error('Expected a secret refusal.');
+        expect(uploadRefusal.firstMatch.path).toBe('config.env');
+        expect(uploadRefusal.firstMatch.line).toBe(1);
+    });
+
+    it('lets the upload limit refuse an untracked file that pushes the diff over MAX_DIFF_UPLOAD_BYTES', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-oversize');
+        const fillerLine = 'export const fillerValue = 1;\n';
+        const fillerLineCount = Math.ceil(MAX_DIFF_UPLOAD_BYTES / fillerLine.length) + 1;
+        fs.writeFileSync(path.join(repoPath, 'oversized.ts'), fillerLine.repeat(fillerLineCount));
+
+        const uploadRefusal = findDiffUploadRefusal(computeDiff(headSha, repoPath, undefined, INCLUDE_UNTRACKED));
+
+        expect(uploadRefusal?.kind).toBe('diff_too_large');
+    });
+
+    it('refuses untracked content beyond the git output buffer with a .gitignore hint instead of ENOBUFS', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-dump');
+        fs.writeFileSync(path.join(repoPath, 'dump.sql'), 'INSERT INTO orders VALUES (1);\n'.repeat(400_000));
+
+        expect(() => computeDiff(headSha, repoPath, undefined, INCLUDE_UNTRACKED))
+            .toThrow(/untracked file\(s\) hold more than 8 MB \(e\.g\. dump\.sql\).*\.gitignore/);
+    });
+
+    it('skips a nested repository and keeps a leading space in the first file name', () => {
+        const { repoPath, headSha } = createScanRepo('untracked-nested');
+        const nestedRepo = path.join(repoPath, 'vendor-checkout');
+        fs.mkdirSync(nestedRepo);
+        runGitInFixture(['init', '-b', 'main'], nestedRepo);
+        fs.writeFileSync(path.join(repoPath, ' spaced.ts'), 'export const spaced = 1;\n');
+
+        const untrackedDiff = computeDiff(headSha, repoPath, undefined, INCLUDE_UNTRACKED);
+
+        expect(untrackedDiff).toContain('+++ b/ spaced.ts');
+        expect(untrackedDiff).not.toContain('vendor-checkout');
+    });
+
+    it('counts untracked files as dirty only when asked to', () => {
+        const { repoPath } = createScanRepo('untracked-dirty');
+        fs.writeFileSync(path.join(repoPath, 'fresh.ts'), 'export const fresh = 1;\n');
+
+        expect(isWorkingTreeDirty(repoPath)).toBe(false);
+        expect(isWorkingTreeDirty(repoPath, INCLUDE_UNTRACKED)).toBe(true);
     });
 });

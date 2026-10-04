@@ -301,7 +301,7 @@
       },
       {
         "path": "components/orders/OrderSummary.tsx",
-        "ruleContains": "Condition 11|ARCH-001"
+        "ruleContains": "Condition 11|COND-011|ARCH-001"
       }
     ]
   },
@@ -857,7 +857,7 @@
       },
       {
         "path": "xl/components/orders/OrderSummary.tsx",
-        "ruleContains": "Condition 11|ARCH-001"
+        "ruleContains": "Condition 11|COND-011|ARCH-001"
       },
       {
         "path": "xl/components/cms/ArticleBody.tsx",

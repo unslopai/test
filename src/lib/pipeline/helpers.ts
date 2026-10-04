@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { formatOccurrenceLineRefs } from '@unslop/shared/occurrence-format';
 import { AI_GENERATED_MARKER, AI_GENERATED_NOTICE, isAiGeneratedFinding } from '@/lib/ai-disclosure';
 import { extractErrorMessage } from '@/lib/errors';
+import { presentConditionRule } from '@/lib/pipeline/conditions';
 import { buildHunkRangesByFile, isLineWithinHunks } from '@/lib/pipeline/diff-utils';
 import { normalizeBareRuleId, subtractPrescanOverlaps } from '@/lib/pipeline/finding-aggregation';
 import { countHitsBySeverity } from '@/lib/pipeline/prescan-hit-cap';
@@ -32,12 +33,17 @@ export { normalizeBareRuleId };
  * deterministische Finding. Bei aggregierten LLM-Issues (ROADMAP §7) fällt
  * nur das kollidierende VORKOMMEN weg, nicht das ganze Aggregat
  * (subtractPrescanOverlaps in finding-aggregation.ts).
+ *
+ * Erst NACH der ID-Vergabe wird "Condition N (…)" zum Nutzer-Label
+ * "COND-00N (Titel)" (presentConditionRule): die Finding-IDs bleiben damit
+ * identisch zu früheren Scans, und alle Konsumenten zeigen dasselbe Label.
  */
 export function collectReportableIssues(context: PipelineContext): PipelineIssue[] {
     const llmIssuesWithoutDuplicates = context.issues
         .map((llmIssue) => subtractPrescanOverlaps(llmIssue, context.prescanIssues))
         .filter((remainingIssue): remainingIssue is PipelineIssue => remainingIssue !== null);
-    return assignFindingIds([...context.prescanIssues, ...llmIssuesWithoutDuplicates]);
+    return assignFindingIds([...context.prescanIssues, ...llmIssuesWithoutDuplicates])
+        .map((reportableIssue) => ({ ...reportableIssue, rule: presentConditionRule(reportableIssue.rule) }));
 }
 
 // =============================================================================
