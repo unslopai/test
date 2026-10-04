@@ -16,6 +16,7 @@ import {
     completeGatekeeperCheckRun,
     deriveDeterministicOnlyConclusion,
     deriveReviewConclusion,
+    markIncompleteCoverage,
     markCheckRunAiGenerated,
 } from '@/lib/check-run';
 import { runPipelineUnderWatchdog } from '@/lib/job-watchdog';
@@ -26,7 +27,7 @@ import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } 
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
-import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeNothingReviewed, hasIncompleteCoverage, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import {
     formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
 } from '@unslop/shared/degradation-notice';
@@ -512,11 +513,12 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
             buildDeterministicOnlySummary(finalContext, reportableIssues),
         );
     }
+    const findingsResult = deriveReviewConclusion(reportableIssues, {
+        integrityScore: finalContext.cascade.integrityScore,
+        minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
+    });
     const reviewedResult = appendDegradationNotices(
-        deriveReviewConclusion(reportableIssues, {
-            integrityScore: finalContext.cascade.integrityScore,
-            minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
-        }),
+        hasIncompleteCoverage(finalContext) ? markIncompleteCoverage(findingsResult) : findingsResult,
         finalContext,
     );
     // Short-Circuit des Pre-Scanners: Outcome 'reviewed', aber kein Modell lief (LEGAL_PAGES_SPEC §4a.3).
@@ -528,8 +530,9 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
 /**
  * Ein Zeit-Skip (DEADLINE_GUARD_SPEC §3.4) und ein halber Draft
  * (LARGE_DIFF_RECALL_SPEC Option A, `draft_partial`) stehen auch in der
- * Check-Summary — die Conclusion-Regeln (check-run.ts) bleiben unverändert (D8).
- * Dasselbe gilt für einen ausgefallenen Pre-Scan neben einer Modell-Review.
+ * Check-Summary. Dasselbe gilt für einen ausgefallenen Pre-Scan neben einer
+ * Modell-Review. Ohne Findings macht `markIncompleteCoverage` aus `success`
+ * ein `neutral`; CRITICAL bleibt `failure` (D8).
  */
 function appendDegradationNotices(
     checkRunResult: CheckRunResult,

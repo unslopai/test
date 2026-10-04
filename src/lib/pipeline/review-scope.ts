@@ -42,6 +42,20 @@ const NO_REVIEWABLE_FILES_REASONS: Readonly<Record<DeterministicOnlySurface, str
 };
 const DEFAULT_NOTHING_REVIEWED_REASON = 'No reviewable files in this pull request.';
 
+/**
+ * true = ein Teil der Änderung blieb ungeprüft: der Pre-Scan ist ausgefallen
+ * oder ein Draft-Batch ist gescheitert. Check und Kommentar zeigen dann kein
+ * „No AI slop found“ ohne Einschränkung (`markIncompleteCoverage`). Ein
+ * Zeit-Skip zählt nicht: der Draft hat alle Dateien gelesen, übersprungen
+ * sind nur Verifier, Eskalation oder Second Opinion, und ohne Findings gibt
+ * es nichts zu verifizieren. Dateien, die das Modell grundsätzlich nicht
+ * liest, zählen auch nicht: das beträfe fast jeden PR mit Config-Dateien.
+ */
+export function hasIncompleteCoverage(context: Pick<PipelineContext, 'cascade' | 'prescanStats'>): boolean {
+    return context.prescanStats?.degraded === true
+        || context.cascade.draftUnreviewedFiles.length > 0;
+}
+
 /** Eine Datei, die der Pre-Scanner überhaupt ansieht: mit Patch, nicht generiert, kein Lockfile. */
 export function isPrescanScannable(changedFile: PullRequestFile): boolean {
     return changedFile.patch !== undefined

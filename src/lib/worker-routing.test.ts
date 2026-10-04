@@ -316,6 +316,8 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
 
         const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
         expect(checkRunResult).toMatchObject({
+            conclusion: 'neutral',
+            title: 'No findings, review incomplete',
             summary: expect.stringContaining(
                 'Reduced coverage: the AI review failed on 2 files — not reviewed: src/lib/alpha.ts, src/lib/beta.ts.',
             ),
@@ -332,6 +334,8 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
 
         const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
         expect(checkRunResult).toMatchObject({
+            conclusion: 'neutral',
+            title: 'No findings, review incomplete',
             summary: expect.stringContaining(
                 'Reduced coverage: the deterministic pre-scanner failed on this change — only the model review ran',
             ),
