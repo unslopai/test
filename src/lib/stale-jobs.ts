@@ -9,11 +9,18 @@
  *
  * Die reine Auswahl-Logik ist bewusst von der IO getrennt, damit sie ohne DB
  * testbar ist.
+ *
+ * Seit dem Deadline Guard (D10) läuft der Reaper zusätzlich lazy aus
+ * Webhook, CLI-Poll und Dashboard (lazy-reaper.ts) — dann auch mehrfach
+ * parallel. Er liest mit der Service-Role ALLE Tenants: bewusste Ausnahme
+ * von DATA-001 für diesen Hintergrundpfad, der dem auslösenden User nichts
+ * zurückgibt.
  */
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { getInstallationToken } from '@/lib/github-app';
 import { completeGatekeeperCheckRun } from '@/lib/check-run';
+import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
 import { STALE_JOB_ERROR_MESSAGE, selectStaleJobs } from '@/lib/stale-jobs-selection';
 import type { StaleJobCandidate } from '@/lib/stale-jobs-selection';
 
@@ -49,10 +56,11 @@ export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOut
 
     const staleJobs = selectStaleJobs(candidates, nowMs);
     const failures: string[] = [];
+    let reapedCount = 0;
     let checkRunsClosed = 0;
 
     for (const staleJob of staleJobs) {
-        const { error: updateError } = await supabase
+        const { data: reapedRows, error: updateError } = await supabase
             .from('review_jobs')
             .update({
                 status: 'error',
@@ -62,12 +70,19 @@ export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOut
             .eq('id', staleJob.id)
             // Statusfilter gegen die Race mit einem Job, der genau jetzt doch
             // noch fertig wird: dann greift das UPDATE schlicht nicht.
-            .eq('status', 'processing');
+            .eq('status', 'processing')
+            // Nur wer die Zeile wirklich umgestellt hat, schließt den Check —
+            // zwei parallele Lazy-Reaper dürfen ihn nie doppelt schließen.
+            .select('id');
 
         if (updateError) {
             failures.push(`Job ${staleJob.id}: ${updateError.message}`);
             continue;
         }
+        if (!reapedRows || reapedRows.length === 0) {
+            continue;
+        }
+        reapedCount += 1;
 
         if (await closeAbandonedCheckRun(staleJob)) {
             checkRunsClosed += 1;
@@ -76,7 +91,7 @@ export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOut
 
     return {
         scanned: candidates.length,
-        reaped: staleJobs.length - failures.length,
+        reaped: reapedCount,
         checkRunsClosed,
         failures,
     };
@@ -98,11 +113,9 @@ async function closeAbandonedCheckRun(staleJob: StaleJobCandidate): Promise<bool
             installationToken,
             staleJob.repoFullName,
             staleJob.checkRunId,
-            {
-                conclusion: 'failure',
-                title: 'Review abgebrochen',
-                summary: STALE_JOB_ERROR_MESSAGE,
-            },
+            // Öffentlich am PR: dieselbe englische Timeout-Copy wie Worker und
+            // Watchdog, nie der interne Detailtext (ROADMAP §15).
+            FAILED_CHECK_RUN_COPY.review_timeout,
         );
         return true;
     } catch (checkRunError: unknown) {

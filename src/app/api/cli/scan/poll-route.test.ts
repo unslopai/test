@@ -29,6 +29,9 @@ vi.mock('@/lib/supabase', () => ({
     },
 }));
 
+const scheduleLazyReapMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/lazy-reaper', () => ({ scheduleLazyReap: scheduleLazyReapMock }));
+
 const { GET } = await import('./[jobId]/route');
 
 function buildPollRequest(): Request {
@@ -213,6 +216,50 @@ describe('GET /api/cli/scan/[jobId] — phase contract (MCP_SPEC §4.1)', () => 
         // Kein Fragment des Modelltexts irgendwo in der serialisierten Antwort.
         expect(JSON.stringify(pollResponse)).not.toContain('SECRET-LEAK-CANARY');
         expect(JSON.stringify(pollResponse)).not.toContain('Response-Preview');
+    });
+
+    it('reicht Zeit-Skips des Deadline Guards durch und verwirft unbekannte Stufen (DEADLINE_GUARD_SPEC D6)', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                ...PERSISTED_RESULT_FIXTURE,
+                degradations: ['time_budget_exhausted'],
+                skipped_stages: ['second_opinion', 'injected_stage'],
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.degradations).toEqual(['time_budget_exhausted']);
+        expect(pollResponse.result.skippedStages).toEqual(['second_opinion']);
+    });
+
+    it('plant nach erfolgreicher Key-Prüfung ein Lazy Reaping ein (DEADLINE_GUARD_SPEC D10)', async () => {
+        mockJobRow();
+
+        await GET(buildPollRequest(), ROUTE_PARAMS);
+
+        expect(scheduleLazyReapMock).toHaveBeenCalledWith('cli-poll');
+    });
+
+    it('ein ungültiger API-Key löst kein Lazy Reaping aus', async () => {
+        resolveApiKeyMock.mockResolvedValue(null);
+
+        const pollResponse = await GET(buildPollRequest(), ROUTE_PARAMS);
+
+        expect(pollResponse.status).toBe(401);
+        expect(scheduleLazyReapMock).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen Review-Timeout als review_timeout — ohne den Rohtext', async () => {
+        mockJobRow({
+            status: 'error',
+            error_message: '[review_timeout] Review-Zeitbudget erschöpft: Draft-Call an der Job-Deadline abgebrochen',
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse).toEqual({ status: 'error', phase: 'submitted', error: 'review_timeout' });
     });
 
     it('meldet eine erschöpfte Modell-Kapazität als model_unavailable — ohne den Rohtext', async () => {

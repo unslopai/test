@@ -8,8 +8,11 @@
 import { ApiError } from '@google/genai';
 import { describe, expect, it, vi } from 'vitest';
 import {
+    CallBudgetExhaustedError,
     ModelUnavailableError,
     findTransientVertexFailure,
+    isCallBudgetRefusal,
+    isCallDeadlineFailure,
     resolveRetryDelayMs,
     runWithTransientRetry,
 } from '@/lib/pipeline/vertex-retry';
@@ -127,6 +130,24 @@ describe('runWithTransientRetry', () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it('verweigert den Retry, wenn das Job-Budget Wartezeit + Startschwelle nicht deckt (DEADLINE_GUARD_SPEC §3.2)', async () => {
+        const retryPolicy = buildInstantPolicy();
+        const modelCall = vi.fn().mockRejectedValue(buildCapacityError());
+
+        const retryOutcome = runWithTransientRetry(modelCall, 'verify', retryPolicy, () => false);
+
+        await expect(retryOutcome).rejects.toBeInstanceOf(CallBudgetExhaustedError);
+        expect(modelCall).toHaveBeenCalledTimes(1);
+        expect(retryPolicy.waitMs).not.toHaveBeenCalled();
+    });
+
+    it('ein verweigerter Retry zählt überall als Deadline-Abbruch (nie retryfähig, Draft => review_timeout)', () => {
+        const budgetRefusal = new CallBudgetExhaustedError('VerdictCall/verify');
+
+        expect(isCallDeadlineFailure(new Error('wrapped', { cause: budgetRefusal }))).toBe(true);
+        expect(isCallBudgetRefusal(new Error('wrapped', { cause: budgetRefusal }))).toBe(true);
     });
 
     it('wiederholt keinen Versuch, der selbst schon länger als 60 s lief (300-s-Routenbudget)', async () => {

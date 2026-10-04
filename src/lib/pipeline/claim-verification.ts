@@ -8,7 +8,14 @@
  */
 import { runEnvelopeGenerateContent } from '@/lib/pipeline/context-cache';
 import { extractTokenUsage, parseModelJson } from '@/lib/pipeline/helpers';
-import { ModelUnavailableError, isCallDeadlineFailure, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
+import {
+    CallBudgetExhaustedError,
+    DEFAULT_RETRY_POLICY,
+    ModelUnavailableError,
+    isCallDeadlineFailure,
+    runWithTransientRetry,
+} from '@/lib/pipeline/vertex-retry';
+import { hasBudgetForCall } from '@/lib/pipeline/deadline';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
 import type { EnvelopeCallResult, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import type { PullRequestFile } from '@/lib/github';
@@ -320,15 +327,22 @@ export async function runVerdictCallWithRetry(
     claimBatch: readonly BlindClaim[],
     callConfig: VerdictCallConfig,
 ): Promise<VerdictCallResult> {
+    const callLabel = `VerdictCall/${callConfig.telemetryPhase}/${callConfig.model}`;
     const runAttemptWithBackoff = () => runWithTransientRetry(
         () => runVerdictCall(context, promptEnvelope, claimBatch, callConfig),
-        `VerdictCall/${callConfig.telemetryPhase}/${callConfig.model}`,
+        callLabel,
+        DEFAULT_RETRY_POLICY,
+        (delayMs) => hasBudgetForCall(context, callConfig.telemetryPhase, delayMs),
     );
     try {
         return await runAttemptWithBackoff();
     } catch (firstAttemptFailure: unknown) {
         if (firstAttemptFailure instanceof ModelUnavailableError) throw firstAttemptFailure;
         if (isCallDeadlineFailure(firstAttemptFailure)) throw firstAttemptFailure;
+        // Der Sofort-Retry wiederholt den vollen Call — nur, wenn das Budget ihn deckt (§3.2).
+        if (!hasBudgetForCall(context, callConfig.telemetryPhase)) {
+            throw new CallBudgetExhaustedError(callLabel, { cause: firstAttemptFailure });
+        }
         console.warn(
             `[ClaimVerification] Verdict-Batch fehlgeschlagen, ein Retry ` +
             `(Job ${context.jobId}, Phase ${callConfig.telemetryPhase}):`,

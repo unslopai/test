@@ -172,7 +172,7 @@ const DOWNGRADE_PRESENTATION: Record<NonNullable<DowngradeReason>, {
     },
     escalation_skipped: {
         note: '⚠️ Downgraded to WARNING — this finding was flagged for Pro escalation, but the escalation '
-            + 'was skipped (budget or API degradation), so it could not be conclusively verified.',
+            + 'was skipped (budget, API or time-limit degradation), so it could not be conclusively verified.',
         verification: 'unverified',
     },
 };
@@ -221,7 +221,10 @@ function finalizeScore(
     context: PipelineContext,
     survivingIssues: readonly PipelineIssue[],
 ): PipelineContext {
-    const integrityScore = computeIntegrityScore(survivingIssues);
+    // D7: ein nur teilweise gelaufener Verifier hätte nur die verifizierten
+    // Claims gezählt — die Zahl würde lügen. Ehrlich ist null.
+    const verifierCutShort = context.cascade.skippedStages.includes('verifier');
+    const integrityScore = verifierCutShort ? null : computeIntegrityScore(survivingIssues);
     console.log(
         `[IntegrityScorer] Cognitive Integrity Score: ${integrityScore ?? 'n/a'} ` +
         `(${survivingIssues.length} Issues, Job ${context.jobId}).`,

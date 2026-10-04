@@ -245,6 +245,10 @@ function buildContext(
             filePaths: fixtureFiles.map((fixtureFile) => fixtureFile.filename),
             overrideSmartDetection: false,
         },
+        // Kein Job-Budget: der Harness misst Recall und Latenz ungedeckelt
+        // (DEADLINE_GUARD_SPEC §3.1) — die Deadline-Pfade haben eigene Unit-Tests.
+        jobStartedAtMs: Date.now(),
+        deadlineAtMs: null,
         tokenUsage: null,
         cascade: INITIAL_CASCADE_STATE,
         cascadeConfig,

@@ -26,6 +26,7 @@ describe('classifyScanFailure — error-code → state mapping (§6.2)', () => {
         ['rate_limit_exceeded', 'quota'],
         ['job_stalled', 'stalled'],
         ['Scan failed: model_unavailable — the AI model provider is temporarily out of capacity', 'model_unavailable'],
+        ['Scan failed: review_timeout — the review exceeded the time limit for this plan', 'review_timeout'],
         ['invalid_api_key', 'unauthorized'],
     ];
 

@@ -7,7 +7,7 @@
 import type { PullRequestFile } from '@/lib/github';
 import type { RepoAuthMode } from '@/lib/repo-auth';
 import type { PrescanConfig, PrescanStats } from '@unslop/prescan';
-import type { IssueOccurrence, IssueVerification, Severity } from '@unslop/shared';
+import type { IssueOccurrence, IssueVerification, Severity, SkippedStage } from '@unslop/shared';
 
 // =============================================================================
 // Issue Types
@@ -78,7 +78,12 @@ type CascadeDegradation =
     | 'verifier_parse_error'
     | 'verifier_api_error'
     /** D8 (PROMPT_CACHING_SPEC §6.3): Explicit-Cache-Pfad fiel auf inline zurück. */
-    | 'cache_fallback';
+    | 'cache_fallback'
+    /** DEADLINE_GUARD_SPEC D6: mindestens eine Stufe lief wegen des Job-Budgets nicht (voll). */
+    | 'time_budget_exhausted';
+
+/** Stufen, die der Deadline Guard übersprungen oder abgebrochen hat (D6) — Wire-Typ aus dem Shared-Contract. */
+type SkippableStage = SkippedStage;
 
 type EscalationReason =
     | 'complexity_heuristic'
@@ -99,6 +104,8 @@ interface CascadeState {
     /** null = Verifikation degradiert, kein ehrlicher Score möglich. */
     readonly integrityScore: number | null;
     readonly degradations: readonly CascadeDegradation[];
+    /** Vom Deadline Guard übersprungene/abgebrochene Stufen; leer = alles lief. */
+    readonly skippedStages: readonly SkippableStage[];
 }
 
 /** Schwellenwerte der Cascade — pro Repo in pipeline_config.cascade (SPEC.md §7). */
@@ -186,6 +193,13 @@ interface PipelineContext {
      */
     readonly authMode: RepoAuthMode;
     readonly repositoryId: string | null;
+    /** Handler-Einstieg der Route, die den Job angenommen hat (DEADLINE_GUARD_SPEC D1). */
+    readonly jobStartedAtMs: number;
+    /**
+     * Bis hier müssen alle LLM-Calls fertig sein (Start + Budget − Reserve, D2).
+     * null = kein Job-Budget — nur Benchmark-/Replay-Harness, nie ein Prod-Job.
+     */
+    readonly deadlineAtMs: number | null;
     /** Repo-Owner — Grundlage für das Pro-Eskalations-Budget (SPEC.md §7). */
     readonly ownerUserId: string;
     /** PR-Diff-Daten (werden vom DiffLoaderStep befüllt) */
@@ -291,6 +305,7 @@ export type {
     ClaimVerdict,
     CascadeRoute,
     CascadeDegradation,
+    SkippableStage,
     EscalationReason,
     CascadeState,
     CascadeConfig,

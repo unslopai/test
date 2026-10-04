@@ -365,6 +365,67 @@ describe('draftReviewerStep', () => {
     });
 });
 
+describe('draftReviewerStep — Deadline Guard (DEADLINE_GUARD_SPEC D5)', () => {
+    const deadlineAbort = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+
+    function buildBudgetedDraftContext(route: 'flash-cascade' | 'pro-direct', remainingMs: number) {
+        return { ...buildDraftContext(route), deadlineAtMs: Date.now() + remainingMs };
+    }
+
+    beforeEach(() => {
+        generateContentMock.mockReset();
+        recordLlmCallMock.mockClear();
+    });
+
+    it('ein Draft-Abbruch an der Job-Deadline endet als ReviewTimeoutError (Client-Code review_timeout)', async () => {
+        generateContentMock.mockRejectedValue(deadlineAbort());
+
+        await expect(draftReviewerStep.execute(buildBudgetedDraftContext('flash-cascade', 120_000)))
+            .rejects.toMatchObject({ name: 'ReviewTimeoutError' });
+        expect(recordLlmCallMock).toHaveBeenCalledWith(expect.objectContaining({ phase: 'draft', status: 'api_error' }));
+    });
+
+    it('ohne Restbudget startet kein Draft-Call', async () => {
+        await expect(draftReviewerStep.execute(buildBudgetedDraftContext('flash-cascade', -1_000)))
+            .rejects.toMatchObject({ name: 'ReviewTimeoutError' });
+        expect(generateContentMock).not.toHaveBeenCalled();
+    });
+
+    it('pro-direct mit 100 s Rest nach dem Abbruch: der Flash-Fallback läuft', async () => {
+        generateContentMock
+            .mockRejectedValueOnce(deadlineAbort())
+            .mockResolvedValueOnce(buildDraftLlmResponse('flash fallback'));
+
+        const draftedContext = await draftReviewerStep.execute(buildBudgetedDraftContext('pro-direct', 100_000));
+
+        expect(generateContentMock.mock.calls[1][0].model).toBe(MODEL_DRAFT);
+        expect(draftedContext.cascade.route).toBe('flash-cascade');
+    });
+
+    it('pro-direct mit nur 60 s Rest: kein Flash-Fallback, sondern review_timeout', async () => {
+        generateContentMock.mockRejectedValueOnce(deadlineAbort());
+
+        await expect(draftReviewerStep.execute(buildBudgetedDraftContext('pro-direct', 60_000)))
+            .rejects.toMatchObject({ name: 'ReviewTimeoutError' });
+        expect(generateContentMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('pro-direct mit wenig Rest und einem Nicht-Zeit-Fehler behält den ehrlichen Fehlercode', async () => {
+        generateContentMock.mockRejectedValueOnce(new Error('invalid argument'));
+
+        await expect(draftReviewerStep.execute(buildBudgetedDraftContext('pro-direct', 60_000)))
+            .rejects.toThrow('invalid argument');
+        expect(generateContentMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('ein Nicht-Deadline-Fehler bleibt unverändert (kein falsches review_timeout)', async () => {
+        generateContentMock.mockRejectedValue(new Error('invalid argument'));
+
+        await expect(draftReviewerStep.execute(buildBudgetedDraftContext('flash-cascade', 120_000)))
+            .rejects.toThrow('invalid argument');
+    });
+});
+
 describe('buildAlreadyFlaggedSection', () => {
     it('renders one (ruleId, path, line) tuple per prescan finding', () => {
         const flaggedSection = buildAlreadyFlaggedSection([

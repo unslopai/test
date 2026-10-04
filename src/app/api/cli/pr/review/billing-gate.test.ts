@@ -260,7 +260,8 @@ describe('POST /api/cli/pr/review (MCP_SPEC §4.7)', () => {
 
         expect(processReviewJobMock).not.toHaveBeenCalled();
         await flushAfterCallbacks();
-        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test');
+        // Job-Uhr ab Handler-Einstieg (DEADLINE_GUARD_SPEC D1).
+        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
     });
 
     it('still answers 202 with a null checkRunUrl when the check run cannot be opened', async () => {

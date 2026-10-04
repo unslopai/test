@@ -35,6 +35,9 @@ interface ScanRequestBody {
 }
 
 export async function POST(request: Request) {
+    // Job-Uhr (DEADLINE_GUARD_SPEC D1): der after()-Callback kennt den
+    // Invocation-Start nicht, maxDuration zählt aber ab hier.
+    const invocationStartedAtMs = Date.now();
     const apiKey = await resolveApiKey(request);
     if (!apiKey) {
         return NextResponse.json({ error: 'invalid_api_key' }, { status: 401 });
@@ -104,7 +107,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'job_creation_failed' }, { status: 500 });
     }
 
-    after(() => processReviewJob(insertedJob.id, repoRow.user_id));
+    after(() => processReviewJob(insertedJob.id, repoRow.user_id, invocationStartedAtMs));
 
     return NextResponse.json({ jobId: insertedJob.id }, { status: 202 });
 }

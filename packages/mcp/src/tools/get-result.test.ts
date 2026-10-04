@@ -130,6 +130,20 @@ describe('unslop_get_result', () => {
         expect(errorBody.error.message).toContain('Wait about a minute');
     });
 
+    it('maps a server-side time limit onto the retryable review_timeout error', async () => {
+        const deps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'error',
+            phase: 'submitted',
+            error: 'review_timeout',
+        } satisfies ScanPollResponse));
+
+        const toolResult = await runGetResultTool(deps, { jobId: 'job-under-test' });
+
+        const errorBody = JSON.parse(toolResult.content[0].text) as { error: { code: string; retryable: boolean } };
+        expect(errorBody.error.code).toBe('review_timeout');
+        expect(errorBody.error.retryable).toBe(true);
+    });
+
     it('returns the deterministic partial with a poll-again hint when the budget elapses', async () => {
         const deps = buildDeps(vi.fn().mockResolvedValue({
             status: 'processing',

@@ -49,6 +49,8 @@ export class UsageError extends Error {}
 const SCAN_FAILURE_HINTS: Readonly<Record<string, string>> = {
     model_unavailable: 'the AI model provider is temporarily out of capacity (retries exhausted). '
         + 'Nothing is wrong with your repository or connection — retry in a minute.',
+    review_timeout: 'the review exceeded the time limit for this plan (large diffs take longest). '
+        + 'Run the scan again; if it keeps timing out, scan a smaller change set.',
 };
 
 export function formatScanFailure(failureCode: string | undefined): string {

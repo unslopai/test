@@ -415,6 +415,9 @@ async function scanChanges(alreadyRetriedAfterConnect = false): Promise<void> {
         case 'model_unavailable':
             stateController.setState('SCAN_FAILED');
             return offerRetry('The AI model is temporarily out of capacity — nothing is wrong with your repository. Retry in a minute.');
+        case 'review_timeout':
+            stateController.setState('SCAN_FAILED');
+            return offerRetry('The review exceeded the time limit for this plan — retry; large change sets take longest.');
         case 'generic':
             return handleGenericScanFailure(scanOutcome.detail, targetFolder.folderPath);
     }

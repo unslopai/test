@@ -70,6 +70,7 @@ export const INITIAL_CASCADE_STATE: Readonly<CascadeState> = {
     escalationReason: null,
     integrityScore: null,
     degradations: [],
+    skippedStages: [],
 };
 
 /**

@@ -215,6 +215,7 @@ export type ScanFailureKind =
     | 'quota'
     | 'stalled'
     | 'model_unavailable'
+    | 'review_timeout'
     | 'unauthorized'
     | 'generic';
 
@@ -229,6 +230,8 @@ export function classifyScanFailure(failureText: string): ScanFailureKind {
     // Vertex capacity after server-side retries — transient, never a repo or
     // connection problem (the F5 user read the old server_error as one).
     if (failureText.includes('model_unavailable')) return 'model_unavailable';
+    // Server-side time limit (Deadline Guard) — a re-run can succeed.
+    if (failureText.includes('review_timeout')) return 'review_timeout';
     if (failureText.includes('invalid_api_key')) return 'unauthorized';
     return 'generic';
 }

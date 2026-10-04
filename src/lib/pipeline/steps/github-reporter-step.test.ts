@@ -123,6 +123,23 @@ describe('githubReporterStep', () => {
         expect(commentFallbackCall[5]).toHaveLength(1);
     });
 
+    it('nennt die aus Zeitgründen übersprungenen Stufen statt des generischen Satzes (DEADLINE_GUARD_SPEC §3.4)', async () => {
+        const timeSkippedContext = {
+            ...buildReportableContext(),
+            cascade: buildCascadeState({
+                integrityScore: 91,
+                degradations: ['time_budget_exhausted'],
+                skippedStages: ['second_opinion', 'escalation'],
+            }),
+        };
+
+        await githubReporterStep.execute(timeSkippedContext);
+
+        const postedBody = String(createPullRequestReviewMock.mock.calls[0][4]);
+        expect(postedBody).toContain('Reduced confidence: time budget exhausted — skipped: second opinion, escalation.');
+        expect(postedBody).not.toContain('Reduced confidence mode');
+    });
+
     it('rethrows unrelated GitHub failures instead of masking them as a fallback', async () => {
         const permissionFailure = new GitHubApiError(
             403, '/repos/unslopai/test/pulls/13/reviews', '{"message":"Resource not accessible"}',

@@ -11,6 +11,9 @@
  *
  * Ein Fehlschlag hier ist FATAL (kein Draft = kein Review möglich) und läuft
  * bewusst in den markJobError-Pfad — die Telemetrie-Zeile wird davor geschrieben.
+ * Reißt der Draft das Job-Budget, wird daraus ein ReviewTimeoutError
+ * (Client-Code `review_timeout`, DEADLINE_GUARD_SPEC D5) statt eines Jobs,
+ * der am Plattform-Kill für immer `processing` bleibt.
  */
 import { fetchRenderedLawBlock } from '@/lib/law';
 import { MODEL_DRAFT, MODEL_ESCALATION } from '@/lib/pipeline/models';
@@ -18,6 +21,8 @@ import { buildAlreadyFlaggedSection } from '@/lib/pipeline/prompt-builder';
 import { resolvePromptEnvelope } from '@/lib/pipeline/context-cache';
 import { addTokenUsage } from '@/lib/pipeline/helpers';
 import { runReviewerPass } from '@/lib/pipeline/reviewer-call';
+import { isCallDeadlineFailure } from '@/lib/pipeline/vertex-retry';
+import { DRAFT_FALLBACK_MIN_MS, ReviewTimeoutError, remainingLlmMs } from '@/lib/pipeline/deadline';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
 
@@ -34,27 +39,59 @@ export const draftReviewerStep: PipelineStep = {
         // Short-Circuit (pre_scanner_design.md §5.3): deterministische CRITICALs
         // haben den Review bereits entschieden — kein Draft-Call.
         if (context.llmSkipped) return context;
-
-        if (context.cascade.route !== 'pro-direct') {
-            return runDraftOnModel(context, MODEL_DRAFT);
+        // Der Draft wird nie übersprungen, solange Zeit übrig ist (D4) — ohne
+        // Rest gibt es nichts Ehrliches zu tun außer dem Timeout.
+        const remainingAtStartMs = remainingLlmMs(context);
+        if (remainingAtStartMs <= 0) {
+            throw new ReviewTimeoutError(`kein LLM-Budget mehr vor dem Draft (${remainingAtStartMs} ms)`);
         }
 
-        try {
-            return await runDraftOnModel(context, MODEL_ESCALATION);
-        } catch (proDraftError: unknown) {
-            // Ohne Fallback stirbt der ganze Job, weil der Pro-Draft auf dieser
-            // Route der KOMPLETTE Review ist (D10: nie ein Job-Fehler wegen der
-            // Kaskade). Der Diff war zwar zu komplex für Flash-Qualität, aber ein
-            // verifizierter Flash-Review schlägt gar keinen Review.
-            console.error(
-                `[DraftReviewer] Pro-Volldurchlauf fehlgeschlagen (Job ${context.jobId}) — ` +
-                `degradiere auf die Flash-Kaskade:`,
-                proDraftError instanceof Error ? proDraftError.message : proDraftError,
-            );
-            return runDraftOnModel(degradeToFlashCascade(context), MODEL_DRAFT);
-        }
+        return context.cascade.route === 'pro-direct'
+            ? runProDirectDraft(context)
+            : runDraftWithinBudget(context, MODEL_DRAFT);
     },
 };
+
+async function runProDirectDraft(context: PipelineContext): Promise<PipelineContext> {
+    try {
+        return await runDraftOnModel(context, MODEL_ESCALATION);
+    } catch (proDraftError: unknown) {
+        // Ein zweiter (Flash-)Draft braucht Ø 27–46 s; mit weniger als
+        // DRAFT_FALLBACK_MIN_MS Rest würde er nur ebenfalls abbrechen (D5).
+        const remainingAfterProMs = remainingLlmMs(context);
+        if (remainingAfterProMs < DRAFT_FALLBACK_MIN_MS) {
+            // Nur ein Zeit-Abbruch ist ein Timeout; ein Kapazitäts- oder
+            // API-Fehler behält seinen ehrlichen Code (model_unavailable/server_error).
+            if (!isCallDeadlineFailure(proDraftError)) throw proDraftError;
+            throw new ReviewTimeoutError(
+                `Pro-direct-Draft gescheitert, nur ${remainingAfterProMs} ms Rest — kein Flash-Fallback`,
+                { cause: proDraftError },
+            );
+        }
+        // Ohne Fallback stirbt der ganze Job, weil der Pro-Draft auf dieser
+        // Route der KOMPLETTE Review ist (D10: nie ein Job-Fehler wegen der
+        // Kaskade). Der Diff war zwar zu komplex für Flash-Qualität, aber ein
+        // verifizierter Flash-Review schlägt gar keinen Review.
+        console.error(
+            `[DraftReviewer] Pro-Volldurchlauf fehlgeschlagen (Job ${context.jobId}) — ` +
+            `degradiere auf die Flash-Kaskade:`,
+            proDraftError instanceof Error ? proDraftError.message : proDraftError,
+        );
+        return runDraftWithinBudget(degradeToFlashCascade(context), MODEL_DRAFT);
+    }
+}
+
+/** Flash-Draft; ein Abbruch an der Job-Deadline wird zum ReviewTimeoutError (D5). */
+async function runDraftWithinBudget(context: PipelineContext, reviewerModel: string): Promise<PipelineContext> {
+    try {
+        return await runDraftOnModel(context, reviewerModel);
+    } catch (draftError: unknown) {
+        if (!isCallDeadlineFailure(draftError)) throw draftError;
+        throw new ReviewTimeoutError(`Draft-Call (${reviewerModel}) an der Job-Deadline abgebrochen`, {
+            cause: draftError,
+        });
+    }
+}
 
 function degradeToFlashCascade(context: PipelineContext): PipelineContext {
     return {
@@ -86,6 +123,7 @@ async function runDraftOnModel(
         detectedEcosystems: context.detectedEcosystems,
         model: reviewerModel,
         role: isProDirect ? 'escalation' : 'draft',
+        deadlineAtMs: context.deadlineAtMs,
     });
     const userPrompt = buildUserPrompt(context, promptVariant);
 

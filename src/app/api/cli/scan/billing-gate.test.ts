@@ -349,6 +349,7 @@ describe('POST /api/cli/scan — Billing-Gate (PADDLE_SPEC §11)', () => {
 
         expect(processReviewJobMock).not.toHaveBeenCalled();
         await flushAfterCallbacks();
-        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test');
+        // Job-Uhr ab Handler-Einstieg (DEADLINE_GUARD_SPEC D1).
+        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
     });
 });

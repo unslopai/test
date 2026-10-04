@@ -18,6 +18,7 @@
 import { NextResponse, after } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { processReviewJob } from "@/lib/worker";
+import { scheduleLazyReap } from "@/lib/lazy-reaper";
 import { verifyWebhookSignature } from "@/lib/github";
 import {
     GitHubAppAuthError,
@@ -59,6 +60,12 @@ const REVIEWABLE_PR_ACTIONS = new Set(['opened', 'synchronize', 'reopened']);
 const INSTALLATION_EVENT_TYPES = new Set(['installation', 'installation_repositories']);
 
 export async function POST(request: Request) {
+    // Job-Uhr (DEADLINE_GUARD_SPEC D1): der after()-Callback kennt den
+    // Invocation-Start nicht, maxDuration zählt aber ab hier.
+    const invocationStartedAtMs = Date.now();
+    // Lazy Reaping (D10): räumt vom Plattform-Kill verwaiste Jobs ab —
+    // gedrosselt, nach der Response, ohne diesen Request zu berühren.
+    scheduleLazyReap('webhook');
     try {
         const rawBody = await request.text();
         const signature = request.headers.get('x-hub-signature-256');
@@ -88,11 +95,11 @@ export async function POST(request: Request) {
         }
 
         if (eventType === 'check_run') {
-            return await handleCheckRunEvent(payload, rawBody, signature);
+            return await handleCheckRunEvent(payload, rawBody, signature, invocationStartedAtMs);
         }
 
         if (eventType === 'pull_request') {
-            return await handlePullRequestEvent(payload, rawBody, signature);
+            return await handlePullRequestEvent(payload, rawBody, signature, invocationStartedAtMs);
         }
 
         return NextResponse.json({
@@ -184,6 +191,7 @@ async function handlePullRequestEvent(
     payload: unknown,
     rawBody: string,
     signature: string | null,
+    invocationStartedAtMs: number,
 ): Promise<NextResponse> {
     const prEvent = parsePullRequestEvent(payload);
 
@@ -203,7 +211,7 @@ async function handlePullRequestEvent(
         });
     }
 
-    return triageAndStartReview(prEvent, rawBody, signature);
+    return triageAndStartReview(prEvent, rawBody, signature, invocationStartedAtMs);
 }
 
 /**
@@ -215,6 +223,7 @@ async function handleCheckRunEvent(
     payload: unknown,
     rawBody: string,
     signature: string | null,
+    invocationStartedAtMs: number,
 ): Promise<NextResponse> {
     const checkRunEvent = parseCheckRunEvent(payload);
 
@@ -243,7 +252,7 @@ async function handleCheckRunEvent(
     console.log(
         `[Webhook] Re-Run angefordert für ${checkRunEvent.prEvent.repoFullName}#${checkRunEvent.prEvent.prNumber}.`,
     );
-    return triageAndStartReview(checkRunEvent.prEvent, rawBody, signature);
+    return triageAndStartReview(checkRunEvent.prEvent, rawBody, signature, invocationStartedAtMs);
 }
 
 /**
@@ -254,6 +263,7 @@ async function triageAndStartReview(
     prEvent: PullRequestEventPayload,
     rawBody: string,
     signature: string | null,
+    invocationStartedAtMs: number,
 ): Promise<NextResponse> {
     const deliveryTarget = await resolveDeliveryTarget(prEvent, rawBody, signature);
 
@@ -277,7 +287,7 @@ async function triageAndStartReview(
         return NextResponse.json({ success: true, message: 'Repo läuft über die GitHub App — Legacy-Delivery ignoriert.' });
     }
 
-    return startReviewForDelivery(deliveryTarget, prEvent);
+    return startReviewForDelivery(deliveryTarget, prEvent, invocationStartedAtMs);
 }
 
 /** Lädt die Kandidaten-Zeilen und übergibt die Auswahl an die reine Logik. */
@@ -320,6 +330,7 @@ async function resolveDeliveryTarget(
 async function startReviewForDelivery(
     deliveryTarget: { kind: 'app'; repoRow: WebhookRepoRow; installationId: number } | { kind: 'legacy'; repoRow: WebhookRepoRow },
     prEvent: PullRequestEventPayload,
+    invocationStartedAtMs: number,
 ): Promise<NextResponse> {
     const { repoRow } = deliveryTarget;
 
@@ -356,7 +367,7 @@ async function startReviewForDelivery(
 
     // Background-Verarbeitung starten (läuft NACH dem Response)
     after(async () => {
-        await processReviewJob(jobId, repoRow.userId);
+        await processReviewJob(jobId, repoRow.userId, invocationStartedAtMs);
     });
 
     // Sofort 200 OK zurückgeben — GitHub wartet nicht

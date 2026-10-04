@@ -29,6 +29,7 @@ export type UnslopErrorCode =
     | 'no_changes'
     | 'job_stalled'
     | 'model_unavailable'
+    | 'review_timeout'
     | 'upstream_unavailable';
 
 export interface UnslopToolError {
@@ -76,6 +77,14 @@ export function pollFailureToToolError(wireError: string | undefined): UnslopToo
         return localToolError(
             'model_unavailable',
             'The AI model is temporarily out of capacity. Wait about a minute, then run `unslop_scan` again.',
+            true,
+        );
+    }
+    if (wireError === 'review_timeout') {
+        return localToolError(
+            'review_timeout',
+            'The review exceeded the time limit for this plan. Run `unslop_scan` again, '
+                + 'or scan a smaller change set if it keeps timing out.',
             true,
         );
     }

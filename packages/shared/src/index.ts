@@ -79,6 +79,9 @@ export interface ScanIssue {
  */
 export type ScanOutcome = 'reviewed' | 'nothing_reviewed';
 
+/** Stufen, die der Deadline Guard übersprungen oder abgebrochen hat (DEADLINE_GUARD_SPEC D6). */
+export type SkippedStage = 'second_opinion' | 'escalation' | 'verifier';
+
 /** Gesamtergebnis eines Scans, wie es die Polling-API zurückgibt. */
 export interface ScanResult {
     readonly hasSlop: boolean;
@@ -94,6 +97,13 @@ export interface ScanResult {
      * verfügbar, kein ehrlicher Score möglich.
      */
     readonly cognitiveIntegrityScore: number | null;
+    /**
+     * Degradationen der Kaskade (z.B. `time_budget_exhausted`, `verifier_api_error`).
+     * Additiv: fehlt bei Ergebnissen vor 2026-09-26 und bei Partials.
+     */
+    readonly degradations?: readonly string[];
+    /** Aus Zeitgründen übersprungene Stufen; leer/fehlend = alles lief. */
+    readonly skippedStages?: readonly SkippedStage[];
 }
 
 /** Lebenszyklus eines review_jobs-Eintrags. */
@@ -133,7 +143,8 @@ export interface ScanPollResponse {
     /**
      * Stabiler Fehlercode bei status 'error' — nie Server-Detailtext:
      * `job_stalled` (5-Minuten-Stall), `model_unavailable` (Vertex-Kapazität
-     * nach den server-seitigen Retries, transient) oder `server_error`.
+     * nach den server-seitigen Retries, transient), `review_timeout`
+     * (Zeitlimit der Plattform, DEADLINE_GUARD_SPEC D5/D9) oder `server_error`.
      */
     readonly error?: string;
 }
