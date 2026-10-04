@@ -14,6 +14,7 @@
  *    gelten als First-Party und werden übersprungen.
  */
 import { RULE_REGISTRY } from '../rules/registry';
+import { extractPyprojectCandidates } from './registry/pyproject-deps';
 import type { PrescanLanguage } from '../language';
 import type {
     PrescanFinding,
@@ -71,6 +72,12 @@ export interface RegistryEngineFile {
     readonly language: PrescanLanguage;
     /** Zeilennummer → Zeilentext, NUR added lines. */
     readonly addedLineTexts: ReadonlyMap<number, string>;
+    /**
+     * Alle bekannten Zeilen der Datei — nur für Manifeste mit Zeilen-
+     * übergreifendem Kontext (pyproject.toml: Tabellen-Header + Arrays).
+     * Kandidaten entstehen trotzdem ausschließlich für Added Lines.
+     */
+    readonly lineTexts?: ReadonlyMap<number, string>;
 }
 
 const JS_IMPORT_PATTERN = /(?:from\s+|require\s*\(\s*|import\s*\(\s*)["']([^"']+)["']|^\s*import\s+["']([^"']+)["']/;
@@ -78,6 +85,8 @@ const PYTHON_IMPORT_PATTERN = /^\s*(?:from\s+([A-Za-z_][\w.]*)\s+import|import\s
 const RUST_USE_PATTERN = /^\s*(?:pub\s+)?use\s+([a-z_][a-z0-9_]*)(?:::|;|\s)/;
 const CARGO_DEPENDENCY_PATTERN = /^([a-zA-Z0-9_-]+)\s*=/;
 const REQUIREMENTS_PATTERN = /^([A-Za-z0-9][A-Za-z0-9._-]*)/;
+/** Ein npm-Paketname; alles andere (z. B. `${specifier}` aus einem Template-Literal) ist kein Import. */
+const NPM_PACKAGE_NAME_PATTERN = /^[A-Za-z0-9][\w.~-]*$/;
 const HF_PRETRAINED_PATTERN = /(?:from_pretrained|hf_hub_download|snapshot_download)\s*\(\s*["']([\w.-]+\/[\w.-]+)["']/;
 
 export function extractPackageCandidates(files: readonly RegistryEngineFile[]): PackageCandidate[] {
@@ -88,9 +97,25 @@ export function extractPackageCandidates(files: readonly RegistryEngineFile[]): 
         for (const [lineNumber, lineText] of file.addedLineTexts) {
             candidates.push(...extractCandidatesFromLine(file, lineNumber, lineText, firstPartyNames));
         }
+        candidates.push(...extractPyprojectManifestCandidates(file));
     }
 
     return dedupeCandidates(candidates);
+}
+
+/** pyproject.toml braucht Tabellen-/Array-Kontext über Zeilengrenzen — daher nicht zeilenweise. */
+function extractPyprojectManifestCandidates(file: RegistryEngineFile): PackageCandidate[] {
+    const isPyproject = (file.path.split('/').pop() ?? '') === 'pyproject.toml';
+    if (!isPyproject || !file.lineTexts) return [];
+    const addedLines = new Set(file.addedLineTexts.keys());
+    return extractPyprojectCandidates(file.lineTexts, addedLines).map((candidate) => ({
+        registry: 'pypi',
+        packageName: candidate.packageName,
+        path: file.path,
+        line: candidate.line,
+        lineText: candidate.lineText,
+        fromManifest: true,
+    }));
 }
 
 /** Pfadsegmente des Diffs = First-Party-Heuristik (src/myapp/… ⇒ 'myapp'). */
@@ -174,6 +199,7 @@ function normalizeNpmImport(importTarget: string, firstPartyNames: ReadonlySet<s
     if (importTarget.startsWith('@')) return null;
 
     const rootPackage = importTarget.split('/')[0];
+    if (!NPM_PACKAGE_NAME_PATTERN.test(rootPackage)) return null;
     if (NODE_BUILTINS.has(rootPackage) || firstPartyNames.has(rootPackage.toLowerCase())) return null;
     return rootPackage;
 }

@@ -13,6 +13,7 @@
  */
 import type {
     EngineId,
+    PrescanCompanionFile,
     PrescanConfig,
     PrescanEngineVersions,
     PrescanFile,
@@ -28,6 +29,8 @@ export const INTERNAL_SECRET_HEADER = 'x-internal-secret';
 
 export interface InternalPrescanRequest {
     readonly files: readonly PrescanFile[];
+    /** Begleitdateien (v4, SEC-019): vom Worker bei headSha beschafft, nie selbst gescannt. */
+    readonly companionFiles?: readonly PrescanCompanionFile[];
     readonly prescanConfig: PrescanConfig;
     /** Nur für Log-Korrelation — die Engines brauchen weder Repo noch SHA. */
     readonly repoFullName: string;
@@ -37,6 +40,7 @@ export interface InternalPrescanRequest {
 /** Validierte Request-Hülle; die Config bleibt roh (siehe parseInternalPrescanRequest). */
 export interface ParsedInternalPrescanRequest {
     readonly files: readonly PrescanFile[];
+    readonly companionFiles: readonly PrescanCompanionFile[];
     readonly rawPrescanConfig: unknown;
     readonly repoFullName: string;
     readonly headSha: string;
@@ -97,6 +101,13 @@ function parsePrescanFile(raw: unknown): PrescanFile | null {
     return { path, content, patch };
 }
 
+function parseCompanionFile(raw: unknown): PrescanCompanionFile | null {
+    if (!isRecord(raw)) return null;
+    const { path, content } = raw;
+    if (!isString(path) || (content !== null && !isString(content))) return null;
+    return { path, content };
+}
+
 /**
  * Validiert die Request-Hülle. Die PrescanConfig selbst wird NICHT hier
  * geprüft: die Route reicht sie durch `resolvePrescanConfig` (feldweiser
@@ -105,8 +116,16 @@ function parsePrescanFile(raw: unknown): PrescanFile | null {
 export function parseInternalPrescanRequest(raw: unknown): ParsedInternalPrescanRequest | null {
     if (!isRecord(raw)) return null;
     const files = parseArray(raw.files, parsePrescanFile);
-    if (files === null || !isString(raw.repoFullName) || !isString(raw.headSha)) return null;
-    return { files, rawPrescanConfig: raw.prescanConfig, repoFullName: raw.repoFullName, headSha: raw.headSha };
+    // Optional (Worker ohne das Feld bleiben gueltig); wenn vorhanden, muss es strukturell stimmen.
+    const companionFiles = raw.companionFiles === undefined ? [] : parseArray(raw.companionFiles, parseCompanionFile);
+    if (files === null || companionFiles === null || !isString(raw.repoFullName) || !isString(raw.headSha)) return null;
+    return {
+        files,
+        companionFiles,
+        rawPrescanConfig: raw.prescanConfig,
+        repoFullName: raw.repoFullName,
+        headSha: raw.headSha,
+    };
 }
 
 // =============================================================================

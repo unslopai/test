@@ -361,10 +361,12 @@ export async function fetchFileContent(
     repoFullName: string,
     filePath: string,
     branch: string = 'main',
+    options: RequestInit = {},
 ): Promise<string> {
     const response = await githubFetch<{ content: string; encoding: string }>(
         `/repos/${repoFullName}/contents/${filePath}?ref=${branch}`,
         token,
+        options,
     );
 
     if (response.encoding === 'base64') {

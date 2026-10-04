@@ -44,8 +44,22 @@ export interface PrescanFile {
     readonly patch: string;
 }
 
+/**
+ * Begleitdatei, die NICHT gescannt, aber von Config-Checks konsultiert wird
+ * (v4, SEC-019): z. B. `next.config.*` neben einer Next-Middleware im Diff.
+ * Vertrag: der Aufrufer listet jede Begleitdatei, die er sehen konnte;
+ * `content: null` heißt „existiert oder nicht — unlesbar“ und lässt den
+ * abhängigen Check ehrlich als skippedCheck enden, nie als Finding (INFRA-002).
+ * Fehlt eine Begleitdatei in der Liste, gilt sie als nicht vorhanden.
+ */
+export interface PrescanCompanionFile {
+    readonly path: string;
+    readonly content: string | null;
+}
+
 export interface PrescanInput {
     readonly files: readonly PrescanFile[];
+    readonly companionFiles?: readonly PrescanCompanionFile[];
 }
 
 /** Ehrlichkeits-Protokoll: was NICHT geprüft wurde, mit Grund (INFRA-002). */

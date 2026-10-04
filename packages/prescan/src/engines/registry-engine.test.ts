@@ -97,6 +97,7 @@ describe('runRegistryEngine — SEC-035', () => {
                     [2, "import { helper } from './local-helper';"],
                     [3, "import { law } from '@/lib/law';"],
                     [4, "import { shared } from '@unslop/shared';"],
+                    [5, "const aliasImport = `import { applySecurityHeaders } from '${specifier}';`;"],
                 ]),
             })],
             { fetchImpl: unreachableFetch },
@@ -209,5 +210,71 @@ describe('runRegistryEngine — SEC-036 (Hugging Face)', () => {
         const hfFinding = registryResult.findings.find((finding) => finding.ruleId === 'SEC-036');
         expect(hfFinding?.severity).toBe('CRITICAL');
         expect(hfFinding?.explanation).toContain('huggingface.co/api/models/nonexistent-org/nonexistent-model');
+    });
+});
+
+describe('runRegistryEngine — pyproject.toml manifests (v4)', () => {
+    const PYPROJECT_LINES: readonly string[] = [
+        '[build-system]',
+        'requires = ["setuptools>=68", "wheel"]',
+        '',
+        '[project]',
+        'name = "billing"',
+        'dependencies = [',
+        '    "requests>=2.31",',
+        '    "hallucinated-http-kit[async]>=1.0; python_version < \'3.12\'",',
+        ']',
+        '',
+        '[project.optional-dependencies]',
+        'dev = ["pytest", "ruff"]',
+        '',
+        '[dependency-groups]',
+        'docs = ["mkdocs", { include-group = "dev" }]',
+        '',
+        '[tool.poetry.dependencies]',
+        'python = "^3.11"',
+        'fastapi = { version = "^0.110", extras = ["all"] }',
+        '',
+        '[tool.poetry.group.dev.dependencies]',
+        'mypy = "^1.8"',
+    ];
+
+    function pyprojectFile(addedLines: readonly number[]): RegistryEngineFile {
+        const lineTexts = new Map(PYPROJECT_LINES.map((lineText, index) => [index + 1, lineText] as const));
+        const addedLineTexts = new Map(addedLines.map((lineNumber) => [lineNumber, lineTexts.get(lineNumber) ?? ''] as const));
+        return { path: 'services/billing/pyproject.toml', language: 'toml', addedLineTexts, lineTexts };
+    }
+
+    it('resolves declarations from every dependency table and only for added lines', async () => {
+        const seenUrls: string[] = [];
+        const recordingFetch = vi.fn(async (url: string | URL | Request) => {
+            seenUrls.push(String(url));
+            return { status: 200, ok: true };
+        }) as unknown as typeof fetch;
+
+        await runRegistryEngine([pyprojectFile([2, 7, 8, 12, 15, 19, 22])], { fetchImpl: recordingFetch });
+
+        const checkedPackages = seenUrls.map((url) => url.replace('https://pypi.org/pypi/', '').replace('/json', '')).sort();
+        expect(checkedPackages).toEqual(['fastapi', 'hallucinated-http-kit', 'mkdocs', 'mypy', 'pytest', 'requests', 'ruff', 'setuptools', 'wheel'].sort());
+    });
+
+    it('ignores the python constraint, unchanged lines and non-dependency tables', async () => {
+        const seenUrls: string[] = [];
+        const recordingFetch = vi.fn(async (url: string | URL | Request) => {
+            seenUrls.push(String(url));
+            return { status: 200, ok: true };
+        }) as unknown as typeof fetch;
+
+        await runRegistryEngine([pyprojectFile([5, 18])], { fetchImpl: recordingFetch });
+
+        expect(seenUrls).toEqual([]);
+    });
+
+    it('flags a 404 declaration as SEC-035 with the manifest line as quote', async () => {
+        const registryResult = await runRegistryEngine([pyprojectFile([8])], { fetchImpl: buildFetchReturning(404) });
+
+        expect(registryResult.findings).toHaveLength(1);
+        expect(registryResult.findings[0]).toMatchObject({ ruleId: 'SEC-035', line: 8, path: 'services/billing/pyproject.toml' });
+        expect(registryResult.findings[0].exactQuote).toContain('hallucinated-http-kit');
     });
 });

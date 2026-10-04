@@ -1,5 +1,37 @@
 # Rule-Recall Benchmark
 
+## Prescan v4 Revision (2026-09-26): SEC-019 auf Next.js verengt — Prescan-only weiter 49/126, 0 FP
+
+Review vom 2026-09-24 baute sieben realistische Dateien, auf denen der SEC-019-Check vom 2026-09-24 ohne Beweis in der Datei feuerte (Verstoß gegen die Fail-Safe-Regel, Design §9). Fix: Express- und Flask-Form **entfernt**, Next nur noch bei einer frischen, nicht entweichenden `NextResponse` (Design §9.1). Die Aussage „SEC-019 deterministisch“ unten gilt damit **nur für Next-Middleware/-Proxy**; Express/Flask bleiben LLM-Lane.
+
+| Messung | Wert |
+|---|---|
+| Prescan-only (`--prescan-only`) | **49/126 (38,9 %)**, unverändert; r08 `middleware.ts` SEC-019 weiter `caughtByPrescan` |
+| Negativ-Kontrollen (r14/r15/r18/r21) | **0 CRITICAL, 0 WARNING False Positives** |
+| Unit-Tests | `packages/prescan` 127/127 (sieben Review-Fälle als Still-Tests, vorher rot), `npm test` 1225 passed / 21 skipped, 0 Fails |
+
+Kein LLM-Lauf, kein Vertex-Call.
+
+## Prescan v4 (2026-09-24): Config-Engine-Lücken geschlossen — Prescan-only 49/126, 0 FP; SEC-019 (letzter stabiler Miss) jetzt deterministisch
+
+Nur 0-Token-Lanes gemessen (kein LLM-Lauf, kein Vertex-Call — Volllauf wartet auf Freigabe). Design-Entscheidungen und Guards: `docs/specs/pre_scanner_design.md` §9.
+
+**Neu deterministisch (`@unslop/prescan` 0.4.0, 50 Regel-IDs):** SEC-019 (Next-Middleware/Express/Flask ohne Security-Header, mit `next.config.*`-Begleitdatei aus dem Worker — *seit 2026-09-26 nur noch Next, s. Revision oben*), SEC-032/033/034 (Terraform-HCL über eigenen Reader + CloudFormation/SAM YAML/JSON), SEC-042/043 (Claude-Code-Settings), `pyproject.toml` in der Registry-Engine (PEP 621/735, Poetry, uv, PDM, build-system). **Bewusst NICHT deterministisch:** MAINT-009 — Peer-Deps (`react-dom`), implizite Runtime-Deps (`sharp`) und Nutzung außerhalb des Diffs sind aus der Diff-Sicht nicht von „ungenutzt“ zu unterscheiden (gleiche Logik wie CONC-008/SEC-012/SEC-021).
+
+| Messung | Wert |
+|---|---|
+| Prescan-only, alle 21 Bundles (`--prescan-only`) | **49/126 (38,9 %)**, vorher 46/126 (v3-Referenz `results/2026-08-25-prescan-only-v3.json`) |
+| Negativ-Kontrollen (r14/r15/r18/r21) | **0 CRITICAL, 0 WARNING False Positives** |
+| Ziel-Bundle r08 | `middleware.ts` **SEC-019 ✓** (Zeile der ersten Response-Header-Mutation), kein Kollateral-Finding (2 Findings = SEC-026 + SEC-019) |
+| Ziel-Bundle r12 | `exporter-role.tf` **SEC-032 ✓**, `order-functions.tf` **SEC-033 ✓** (2 Findings, je Funktion), `pdf-render.tf` SEC-034 bewusst still (keine Own-Account-Kontrast-Evidenz in der Datei — bleibt LLM-Fund) |
+| Unit-Tests | `packages/prescan` 125/125 (+35), `npm test` 1220 passed / 21 skipped (einziger Fail: `git.test.ts`-Timeout-Flake, ROADMAP §8, isoliert 18/18) |
+
+**Erwartung für den nächsten Volllauf:** combined 126/126, da SEC-019 der einzige stabile Miss war (Stand 2026-09-16: 125/126). Nicht behauptet, bis gemessen.
+
+**Fixture-Universum unverändert:** SEC-042/043 bleiben in `excluded-rules.json` (LLM-Lane kann sie aus einem Hunk nicht attribuieren; neue Fixtures würden die 126er-Referenzreihe brechen). Rohdaten dieses Laufs wurden nicht als datierte Datei eingecheckt — `last-run.json` ist ein Wegwerf-Artefakt; die Zahlen oben sind der Beleg.
+
+---
+
 ## Eskalations-Rolle auf Gemini 3.8 (2026-09-17): Degeneration erklärt + repariert, r20 18/18 + 17/18, Second Opinion 13–20 s — ENTSCHEIDUNG: Eskalation → 3.8 (medium, eu, Draft-Cache)
 
 Anlass: ROADMAP-Ziel „Eskalation auf 3.8" (−50 % Kosten) mit zwei Blockern aus dem 03.09.-Lauf (JSON-Degeneration 3/7, `high`-Timeout). Statt weiterer Volllaeufe zuerst ein **Probe-Harness** gegen den echten r20-pro-direct-Prompt (System 28.877 Zeichen, Contents 60.156 Zeichen, 20.098 Tokens), das pro Call `finishReason`, Antwort-/Thinking-Tokens, Latenz und die Parse-Ausfallart protokolliert. Entscheidung und Architektur in `MODEL_STRATEGY_2026-08.md` §1h.
