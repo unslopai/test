@@ -1,0 +1,162 @@
+{
+  "capturedAt": "2026-09-30T09:52:05.527Z",
+  "corpusLabel": "cobra",
+  "fileCount": 59,
+  "filesByExtension": {
+    ".yml": 5,
+    ".md": 17,
+    ".go": 36,
+    "go.mod": 1
+  },
+  "totalDurationMs": 642,
+  "maxScanDurationMs": 560,
+  "findings": [
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "bash_completions.go",
+      "line": 36,
+      "exactQuote": "func writePreamble(buf io.StringWriter, name string) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "bash_completionsV2.go",
+      "line": 31,
+      "exactQuote": "func genBashComp(buf io.StringWriter, name string, includeDesc bool) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "cobra.go",
+      "line": 192,
+      "exactQuote": "func ld(s, t string, ignoreCase bool) int {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 1974,
+      "exactQuote": "func defaultUsageFunc(w io.Writer, in interface{}) error {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 1974,
+      "exactQuote": "func defaultUsageFunc(w io.Writer, in interface{}) error {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 905,
+      "exactQuote": "func (c *Command) execute(a []string) (err error) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 905,
+      "exactQuote": "func (c *Command) execute(a []string) (err error) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 1084,
+      "exactQuote": "func (c *Command) ExecuteC() (cmd *Command, err error) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "command.go",
+      "line": 1084,
+      "exactQuote": "func (c *Command) ExecuteC() (cmd *Command, err error) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 657,
+      "exactQuote": "func checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 657,
+      "exactQuote": "func checkIfFlagCompletion(finalCmd *Command, args []string, lastArg string) (*pflag.Flag, []string, string, error) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 316,
+      "exactQuote": "func (c *Command) getCompletions(args []string) (*Command, []Completion, ShellCompDirective, error) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 316,
+      "exactQuote": "func (c *Command) getCompletions(args []string) (*Command, []Completion, ShellCompDirective, error) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 748,
+      "exactQuote": "func (c *Command) InitDefaultCompletionCmd(args ...string) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "completions.go",
+      "line": 748,
+      "exactQuote": "func (c *Command) InitDefaultCompletionCmd(args ...string) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "doc/md_docs.go",
+      "line": 57,
+      "exactQuote": "func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "doc/rest_docs.go",
+      "line": 62,
+      "exactQuote": "func GenReSTCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string, string) string) error {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "fish_completions.go",
+      "line": 25,
+      "exactQuote": "func genFishComp(buf io.StringWriter, name string, includeDesc bool) {"
+    },
+    {
+      "ruleId": "ARCH-001",
+      "severity": "WARNING",
+      "path": "flag_groups.go",
+      "line": 225,
+      "exactQuote": "func (c *Command) enforceFlagGroupsForCompletion() {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "powershell_completions.go",
+      "line": 28,
+      "exactQuote": "func genPowerShellComp(buf io.StringWriter, name string, includeDesc bool) {"
+    },
+    {
+      "ruleId": "ARCH-002",
+      "severity": "WARNING",
+      "path": "zsh_completions.go",
+      "line": 87,
+      "exactQuote": "func genZshComp(buf io.StringWriter, name string, includeDesc bool) {"
+    }
+  ]
+}

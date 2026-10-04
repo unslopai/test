@@ -68,6 +68,21 @@ export function hasTreeSitterGrammar(language: PrescanLanguage): boolean {
     return !LANGUAGES_WITHOUT_GRAMMAR.has(language);
 }
 
+/**
+ * Prosa statt Code (LANGUAGE_COVERAGE_SPEC §4.4): Markdown zitiert unsichere
+ * Muster, um sie zu erklären, und Übersetzungskataloge enthalten UI-Sätze wie
+ * „API key limit reached“. Die Regex-Regeln über Code-Verhalten laufen dort
+ * nicht; nur Secrets in Provider-Format bleiben ein Befund.
+ */
+const PROSE_EXTENSION_PATTERN = /\.(md|mdx|markdown|rst|adoc)$/;
+const TRANSLATION_CATALOG_PATTERN =
+    /(^|\/)(messages|locales?|i18n|l10n|langs?|translations|_locales)\/.*\.(json|ya?ml|properties)$|\.(po|pot|arb|xlf|xliff)$/;
+
+export function isProseFile(filePath: string): boolean {
+    const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+    return PROSE_EXTENSION_PATTERN.test(normalizedPath) || TRANSLATION_CATALOG_PATTERN.test(normalizedPath);
+}
+
 /** Test-Datei-Muster (TEST-010, pre_scanner_design.md §2). */
 const TEST_FILE_PATTERN = /\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]*\.py$|Test\.java$/;
 

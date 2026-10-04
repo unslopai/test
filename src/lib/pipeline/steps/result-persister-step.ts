@@ -10,6 +10,7 @@
 import { createHash } from 'node:crypto';
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
+import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
@@ -44,7 +45,7 @@ export const resultPersisterStep: PipelineStep = {
             : {
                 has_slop: reportableIssues.length > 0,
                 issues: reportableIssues,
-                summary: context.reviewSummary || 'No AI slop found.',
+                summary: resolvePublishedSummary(context, reportableIssues),
             };
 
         const rerollBookkeeping = await resolveRerollBookkeeping(context, reviewResult.issues);

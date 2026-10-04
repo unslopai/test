@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-09-30T09:52:31.620Z",
+  "corpusLabel": "terraform-aws-vpc",
+  "fileCount": 108,
+  "filesByExtension": {
+    ".md": 24,
+    ".yml": 4,
+    ".yaml": 2,
+    ".json": 1,
+    ".tf": 77
+  },
+  "totalDurationMs": 244,
+  "maxScanDurationMs": 161,
+  "findings": []
+}
