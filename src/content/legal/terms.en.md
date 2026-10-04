@@ -46,7 +46,7 @@ This English version is provided for information. If it differs from the German 
 
 ## 5. AI-generated Outputs
 
-5.1 We generate Outputs with AI systems. We label them as AI-generated, visibly and, where the format allows, in machine-readable form. [VORBEDINGUNG: Kennzeichnung in Review-Kommentaren, Check Runs und Tool-Ausgaben umgesetzt]
+5.1 We generate Outputs with AI systems. We label them as AI-generated, visibly and, where the format allows, in machine-readable form. [VORBEDINGUNG V11: Kennzeichnung auch in der VS-Code-Erweiterung und in der Scan-Historie des Dashboards sichtbar]
 
 5.2 If you redistribute Outputs, please do not remove this labeling. Anyone who publishes Outputs as text to inform the public on matters of public interest may have their own disclosure obligations under Art. 50(4) of the AI Act, Regulation (EU) 2024/1689.
 

@@ -75,6 +75,8 @@ describe('reportUploadRefusal — Exit-Code-Contract', () => {
             filesReviewed: 0,
             // Ehrlichkeits-Contract (ROADMAP §3): 0 geprüfte Dateien sind nie ein Urteil.
             outcome: 'nothing_reviewed',
+            // Nichts lief, also ist nichts KI-generiert (LEGAL_PAGES_SPEC §4a.3).
+            aiGenerated: false,
             omittedFiles: [],
             cognitiveIntegrityScore: null,
         });

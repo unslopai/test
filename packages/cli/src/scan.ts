@@ -202,6 +202,8 @@ export function reportUploadRefusal(uploadRefusal: DiffUploadRefusal, options: S
                 filesReviewed: 0,
                 // Honesty contract (ROADMAP §3): zero files reviewed is never a verdict.
                 outcome: 'nothing_reviewed',
+                // Nothing ran, so nothing here is AI-generated (AI Act Art. 50(2)).
+                aiGenerated: false,
                 omittedFiles: [],
                 cognitiveIntegrityScore: null,
             }));

@@ -141,6 +141,10 @@ function buildScanResponse(
         ...(phase === 'complete' && scanResult
             ? { outcome: scanResult.outcome, filesReviewed: scanResult.filesReviewed }
             : {}),
+        // AI Act Art. 50(2) marker: true only when a model took part in this
+        // result; a deterministic partial and a deterministic-only scan are not.
+        // A server that predates the field sends none: label when in doubt.
+        aiGenerated: scanResult?.aiGenerated ?? (phase === 'complete' && scanResult?.outcome === 'reviewed'),
         nextStep: describeNextStep(phase, scanResult),
     };
 
