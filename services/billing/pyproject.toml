@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "billing"
+version = "0.1.0"
+description = "Billing worker"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+acme-ledger-sdk-zq7 = { git = "https://github.com/acme/acme-ledger-sdk-zq7.git", tag = "v1.2" }
+acme-shared-zq7 = { path = "../shared", develop = true }
+acme-invoice-kit-zq7 = "^1.0"
