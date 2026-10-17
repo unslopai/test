@@ -75,6 +75,25 @@ describe('runRegistryEngine — SEC-035', () => {
         expect(registryResult.skippedChecks).toHaveLength(0);
     });
 
+    it('ignores an import statement quoted in a string literal, still flags code after a closed string', async () => {
+        const registryResult = await runRegistryEngine(
+            [buildFile({
+                path: 'src/lib/reporter.test.ts',
+                addedLineTexts: new Map([
+                    [1, "patch: '@@ -40,3 +40,5 @@\\n+import hallucinatedKit from \"hallucinated-kit\";\\n+const kit = 1;',"],
+                    [2, 'const fixtureSource = "const helper = require(\'quoted-only-pkg\')";'],
+                    [3, "const label = 'it\\'s fine'; const realImport = require('real-missing-pkg');"],
+                    [4, "const quotedSource = \"require('quoted-first-pkg')\"; const nextImport = require('second-missing-pkg');"],
+                ]),
+            })],
+            { fetchImpl: buildFetchReturning(404) },
+        );
+
+        expect(registryResult.findings.map((finding) => finding.line)).toEqual([3, 4]);
+        expect(registryResult.findings[0].explanation).toContain('registry.npmjs.org/real-missing-pkg');
+        expect(registryResult.findings[1].explanation).toContain('registry.npmjs.org/second-missing-pkg');
+    });
+
     it('records network failures as skippedChecks — never as finding or pass', async () => {
         const failingFetch = vi.fn(async () => { throw new Error('ETIMEDOUT'); }) as unknown as typeof fetch;
         const registryResult = await runRegistryEngine(

@@ -201,4 +201,17 @@ describe('prose files — Markdown and translation catalogs (LANGUAGE_COVERAGE_S
         const readmeFindings = scanProseFile('README.md', ['export AWS_KEY=AKIAIOSFODNN7EXAMPLE']);
         expect(ruleIdsOf(readmeFindings)).toEqual(['SEC-005']);
     });
+
+    it('treats a checked-in diff as quoted code, not as code at that path', () => {
+        const quotedDiffLines = [
+            '+requests.get(registryUrl, verify=False)',
+            '+const agent = new https.Agent({ rejectUnauthorized: false });',
+            "+res.setHeader('Access-Control-Allow-Origin', '*');",
+        ];
+
+        expect(scanProseFile('fixtures/rule-recall/r26-clean-config.diff', quotedDiffLines)).toEqual([]);
+        expect(scanProseFile('patches/left-pad+1.3.0.patch', quotedDiffLines)).toEqual([]);
+        expect(ruleIdsOf(scanProseFile('fixtures/leaked.diff', ['+AWS_KEY=AKIAIOSFODNN7EXAMPLE'])))
+            .toEqual(['SEC-005']);
+    });
 });

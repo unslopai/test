@@ -24,7 +24,9 @@ import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pi
 import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
-import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
+import {
+    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
+} from '@unslop/shared/degradation-notice';
 import type { PullRequestReviewComment } from '@/lib/github';
 import type { CascadeState, PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
@@ -285,7 +287,7 @@ function buildModelReviewFooter(context: PipelineContext, reportableIssues: read
     const reviewOutcome = resolveReviewOutcome(context);
     const scoreBlock = reviewOutcome === 'deterministic_only'
         ? ''
-        : buildIntegrityScoreBlock(context.cascade, reportableIssues);
+        : buildIntegrityScoreBlock(context, reportableIssues);
     return isAiGeneratedRun(reviewOutcome, context.llmSkipped) ? appendAiDisclosure(scoreBlock) : scoreBlock;
 }
 
@@ -299,7 +301,7 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
         '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.'
             + omittedNote
             // Der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt.
-            + appendAiDisclosure(buildIntegrityScoreBlock(context.cascade, [])),
+            + appendAiDisclosure(buildIntegrityScoreBlock(context, [])),
         [],
         'COMMENT',
     );
@@ -311,7 +313,11 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
 // Cognitive Integrity Score Block (SPEC.md §6 — informativ, gated NIE den Check)
 // =============================================================================
 
-function buildIntegrityScoreBlock(cascade: CascadeState, reportableIssues: readonly PipelineIssue[]): string {
+function buildIntegrityScoreBlock(
+    context: Pick<PipelineContext, 'cascade' | 'prescanStats'>,
+    reportableIssues: readonly PipelineIssue[],
+): string {
+    const cascade = context.cascade;
     const scoreBlockLines = ['', '---', ''];
 
     if (cascade.integrityScore !== null) {
@@ -324,7 +330,7 @@ function buildIntegrityScoreBlock(cascade: CascadeState, reportableIssues: reado
         scoreBlockLines.push('_Confidence verification was unavailable for this review._');
     }
 
-    for (const degradationNotice of collectDegradationNotices(cascade)) {
+    for (const degradationNotice of collectDegradationNotices(context)) {
         scoreBlockLines.push('');
         scoreBlockLines.push(degradationNotice);
     }
@@ -336,18 +342,22 @@ function buildIntegrityScoreBlock(cascade: CascadeState, reportableIssues: reado
  * Ein Zeit-Skip nennt die Stufen (DEADLINE_GUARD_SPEC §3.4), ein halber Draft
  * die nicht geprüften Dateien (LARGE_DIFF_RECALL_SPEC Option A) — die
  * Dateiliste bleibt bewusst ohne Kursiv-Markup, damit Unterstriche in Pfaden
- * das Markdown nicht kippen. Alle übrigen Degradationen behalten den
- * generischen Satz.
+ * das Markdown nicht kippen. Alle übrigen Degradationen der Cascade behalten
+ * den generischen Satz. Ein ausgefallener Pre-Scan steht nicht in
+ * `cascade.degradations` und bekommt seine eigene Zeile.
  */
-function collectDegradationNotices(cascade: CascadeState): string[] {
+function collectDegradationNotices(context: Pick<PipelineContext, 'cascade' | 'prescanStats'>): string[] {
+    const cascade = context.cascade;
     const timeBudgetNotice = formatTimeBudgetNotice(cascade.skippedStages);
     const draftPartialNotice = formatDraftPartialNotice(cascade.draftUnreviewedFiles);
+    const prescanUnavailableNotice = formatPrescanUnavailableNotice(context.prescanStats?.degraded);
     const degradationNotices: string[] = [];
     if (timeBudgetNotice) degradationNotices.push(`_⚠️ ${timeBudgetNotice}_`);
     if (draftPartialNotice) degradationNotices.push(`⚠️ ${draftPartialNotice}`);
     if (degradationNotices.length === 0 && cascade.degradations.length > 0) {
         degradationNotices.push('_⚠️ Reduced confidence mode: parts of the verification cascade were unavailable._');
     }
+    if (prescanUnavailableNotice) degradationNotices.push(`_⚠️ ${prescanUnavailableNotice}_`);
     return degradationNotices;
 }
 

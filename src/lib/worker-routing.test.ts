@@ -322,6 +322,36 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
         });
     });
 
+    it('nennt einen ausgefallenen Pre-Scan neben der Modell-Review in der Check-Summary (unslopai/test#29)', async () => {
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            prescanStats: buildPrescanStats({ degraded: true, degradedReason: 'Prescan-Route antwortete mit HTTP 500.' }),
+        }));
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunResult).toMatchObject({
+            summary: expect.stringContaining(
+                'Reduced coverage: the deterministic pre-scanner failed on this change — only the model review ran',
+            ),
+        });
+    });
+
+    it('nennt keinen Pre-Scan-Ausfall, wenn der Pre-Scan gelaufen ist', async () => {
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            prescanStats: buildPrescanStats(),
+        }));
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunResult).toMatchObject({
+            summary: expect.not.stringContaining('deterministic pre-scanner failed'),
+        });
+    });
+
     it('kennzeichnet die Check-Summary eines Modell-Reviews als KI-generiert (LEGAL_PAGES_SPEC §4a.3)', async () => {
         runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => initialContext);
 
