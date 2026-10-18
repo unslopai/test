@@ -150,9 +150,9 @@ Liability towards data subjects is governed by Art. 82 GDPR. Between the parties
 
 **Nature and purpose of the processing:** automated review of source code (code review) on behalf of the Controller:
 
-1. fetching diffs, changed files and individual related configuration files through the GitHub API after installation of the GitHub App or through a repository webhook that the Processor creates with the Controller's GitHub access token, or receiving diffs from the CLI, VS Code extension and MCP server;
+1. fetching diffs, changed files, individual related configuration files and a rule-based selection of further repository files at the state of the pull request (list of file paths, manifest files, files with the database schema, start file of a service, sections of changed files) through the GitHub API after installation of the GitHub App or through a repository webhook that the Processor creates with the Controller's GitHub access token, or receiving diffs and the same selection of further files from the CLI, VS Code extension and MCP server;
 2. review with fixed rules and matching of package and model names against public registries (only the names as they appear in the code; they may contain a package author's account name);
-3. transmission to AI models at Google Cloud Vertex AI for analysis and verification, and of a diff excerpt (file names and up to 30 added lines) to generate a search vector that is not stored;
+3. transmission of the diff and of the selection of further files from number 1 to AI models at Google Cloud Vertex AI for analysis and verification, without the Processor storing the content of this selection (the list of paths and the size are stored; a selection uploaded by the CLI, VS Code extension or MCP server only until the review has loaded it), and of a diff excerpt (file names and up to 30 added lines) to generate a search vector that is not stored;
 4. storage of the request, result and log data, including in the hosting provider's runtime logs;
 5. writing results back as check runs (for a repository webhook instead as a review under the user's GitHub account that requests changes or, on the user's own pull requests, only comments), review comments and, where needed, a notice comment to the Controller's GitHub repository; reading existing pull request comments only to avoid duplicate findings, and our own review comments to be able to resolve findings later; resolving the discussion of a finding marked as resolved;
 6. for project context: reading the file list, individual manifest files (only the detected ecosystems are stored) and the JavaScript and TypeScript files, storing essentially their structure (signatures, interfaces, type definitions, class outlines; the automatic selection can include individual further lines of code), converting it into search vectors and storing it.
@@ -187,7 +187,7 @@ Outside this processing: GitHub keeps webhook delivery logs for 3 days (see Anne
 - Incoming webhooks from GitHub and Paddle are verified by signature.
 - Admin functions in the dashboard are restricted to a fixed list of operator accounts.
 - Workstation: disk encryption, screen lock, current security updates; processed data is not stored permanently on the workstation. [BESTÄTIGEN V17] [VORBEDINGUNG V21: keine Inhalte von Auftragsdaten in KI-gestützten Arbeitssitzungen, über alle Wege (db-query-Skript, Supabase-MCP, Vercel-Laufzeitprotokolle); Abfragen auf Kennungen, Status, Zeitstempel und Zähler beschränkt]
-- The CLI, the MCP server and the VS Code extension (through the CLI) abort the transmission if they detect access keys or private keys in the diff. For code fetched by the GitHub App there is no such server-side filtering.
+- The CLI, the MCP server and the VS Code extension (through the CLI) abort the transmission if they detect access keys or private keys in the diff. On the server, the Processor replaces strings that look like access keys or passwords with a placeholder in every diff before it reaches an AI model, and leaves out a file of the selection of further files with such a match. Detection is pattern-based and can miss secrets.
 
 **3. Integrity (Art. 32(1)(b))**
 - Changes to the service are checked locally with automated tests before deployment and brought in through pull requests; deployments are traceable in the hosting provider's version history. [BESTÄTIGEN: Branch-Schutz auf main bzw. PR-Pflicht, alternativ Satz auf den Ist-Stand kürzen]
@@ -212,7 +212,7 @@ Outside this processing: GitHub keeps webhook delivery logs for 3 days (see Anne
 - Supabase: SOC 2 Type 2; ISO/IEC 27001
 
 **8. Data minimization and AI-specific measures**
-- Only the diff under review, excerpts of affected files where needed and the repository's structural data are sent to the AI models; a diff excerpt and the structural data are sent to the model for search vectors. Titles, descriptions and author details of pull requests are not evaluated and not sent to AI models.
+- Only the diff under review, the rule-based selection of further repository files (file paths, manifest files, database schema, start file, sections of changed files; no `.env` files, no lockfiles) and the repository's structural data are sent to the AI models; a diff excerpt and the structural data are sent to the model for search vectors. Titles, descriptions and author details of pull requests are not evaluated and not sent to AI models.
 - Google does not train models with the data (Google Cloud Service Specific Terms, "Training Restriction").
 - The context cache the service creates at Google contains only the review rules, no processed data.
 - AI processing takes place through Vertex AI's EU endpoint. [OPTIONAL, NUR SOLANGE DER ROLLBACK-PFAD EXISTIERT: exception fallback path, see Annex 4]

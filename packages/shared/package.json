@@ -11,6 +11,8 @@
     "./node": "./src/node/index.ts",
     "./occurrence-format": "./src/occurrence-format.ts",
     "./verification-format": "./src/verification-format.ts",
-    "./degradation-notice": "./src/degradation-notice.ts"
+    "./degradation-notice": "./src/degradation-notice.ts",
+    "./repo-context": "./src/repo-context.ts",
+    "./secret-filter": "./src/node/secret-filter.ts"
   }
 }

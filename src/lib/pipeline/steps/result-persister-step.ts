@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
+import { buildPersistedRepoContext } from '@/lib/pipeline/repo-context-result';
 import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
@@ -88,6 +89,11 @@ export const resultPersisterStep: PipelineStep = {
                         step_id: stepTiming.stepId,
                         duration_ms: stepTiming.durationMs,
                     })),
+                    // REPO_CONTEXT_SPEC §6.5: Pfadliste und Größe des Kontextpakets,
+                    // nie der Inhalt. Die Tokens je Call stehen in der Telemetrie.
+                    repo_context: buildPersistedRepoContext(context),
+                    // Zeilen des Modell-Diffs, in denen der Secret-Filter Material ersetzt hat.
+                    secret_redactions: context.secretRedactions,
                 },
                 unresolved_fingerprint: rerollBookkeeping.unresolvedFingerprint,
                 reroll_count: rerollBookkeeping.rerollCount,

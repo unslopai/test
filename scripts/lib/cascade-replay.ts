@@ -35,6 +35,8 @@ import { supabase } from '@/lib/supabase';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import {
     DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REPO_CONTEXT_CONFIG,
+    buildInitialRepoContextState,
     DEFAULT_REVIEW_SCOPE_CONFIG,
     INITIAL_CASCADE_STATE,
 } from '@/lib/pipeline/defaults';
@@ -242,6 +244,11 @@ function buildReplayContext(
         // Replay misst die LLM-Cascade — der deterministische Pre-Scanner
         // läuft hier nicht (Baseline bleibt Prescan-frei reproduzierbar).
         prescanConfig: DEFAULT_PRESCAN_CONFIG,
+        // Das Replay hat kein Repo hinter den Fixtures: kein Kontextpaket, die
+        // Condition 12 steht trotzdem im Prompt wie in Produktion.
+        repoContextConfig: DEFAULT_REPO_CONTEXT_CONFIG,
+        repoContext: buildInitialRepoContextState(DEFAULT_REPO_CONTEXT_CONFIG),
+        secretRedactions: [],
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,

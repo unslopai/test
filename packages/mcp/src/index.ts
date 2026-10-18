@@ -9,10 +9,25 @@
  * a server that refuses to start is invisible to the user.
  */
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { computeDiff, loadConfig, resolveRerollLimit } from '@unslop/shared/node';
+import { buildLocalRepoContext, computeDiff, loadConfig, resolveRerollLimit } from '@unslop/shared/node';
+import type { RepoContextPackage } from '@unslop/shared/node';
 import { createUnslopApiClient } from './unslop-client.js';
 import { resolveRepoContext, resolveRepoIdentity } from './repo-context.js';
 import { createUnslopMcpServer } from './server.js';
+
+/**
+ * A context package that cannot be built never blocks a scan: the reason goes
+ * to stderr (stdout belongs to the protocol) and the scan covers the diff only.
+ */
+async function buildContextPackage(gitRoot: string, unifiedDiff: string): Promise<RepoContextPackage | null> {
+    try {
+        return await buildLocalRepoContext(gitRoot, unifiedDiff);
+    } catch (contextError: unknown) {
+        const failureDetail = contextError instanceof Error ? contextError.message : String(contextError);
+        console.error(`[unslop-mcp] repository context not built, scanning the diff only: ${failureDetail}`);
+        return null;
+    }
+}
 
 async function main(): Promise<void> {
     const clientConfig = loadConfig();
@@ -22,6 +37,7 @@ async function main(): Promise<void> {
         resolveRepoContext,
         resolveRepoIdentity,
         buildDiff: (gitRoot, mergeBaseSha, pathFilters) => computeDiff(mergeBaseSha, gitRoot, pathFilters),
+        buildContextPackage,
         baseUrl: clientConfig.baseUrl,
         rerollLimit: resolveRerollLimit(),
         waitMs: (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs)),

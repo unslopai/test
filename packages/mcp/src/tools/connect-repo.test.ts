@@ -26,6 +26,7 @@ function buildDeps(overrides: Partial<ToolDeps> = {}): ToolDeps {
             headSha: 'b'.repeat(40),
         }),
         buildDiff: vi.fn() as unknown as ToolDeps['buildDiff'],
+        buildContextPackage: vi.fn().mockResolvedValue(null),
         baseUrl: 'https://unslop.codes',
         rerollLimit: 3,
         waitMs: vi.fn().mockResolvedValue(undefined),

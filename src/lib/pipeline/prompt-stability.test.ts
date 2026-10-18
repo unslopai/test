@@ -19,6 +19,8 @@ import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import { buildPipelineContext, buildPullRequestFile } from '@/lib/pipeline/testing/context-fixture';
 import type { PromptConfig } from '@/lib/pipeline/types';
 import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
+import { computeCacheKey } from '@/lib/pipeline/context-cache';
+import type { RepoContextPackage } from '@unslop/shared/repo-context';
 
 const { generateContentMock } = vi.hoisted(() => ({
     generateContentMock: vi.fn(),
@@ -173,5 +175,75 @@ describe('Dynamik-Platzierung im Draft-Reviewer', () => {
         const sentContents = generateContentMock.mock.calls[0][0].contents as string;
         expect(sentContents.startsWith(buildProtocolBlock('reviewer_rag'))).toBe(true);
         expect(sentContents).toContain('=== EVIDENCE ===');
+    });
+});
+
+describe('Repo-Kontextpaket (REPO_CONTEXT_SPEC §6.3)', () => {
+    const CONTEXT_PACKAGE: RepoContextPackage = {
+        sections: [{
+            kind: 'schema',
+            path: 'db/schema.sql',
+            content: 'Tables defined or altered in this file: contact_messages',
+            relatedPaths: [],
+        }],
+        omissions: [],
+        schemaCandidateCount: 1,
+        pathListTruncated: false,
+    };
+
+    beforeEach(() => {
+        generateContentMock.mockReset();
+        generateContentMock.mockResolvedValue(buildEmptyLlmResponse());
+    });
+
+    it('steht nur im dynamischen Teil: Prefix und Cache-Key sind mit und ohne Paket identisch', async () => {
+        const baseContext = buildPipelineContext({
+            combinedDiff: '=== FILE: src/lib/example.ts (modified) ===\n+const x = 1;',
+            reviewableFiles: [buildPullRequestFile()],
+            promptConfig: PROMPT_CONFIG,
+        });
+        const contextWithPackage = {
+            ...baseContext,
+            repoContext: { status: 'loaded' as const, contextPackage: CONTEXT_PACKAGE, loadMs: 12, unavailableReason: null },
+        };
+
+        await draftReviewerStep.execute(baseContext);
+        await draftReviewerStep.execute(contextWithPackage);
+
+        const [callWithout, callWith] = generateContentMock.mock.calls.map(
+            (mockCall) => mockCall[0] as { contents: string; config: { systemInstruction: string } },
+        );
+        expect(callWithout.contents).not.toContain('=== REPOSITORY CONTEXT (');
+        expect(callWith.contents).toContain('--- [schema] db/schema.sql ---');
+        expect(callWith.contents.indexOf('--- [schema] db/schema.sql ---'))
+            .toBeLessThan(callWith.contents.indexOf('=== NEW CODE (Pull Request Diff) ==='));
+        expect(callWith.config.systemInstruction).toBe(callWithout.config.systemInstruction);
+        expect(callWith.config.systemInstruction).not.toContain('db/schema.sql');
+        // Gecacht wird genau dieser Prefix (Inline-Modus: systemInstruction IST
+        // Layer 1). Der Cache-Key hat konstruktiv keinen Paket-Eingang:
+        // `CacheKeyInputs` kennt nur Modell, Law-Hash, Ökosysteme und Conditions.
+    });
+
+    it('der Cache-Key ändert sich mit Condition 12, also mit dem Repo-Kontext-Schalter, nicht mit dem Paket', () => {
+        const keyInputs = { model: 'model-under-test', lawContentHash: 'law-test-hash', detectedEcosystems: null };
+        const conditionIdsWithoutContext = ALL_CONDITION_IDS.filter((conditionId) => conditionId !== 'COND-012');
+
+        expect(computeCacheKey({ ...keyInputs, activeConditionIds: ALL_CONDITION_IDS }))
+            .not.toBe(computeCacheKey({ ...keyInputs, activeConditionIds: conditionIdsWithoutContext }));
+        expect(buildCachedPrefix({ ...PROMPT_CONFIG, activeConditionIds: conditionIdsWithoutContext }, 'LAW'))
+            .not.toContain('Repository Mismatch');
+    });
+
+    it('ohne Paket bleibt der Draft-Request der reine Diff', async () => {
+        const baseContext = buildPipelineContext({
+            combinedDiff: '=== FILE: src/lib/example.ts (modified) ===\n+const x = 1;',
+            reviewableFiles: [buildPullRequestFile()],
+        });
+
+        await draftReviewerStep.execute(baseContext);
+
+        const sentContents = generateContentMock.mock.calls[0][0].contents as string;
+        expect(sentContents.endsWith(baseContext.combinedDiff)).toBe(true);
+        expect(sentContents).not.toContain('=== NEW CODE (Pull Request Diff) ===');
     });
 });

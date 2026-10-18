@@ -9,6 +9,7 @@ import type { RepoAuthMode } from '@/lib/repo-auth';
 import type { StepTiming } from '@/lib/pipeline/step-timeline';
 import type { PrescanConfig, PrescanStats } from '@unslop/prescan';
 import type { DraftFailureReason, IssueOccurrence, IssueVerification, Severity, SkippedStage } from '@unslop/shared';
+import type { RepoContextPackage, RepoContextStatus } from '@unslop/shared/repo-context';
 
 // =============================================================================
 // Issue Types
@@ -63,6 +64,27 @@ interface PipelineIssue {
      * `review_jobs.result`; der Shared-Contract kennt das Feld nicht.
      */
     readonly cappedHits?: readonly PrescanHitLocation[];
+    /**
+     * Nur an Condition-12-Befunden (REPO_CONTEXT_SPEC §7.1): die Kontextdatei
+     * des Pakets, auf die sich der Befund stützt, und seine Art. Grundlage der
+     * festen Verifier-Frage; landet mit dem Issue in `review_jobs.result`.
+     */
+    readonly repoMismatch?: RepositoryMismatchEvidence;
+}
+
+/** Geschlossene Liste aus REPO_CONTEXT_SPEC §7.1. */
+type RepositoryMismatchKind =
+    | 'schema'
+    | 'manifest'
+    | 'removed_api'
+    | 'unloaded_entry'
+    | 'in_memory_state'
+    | 'second_database';
+
+interface RepositoryMismatchEvidence {
+    /** Pfad eines Abschnitts im Kontextpaket des Calls (server-validiert). */
+    readonly contextPath: string;
+    readonly mismatchKind: RepositoryMismatchKind;
 }
 
 /** Eine Fundstelle eines Pre-Scanner-Treffers, dateiübergreifend (anders als IssueOccurrence). */
@@ -104,7 +126,13 @@ type CascadeDegradation =
      * ist gescheitert, die übrigen zählen; die nicht geprüften Dateien stehen
      * in `draftUnreviewedFiles`, der Score ist null.
      */
-    | 'draft_partial';
+    | 'draft_partial'
+    /**
+     * REPO_CONTEXT_SPEC §9.2: das Kontextpaket kam nicht zustande (Abruf
+     * gescheitert, Zeitgrenze, ungültiger Upload). Die Review lief nur auf dem
+     * Diff; Condition 12 meldet dann nichts. Kein Einfluss auf den Score.
+     */
+    | 'repo_context_unavailable';
 
 /** Stufen, die der Deadline Guard übersprungen oder abgebrochen hat (D6) — Wire-Typ aus dem Shared-Contract. */
 type SkippableStage = SkippedStage;
@@ -291,6 +319,17 @@ interface PipelineContext {
     readonly reviewScopeConfig: ReviewScopeConfig;
     /** Dauer je abgeschlossenem Step, vom Runner geführt (DEADLINE_GUARD_SPEC §3.7). */
     readonly stepTimings: readonly StepTiming[];
+    /** Repo-Kontext aus pipeline_config.repoContext (Schalter und Token-Obergrenze, mit Defaults gemerged). */
+    readonly repoContextConfig: RepoContextConfig;
+    /** Kontextpaket des Jobs (RepoContextLoaderStep); der Inhalt wird nie persistiert. */
+    readonly repoContext: RepoContextState;
+    /**
+     * Vom Client hochgeladenes Paket, roh aus dem Job-Payload (CliDiffLoaderStep).
+     * Fehlt bei PR-Jobs und alten Clients; validiert es der RepoContextLoaderStep.
+     */
+    readonly uploadedContextPackage?: unknown;
+    /** Zeilen des Modell-Diffs, in denen der serverseitige Secret-Filter Material ersetzt hat. */
+    readonly secretRedactions: readonly SecretRedaction[];
     /** Ob die Pipeline nach diesem Step abbrechen soll. */
     readonly shouldAbort: boolean;
     readonly abortReason?: string;
@@ -347,6 +386,34 @@ interface PipelineConfig {
      * die Feld-Validierung macht resolveReviewScopeConfig.
      */
     readonly reviewScope?: unknown;
+    /**
+     * Repo-Kontext (REPO_CONTEXT_SPEC §12 Frage 2) — strukturell durchgereicht,
+     * die Feld-Validierung macht resolveRepoContextConfig.
+     */
+    readonly repoContext?: unknown;
+}
+
+/** Schalter und Kostenbremse des Kontextpakets (REPO_CONTEXT_SPEC §12, Auflage Wirtschaftlichkeit). */
+interface RepoContextConfig {
+    /** false = kein Paket, kein Abruf, keine Condition 12 für dieses Repo. */
+    readonly enabled: boolean;
+    /** Token-Obergrenze des Pakets je Draft-Call; was nicht passt, fällt ganz weg und wird genannt. */
+    readonly maxTokens: number;
+}
+
+interface RepoContextState {
+    readonly status: RepoContextStatus;
+    readonly contextPackage: RepoContextPackage | null;
+    /** Dauer von Abruf und Bau in ms; null = nicht versucht. */
+    readonly loadMs: number | null;
+    /** Server-Code zum Status `unavailable` (z. B. `timeout`, `http_404`); nie Fremdtext. */
+    readonly unavailableReason: string | null;
+}
+
+/** Eine redigierte Zeile: Datei und Musterklassen, nie das Material. */
+interface SecretRedaction {
+    readonly path: string;
+    readonly patternClasses: readonly string[];
 }
 
 /** Welche Dateien die Modell-Review liest (LANGUAGE_COVERAGE_SPEC §6.3). */
@@ -360,6 +427,11 @@ interface ReviewScopeConfig {
 
 export type {
     ReviewScopeConfig,
+    RepoContextConfig,
+    RepoContextState,
+    RepositoryMismatchEvidence,
+    RepositoryMismatchKind,
+    SecretRedaction,
     IssueSeverity,
     RepoAuthMode,
     TokenUsage,

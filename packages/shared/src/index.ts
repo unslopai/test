@@ -151,6 +151,27 @@ export interface ScanResult {
      * eines Servers vor 2026-10-03 und wenn der Pre-Scanner nicht lief.
      */
     readonly prescan?: ScanPrescanStatus;
+    /**
+     * Repo-Kontextpaket des Laufs (REPO_CONTEXT_SPEC §9.2). Additiv: fehlt bei
+     * Antworten eines Servers vor Stufe 1 und bei Partials.
+     */
+    readonly repoContext?: ScanRepoContext;
+}
+
+/**
+ * Was die Modell-Review neben dem Diff vom Repo gesehen hat: nur Pfade und
+ * Größe, nie Inhalt. `status` wie `RepoContextStatus` in `./repo-context.ts`
+ * (dieser Root-Export bleibt types-only und ohne Importe): `loaded`,
+ * `unavailable` (Degradation `repo_context_unavailable`), `disabled` (je Repo
+ * abgeschaltet) oder `not_provided` (der Client hat kein Paket mitgeschickt).
+ * Den Satz dazu formt `formatRepoContextNotice`.
+ */
+export interface ScanRepoContext {
+    readonly status: 'loaded' | 'unavailable' | 'disabled' | 'not_provided';
+    readonly paths: readonly string[];
+    readonly estimatedTokens: number;
+    /** Wegen Größe, Budget, Abruf-Deckel oder Secret-Treffer nicht im Paket. */
+    readonly omittedPaths: readonly string[];
 }
 
 /**

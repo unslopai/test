@@ -132,6 +132,27 @@ const CONDITIONS: readonly ReviewCondition[] = [
             'Condition 11 (Cyclomatic Explosion / God Component): The JSX return statement contains nesting ' +
             "deeper than 4 levels (if/else, ternaries, logical ANDs), or a component contains more than 2 'useEffect' declarations.",
     },
+    {
+        // REPO_CONTEXT_SPEC §7.1. Nicht je Repo einzeln wählbar: aktiv genau dann,
+        // wenn `pipeline_config.repoContext.enabled` gilt (defaults.ts).
+        id: 'COND-012',
+        name: 'Repository Mismatch',
+        category: 'macro',
+        scopes: ['universal'],
+        promptText:
+            'Condition 12 (Repository Mismatch): Applies ONLY when the request contains a REPOSITORY CONTEXT section. ' +
+            'The added code contradicts a file shown there in exactly one of these ways: ' +
+            '(1) it reads or writes a database table or column that the shown schema does not define; ' +
+            '(2) it imports or requires a third-party package that the shown manifest of its module does not declare ' +
+            '(standard-library, built-in and relative imports, path aliases such as \'@/…\' and packages of the same ' +
+            'workspace never count, nor does a package whose distribution name ' +
+            "differs from its import name, such as 'pyyaml' for 'yaml'); " +
+            '(3) it calls an API that the major version pinned in the shown manifest has removed; ' +
+            '(4) it adds a route, handler or module that the shown entry point never loads, or starts a second server next to it; ' +
+            '(5) it keeps application state in process memory although the shown schema has a table for that data; ' +
+            '(6) it adds a second database or database driver next to the one the shown files already use. ' +
+            'Report only what a shown file proves; a file that is not shown proves nothing.',
+    },
 ] as const;
 
 /** Immutable Registry aller Conditions, indiziert nach ID. */
@@ -167,3 +188,13 @@ export function presentConditionRule(ruleReference: string): string {
 
     return `${condition.id} (${condition.name})${ruleReference.slice(conditionMatch[0].length)}`;
 }
+
+/**
+ * Conditions, die ein Repo einzeln an- und abwählen kann. COND-012 gehört
+ * nicht dazu: sie folgt `pipeline_config.repoContext.enabled`
+ * (`resolveActiveConditionIds` in defaults.ts), ein zweiter Schalter daneben
+ * würde nichts bewirken.
+ */
+export const SELECTABLE_CONDITION_IDS: readonly string[] = ALL_CONDITION_IDS.filter(
+    (conditionId) => conditionId !== 'COND-012',
+);

@@ -1,6 +1,6 @@
 # Repo-Kontext für die Review: Spec mit Empfehlung
 
-**Status: freigegeben am 2026-10-05 (Luca, alle Fragen in §12 wie empfohlen, Auflage zur Wirtschaftlichkeit in §12).** Die Spec selbst enthält keinen Produktcode; gebaut wird in den Stufen aus §9. Nur intern: Die Zahlen aus der Mehrwert-Studie und alle Angaben zu anderen Produkten dürfen in keine Marketing-Datei (`docs/strategy/MARKETING_CLAIMS.md` §00).
+**Status: freigegeben am 2026-10-05 (Luca, alle Fragen in §12 wie empfohlen, Auflage zur Wirtschaftlichkeit in §12).** Die Spec selbst enthält keinen Produktcode; gebaut wird in den Stufen aus §9. **Stufe 1a und 1b sind seit 2026-10-05 gebaut** (Nachträge §6.1a, §8.1, §9.3); Live-Beleg und Messung 1 stehen aus. Nur intern: Die Zahlen aus der Mehrwert-Studie und alle Angaben zu anderen Produkten dürfen in keine Marketing-Datei (`docs/strategy/MARKETING_CLAIMS.md` §00).
 
 ## 1. Kurzfassung
 
@@ -227,6 +227,73 @@ Preise aus `scripts/lib/vertex-pricing.ts`: `gemini-3.8-flash` Listenpreis 1,65 
 
 Zwei Messwerte aus der Probe gehören zur Latenz dazu: Ein Call mit Paket brauchte 128,9 s und 18 842 Output-Tokens bei gleichem Prompt-Umfang. Das ist die bekannte Streuung der Thinking-Tokens (ROADMAP-Chronik 2026-10-03, „Go-Draft-Latenz erklärt“), kein Effekt des Pakets, aber sie zeigt, dass jede zusätzliche Runde in Option B dieses Risiko vervielfacht.
 
+### 6.1a Nachtrag 2026-10-05: gemessene Paketgröße und Mehrkosten auf allen 40 Studien-PRs
+
+Auflage aus §12: gemessen statt geschätzt, vor dem Merge. Gebaut wurde das Paket mit den Auswahlregeln aus `packages/shared/src/repo-context.ts` für jeden der 40 Replay-Branches (`av/*` auf `unslopai/test`, Liste in `fixtures/added-value/results/runs.json`), **ohne Modell-Call**: Diff wie im Diff-Loader (Filter `isReviewableFile`, Größen-Cap, Secret-Redaktion), Leser über `git show` am Head des Branches, höchstens 15 Datei-Abrufe wie im App-Pfad, Obergrenze 8 000 Tokens.
+
+- **Tokens** sind die Schätzung Zeichen / 4, mit der Budget, Ergebnis und Telemetrie rechnen; die Zählung des Anbieters weicht davon ab (ungemessen).
+- **Mehrkosten** sind nur die Input-Tokens des Pakets: im Draft je Call (bei Datei-Batches die Sicht jedes Batches auf seine Dateien, Spalte „Draft-Calls“) zum Preis von `gemini-3.8-flash`, dazu im Verifier der schlimmste Fall, dass jeder Manifest-, Schema- und Einstiegspunkt-Abschnitt einmal zitiert wird, zum Preis von `gemini-3.6-flash`. Preise aus `scripts/lib/vertex-pricing.ts` (`fetchVertexPricing`): 0,825 USD je Million Input-Tokens mit Intro-Rabatt für beide Modelle, Listenpreis das Doppelte (Rabatt 50 % bis 2026-12-31). Das Paket steht im dynamischen Teil und bekommt keinen Cache-Rabatt.
+- **Nicht enthalten:** Output-Tokens für zusätzliche Befunde und zusätzliches Nachdenken. Die stehen nur in der Probe mit Modell (§8.1).
+
+| PR | Dateien im Modell-Diff | Diff-Tokens | Paket ohne Deckel | Paket bei 8 000 | Bytes | Draft-Calls | Paket-Tokens Draft | Verifier (max.) | Auslassungen | Mehrkosten Liste (USD) | mit Rabatt (USD) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| a-pr45 (#55) | 8 | 2 974 | 4 596 | 4 596 | 18 459 | 1 | 4 596 | 136 | 2 | 0,0078 | 0,0039 |
+| a-pr31 (#56) | 1 | 1 941 | 1 117 | 1 117 | 4 473 | 1 | 1 117 | 136 | 0 | 0,0021 | 0,0010 |
+| a-pr23 (#57) | 1 | 1 024 | 181 | 181 | 722 | 1 | 181 | 136 | 0 | 0,0005 | 0,0003 |
+| a-pr14 (#58) | 4 | 3 126 | 2 052 | 2 052 | 8 256 | 1 | 2 052 | 136 | 1 | 0,0036 | 0,0018 |
+| a-pr44 (#59) | 10 | 5 117 | 12 413 | 6 470 | 26 017 | 1 | 6 470 | 275 | 4 | 0,0111 | 0,0056 |
+| a-pr30 (#60) | 7 | 6 441 | 5 300 | 5 300 | 21 234 | 1 | 5 300 | 238 | 1 | 0,0091 | 0,0046 |
+| a-pr12 (#61) | 11 | 6 040 | 9 585 | 7 352 | 29 499 | 1 | 7 352 | 136 | 2 | 0,0124 | 0,0062 |
+| a-pr43 (#62) | 17 | 9 229 | 8 182 | 7 530 | 30 213 | 1 | 7 530 | 691 | 8 | 0,0136 | 0,0068 |
+| a-pr15 (#63) | 10 | 8 147 | 7 582 | 7 484 | 30 057 | 1 | 7 484 | 136 | 1 | 0,0126 | 0,0063 |
+| a-pr39 (#64) | 22 | 17 530 | 14 670 | 7 549 | 30 307 | 1 | 7 549 | 409 | 15 | 0,0131 | 0,0066 |
+| a-pr11 (#65) | 1 | 699 | 241 | 241 | 961 | 1 | 241 | 136 | 0 | 0,0006 | 0,0003 |
+| a-pr26 (#66) | 29 | 21 433 | 8 490 | 7 390 | 29 717 | 2 | 7 742 | 316 | 17 | 0,0133 | 0,0066 |
+| a-pr34 (#67) | 21 | 17 696 | 10 754 | 7 458 | 29 865 | 1 | 7 458 | 136 | 3 | 0,0125 | 0,0063 |
+| a-pr42 (#68) | 30 | 21 158 | 9 410 | 7 585 | 30 413 | 2 | 8 191 | 802 | 15 | 0,0148 | 0,0074 |
+| a-pr9 (#69) | 31 | 36 323 | 7 024 | 7 024 | 28 187 | 2 | 7 988 | 348 | 7 | 0,0138 | 0,0069 |
+| a-pr10 (#70) | 65 | 42 601 | 6 751 | 6 751 | 27 093 | 3 | 9 395 | 698 | 46 | 0,0167 | 0,0083 |
+| a-pr37 (#71) | 20 | 20 952 | 15 860 | 7 359 | 29 517 | 2 | 7 640 | 238 | 10 | 0,0130 | 0,0065 |
+| a-pr38 (#72) | 37 | 22 211 | 10 053 | 6 851 | 27 488 | 2 | 7 808 | 691 | 26 | 0,0140 | 0,0070 |
+| a-pr40 (#73) | 36 | 23 250 | 8 114 | 7 539 | 30 265 | 2 | 7 897 | 691 | 25 | 0,0142 | 0,0071 |
+| a-pr18 (#74) | 17 | 10 501 | 5 386 | 5 386 | 21 566 | 1 | 5 386 | 617 | 0 | 0,0099 | 0,0050 |
+| b-gem-t01 (#75) | 1 | 625 | 351 | 351 | 1 401 | 1 | 351 | 292 | 0 | 0,0011 | 0,0005 |
+| b-gem-t02 (#76) | 1 | 779 | 478 | 478 | 1 911 | 1 | 478 | 415 | 0 | 0,0015 | 0,0007 |
+| b-gem-t03 (#77) | 1 | 551 | 446 | 446 | 1 781 | 1 | 446 | 412 | 0 | 0,0014 | 0,0007 |
+| b-gem-t04 (#78) | 1 | 567 | 323 | 323 | 1 289 | 1 | 323 | 290 | 0 | 0,0010 | 0,0005 |
+| b-gem-t05 (#79) | 1 | 388 | 452 | 452 | 1 808 | 1 | 452 | 404 | 0 | 0,0014 | 0,0007 |
+| b-gem-t06 (#80) | 1 | 859 | 366 | 366 | 1 462 | 1 | 366 | 309 | 0 | 0,0011 | 0,0006 |
+| b-gem-t07 (#81) | 1 | 940 | 324 | 324 | 1 295 | 1 | 324 | 290 | 0 | 0,0010 | 0,0005 |
+| b-gem-t08 (#82) | 1 | 781 | 388 | 388 | 1 551 | 1 | 388 | 328 | 0 | 0,0012 | 0,0006 |
+| b-gem-t09 (#83) | 1 | 479 | 357 | 357 | 1 425 | 1 | 357 | 296 | 0 | 0,0011 | 0,0005 |
+| b-gem-t10 (#84) | 1 | 1 580 | 450 | 450 | 1 800 | 1 | 450 | 404 | 0 | 0,0014 | 0,0007 |
+| b-qwen-t01 (#85) | 1 | 395 | 351 | 351 | 1 401 | 1 | 351 | 292 | 0 | 0,0011 | 0,0005 |
+| b-qwen-t02 (#86) | 1 | 346 | 478 | 478 | 1 911 | 1 | 478 | 415 | 0 | 0,0015 | 0,0007 |
+| b-qwen-t03 (#87) | 1 | 262 | 446 | 446 | 1 781 | 1 | 446 | 412 | 0 | 0,0014 | 0,0007 |
+| b-qwen-t04 (#88) | 1 | 342 | 323 | 323 | 1 289 | 1 | 323 | 290 | 0 | 0,0010 | 0,0005 |
+| b-qwen-t05 (#89) | 1 | 126 | 452 | 452 | 1 808 | 1 | 452 | 404 | 0 | 0,0014 | 0,0007 |
+| b-qwen-t06 (#90) | 1 | 360 | 366 | 366 | 1 462 | 1 | 366 | 309 | 0 | 0,0011 | 0,0006 |
+| b-qwen-t07 (#91) | 1 | 434 | 324 | 324 | 1 295 | 1 | 324 | 290 | 0 | 0,0010 | 0,0005 |
+| b-qwen-t08 (#92) | 1 | 477 | 388 | 388 | 1 551 | 1 | 388 | 328 | 0 | 0,0012 | 0,0006 |
+| b-qwen-t09 (#93) | 1 | 171 | 357 | 357 | 1 425 | 1 | 357 | 296 | 0 | 0,0011 | 0,0005 |
+| b-qwen-t10 (#94) | 1 | 550 | 450 | 450 | 1 800 | 1 | 450 | 404 | 0 | 0,0014 | 0,0007 |
+
+| | Paket-Tokens Mittel | Maximum | Bytes Mittel | Maximum | Mehrkosten Liste Mittel | Maximum | mit Rabatt Mittel | Maximum |
+|---|---|---|---|---|---|---|---|---|
+| Segment A (20 PRs) | 5 661 | 7 585 | 22 715 | 30 413 | 0,0104 USD | 0,0167 USD | 0,0052 USD | 0,0083 USD |
+| Segment B (20 PRs) | 394 | 478 | 1 572 | 1 911 | 0,0012 USD | 0,0015 USD | 0,0006 USD | 0,0007 USD |
+| **alle 40** | **3 027** | **7 585** | 12 144 | 30 413 | **0,0058 USD** | **0,0167 USD** | 0,0029 USD | 0,0083 USD |
+
+**Gegen die Leitplanke (0,15 USD je PR im Mittel, Listenpreis, §10):** Die Leitplanke meint die Gesamtkosten je PR. Die Studie maß ohne Paket 0,04 bis 0,10 USD (Liste). Das Paket legt im Mittel 0,0058 USD und höchstens 0,0167 USD an Input dazu, also 4 % bzw. 11 % der Leitplanke. Mit den Output-Tokens aus §8.1 lag kein Probe-Lauf über 0,067 USD (Liste) gesamt, der abschließende Lauf bei höchstens 0,059 USD.
+
+**Was die Messung über die Regeln zeigt:**
+- Ohne Deckel braucht das Paket 181 bis 15 860 Tokens; 30 der 40 PRs bleiben unter 8 000. Der Default bleibt deshalb bei 8 000 (Vorschlag aus §5.1), begründet an der Konstante `DEFAULT_REPO_CONTEXT_MAX_TOKENS`. Repo-Config: `pipeline_config.repoContext.maxTokens`, höchstens 16 000.
+- Am Budget fallen in 11 PRs zusammen 32 Abschnitte weg: 26 Ausschnitte geänderter Dateien (A4) und sechsmal der Dateibaum (A7). Manifeste (das nächste und die seiner Elternverzeichnisse, §9.3) und Schema passten in jedem der 40 PRs.
+- Der Abruf-Deckel des App-Pfads (15 Dateien) greift früher als das Budget: in 9 PRs mit 17 bis 65 Dateien bleiben 2 bis 46 geänderte Dateien ohne A4-Abschnitt (`file_limit`). Produktionscode wird vor Testdateien gelesen, höchstens 6 Schema-Dateien. Jede Auslassung steht in `result.repo_context.omissions`.
+- 7 Dateien fielen als `too_large` weg (kein Hunk-Fenster unter dem Datei-Budget von 8 000 Zeichen), 4 wegen eines Secret-Treffers (`regex-engine.test.ts` in zwei PRs, `config-engine.ts`, `internal-contract.ts`: Dateien rund um die Secret-Regeln des Pre-Scanners; nicht einzeln gesichtet, ob Muster oder Material).
+- Der Secret-Filter ersetzte im Modell-Diff 7 Zeilen in 5 der 40 PRs (4 in Segment A, 3 in Segment B, dort das hartkodierte JWT-Secret der Aufgabe t02). Eine erste Fassung traf 10 Zeilen, darunter gewöhnlichen Code; die Muster sind seitdem enger (§9.3 Nr. 9).
+- Segment B ist ein Skelett: 13 Dateien, ein Schema, je ein Manifest je Dienst. Die Zahlen für Segment A sind die belastbareren; sie stammen aus den Replay-Branches des eigenen Repos.
+
 ### 6.2 Speicher auf Vercel Hobby (2 GB)
 
 - A: einige hundert Kilobyte Text je Job. Der rekursive Tree-Abruf liefert bei großen Repos bis zu 100 000 Einträge und 7 MB JSON; besser nur die Verzeichnisse der geänderten Dateien und ihre Eltern abrufen. Unkritisch.
@@ -351,6 +418,68 @@ Summe: **0,1844 USD** für 9 Calls (mit Intro-Rabatt, wie `scripts/lib/vertex-pr
 
 Die Rohantworten stehen in Anhang A.
 
+### 8.1 Nachtrag 2026-10-05: Probe auf dem Pipeline-Pfad (Stufe 1a/1b gebaut)
+
+**Frage:** Findet die gebaute Pipeline die Repo-Fehler, und bestätigt sie der blinde Verifier?
+
+**Aufbau:** Die drei PRs aus §8 und zwei weitere Studien-PRs mit Repo-Befunden (Flash-Lite t09 mit Nr. 19, Qwen t05 mit Nr. 29), zusammen acht Ziel-Befunde aus §3. Je PR ein Lauf über die Steps des Rule-Recall-Runners (`runCascadeLane`: Router, Draft, Verifier, Scorer; ohne Eskalation und Zweitmeinung, `allowEscalation: false`), mit dem Paket aus den Auswahlregeln, gelesen per `git show` am Head des Branches, Obergrenze 8 000 Tokens, Repo-Ökosysteme `react, typescript, nodejs` wie auf `unslopai/test`. Kein Test-PR, kein Pre-Scan, keine Reference Practices. Kosten aus den Telemetrie-Zeilen der Jobs, mit Intro-Rabatt wie `scripts/lib/vertex-pricing.ts` rechnet (Listenpreis das Doppelte).
+
+**Ergebnis des abschließenden Laufs (Code und Prompt wie im PR, nach den Korrekturen aus dem Review):**
+
+| PR | Ziel-Befunde | gefunden und CONFIRMED | weitere Condition-12-Befunde | Regelbefunde | Paket-Tokens | Draft | Verifier | Kosten | Job |
+|---|---|---|---|---|---|---|---|---|---|
+| Qwen t06 (`main.go`) | Nr. 31, 32, 33 | **2 von 3** (Nr. 32 `manifest`, Nr. 33 `schema`, beide CRITICAL) | keine | keine | 366 | 19,6 s | 9,8 s | 0,0234 USD | `f6d38669` |
+| Qwen t03 (`route.ts`) | Nr. 26, 27 | **2 von 2** (`schema`, `manifest`, beide CRITICAL) | keine | Condition 5 | 446 | 20,1 s | 11,7 s | 0,0231 USD | `33ca72ae` |
+| Flash-Lite t02 (`login.js`) | Nr. 8 | **1 von 1** (`unloaded_entry`, CRITICAL) | 1: Nutzer im Speicher statt Tabelle `users` (`in_memory_state`, WARNING) | SEC-012 | 478 | 24,3 s | 15,7 s | 0,0234 USD | `87501096` |
+| Flash-Lite t09 (`fetcher.py`) | Nr. 19 | **1 von 1** (`manifest`, CRITICAL) | keine | MAINT-007 | 357 | 23,6 s | 9,5 s | 0,0256 USD | `102cc2ff` |
+| Qwen t05 (`CommentView.tsx`) | Nr. 29 | **1 von 1** (`removed_api`, CRITICAL) | keine | keine | 452 | 35,6 s | 7,8 s | 0,0293 USD | `1ec72bbd` |
+| **Summe** | 8 | **7 von 8** | 1 | | | | | **0,1249 USD** | |
+
+- **Fehlalarme der Condition 12: 0 von 8.** Alle acht Befunde sind an `db/schema.sql`, `go.mod`, `requirements.txt`, `web/package.json` und `services/auth/server.js` des Skeletts nachvollziehbar; der zusätzliche Befund in `login.js` entspricht der Klasse von Nr. 25 und war schon in §8 als echt eingeordnet. Der Verifier hat alle acht mit der festen Frage bestätigt (Konfidenz 95 bis 99).
+- **Verfehlt: Nr. 31** (SQLite statt der gemeinsamen Postgres-Datenbank). Die Art `second_database` braucht `web/lib/db.ts` oder einen Hinweis im Manifest; das Paket zeigt hier nur `go.mod` mit `lib/pq`, und der Draft meldete stattdessen den fehlenden Treiber (Nr. 32). A6 (Nachbardateien) ist nicht gebaut.
+- **Schweregrad:** sieben CRITICAL, einer WARNING, wie §7.1 es vorsieht (ein Schema-Kandidat, keine Auslassung).
+- **Kosten je PR:** 0,023 bis 0,029 USD mit Rabatt, also 0,046 bis 0,059 USD Liste, gegen 0,04 bis 0,10 USD in der Studie ohne Paket. Leitplanke 0,15 USD.
+- **Regelbefunde schwanken.** In `login.js` meldete dieser Lauf nur SEC-012; SEC-005 (hartkodiertes Secret) und SEC-021 (Ratenbegrenzung) fehlten. Der Lauf davor mit demselben Prompt hatte alle drei, der Lauf ohne Paket ebenfalls (Tabelle unten). Über vier Läufe mit Paket: SEC-012 viermal, SEC-005 dreimal, SEC-021 einmal. Die Condition-12-Befunde waren in allen Läufen dieselben.
+
+**Kontrollen und Regression (Rule-Recall-Runner, Produktionspfad, `--no-escalation`, Report `fixtures/rule-recall/results/2026-10-05-repo-context-stage1-regression.json`):**
+
+| Fixture | Draft | Pre-Scan | überlebt | Bemerkung |
+|---|---|---|---|---|
+| r05 (TypeScript, Security) | 10 von 10 | 6 | 10 von 10 | |
+| r10 (Go) | 5 von 6 | 2 | 6 von 6 | ein Draft-Miss, vom Pre-Scan gedeckt |
+| r13 (PowerShell) | 3 von 3 | 2 | 3 von 3 | |
+| r18 (saubere Kontrolle) | 0 Befunde | | | 0 Fehlalarme |
+| r25 (saubere Kontrolle, System-Prompt) | 0 Befunde | | | 0 Fehlalarme, kein GATE-001 |
+
+Kombiniert 19 von 19, kein Condition-12-Befund ohne Paket. Die Fixtures sind Diffs ohne Repo; sie prüfen den geänderten Prompt (Condition 12 im Prefix, neue Protokoll-Absätze) und den Secret-Filter auf dem Modell-Diff, nicht das Paket. Die Tabelle ist der Lauf auf dem Stand des PRs (nach den Korrekturen aus dem Review), Kosten 0,1231 USD mit Rabatt (`scripts/benchmark-cost.ts`). Ein erster Lauf vor den Korrekturen hatte dieselben Zahlen.
+
+**Frühere Läufe desselben Tages.** „alt“ = Fußzeile des Pakets „Check the added lines of the diff against this context under Condition 12“, „neu“ = die endgültige Fußzeile vor den Korrekturen aus dem Review:
+
+| PR | Paket | Condition-12-Ziele | Regelbefunde | Draft-Latenz | Kosten |
+|---|---|---|---|---|---|
+| Qwen t06 | ja, neu | 2 von 3 | keine | 22,3 s | 0,0230 USD |
+| Qwen t03 | ja, neu | 2 von 2 | Condition 5 | 27,1 s | 0,0264 USD |
+| Flash-Lite t02 | ja, neu | 1 von 1, dazu `in_memory_state` | SEC-005, SEC-012, SEC-021 | 38,0 s | 0,0267 USD |
+| Flash-Lite t09 | ja, neu | 1 von 1 | MAINT-007 | 19,8 s | 0,0196 USD |
+| Qwen t05 | ja, neu | 1 von 1 | keine | 36,7 s | 0,0263 USD |
+| Qwen t03 | ja, alt | 2 von 2 | Condition 5 | 42,5 s | 0,0334 USD (ein Verifier-Parse-Fehler, Retry) |
+| Qwen t06 | ja, alt | 2 von 3 | keine | 42,9 s | 0,0321 USD |
+| Flash-Lite t02 | ja, alt | 1 von 1, dazu `in_memory_state` | SEC-005, SEC-012 | 249,5 s | 0,0284 USD |
+| Flash-Lite t02 (Wiederholung) | ja, alt | 1 von 1, dazu `in_memory_state` | SEC-005, SEC-012 | 71,8 s | 0,0264 USD |
+| Flash-Lite t02 | **nein** | 0 (kein Paket) | SEC-005, SEC-012, **SEC-021** | 41,2 s | 0,0237 USD |
+| Flash-Lite t09 | ja, alt | 1 von 1 | MAINT-007 | 107,0 s | 0,0300 USD |
+| Qwen t05 | ja, alt | 1 von 1 | keine | 205,3 s | 0,0220 USD |
+| Qwen t05 (Wiederholung) | ja, alt | 1 von 1 | keine | 171,0 s | 0,0300 USD |
+| Qwen t05 | **nein** | 0 (kein Paket) | **MAINT-007** (Datei importiert sich selbst) | 38,2 s | 0,0259 USD |
+
+Zwei Beobachtungen daraus haben die Fußzeile geändert:
+1. **Verdrängung eines Regelbefunds.** Mit Paket fehlte in `login.js` zweimal SEC-021 (fehlende Ratenbegrenzung), den der Lauf ohne Paket hatte. Die Fußzeile lenkte den Blick auf Condition 12. Sie lautet jetzt „Review the diff against the full rulebook as usual. In addition, check its added lines against this context under Condition 12 (Repository Mismatch).“ Im ersten Lauf danach war SEC-021 wieder da, im abschließenden fehlte er erneut, zusammen mit SEC-005. Die neue Fußzeile hat die Verdrängung also nicht behoben.
+2. **Draft-Latenz.** Mit der alten Fußzeile brauchten Drafts auf t02, t09 und t05 107 bis 249 s bei 3 100 bis 5 400 Output-Tokens (eine Wiederholung auf t02: 72 s), ohne Paket 38 und 41 s. Mit der neuen Fußzeile 20 bis 38 s auf allen fünf PRs, in zwei Läufen.
+
+**Was das trägt und was nicht:** Die Zahl 7 von 8 hielt in drei Läufen über alle fünf PRs. Ob die langen Drafts am Wortlaut der alten Fußzeile hingen oder an der Auslastung bei Vertex zur selben Zeit, ist nicht belegt. Offen und wichtiger: **Mit Paket erscheinen Regelbefunde weniger verlässlich.** In `login.js` fehlten mit Paket SEC-021 in drei von vier Läufen und SEC-005 in einem; in `CommentView.tsx` meldete der Lauf ohne Paket MAINT-007, alle vier Läufe mit Paket nicht. Ohne Paket gibt es je PR nur einen Lauf, die Streuung dort ist also ungemessen (in §8 fehlte SEC-021 in keiner Variante). Für Messung 1 heißt das: die Leitplanke „mindestens 10 der 11 bisher gefundenen blockierenden Befunde bleiben“ und die Job-Dauer sind die beiden Zahlen, die zuerst zu prüfen sind. Unverändert gilt: fünf PRs, ein Skelett-Repo mit genau einem Schema, kein Pre-Scan, keine Messung auf echten Repos.
+
+**Budget:** alle Probe-Läufe zusammen 0,4989 USD (0,0334 + 0,1125 + 0,0496 + 0,0564 + 0,1221 + 0,1249), dazu die Regressionsprobe mit 0,1231 USD und ihr erster Lauf, dessen Kosten nicht gemessen sind (§13; gleiche Fixtures, also ebenfalls rund 0,12 USD). Zusammen rund 0,75 USD. Grenze der Session 1,50 USD. Eskalationszähler des Dogfooding-Kontos vorher 19 von 50, nachher 19 von 50 (`billing_accounts.escalation_month_count`, per SQL gelesen). Die 19 Probe-Jobs und die 5 Jobs der Regressionsprobe (`source = manual`) stehen als Beleg in der Datenbank; `scripts/cleanup-benchmark-jobs.ts` räumt sie ab.
+
 ## 9. Empfehlung und Stufenplan
 
 **Option D, in dieser Reihenfolge:**
@@ -384,6 +513,26 @@ Eine Auswahlregel-Datei für Server und Client ist Pflicht (MAINT-001): Die Rege
 - Kommt kein Paket zustande (API-Fehler, Zeitlimit, Größe), läuft die Review wie heute und sagt das: eine Degradation im Ergebnis und ein Satz in Kommentar, CLI, Extension und MCP. Die Condition „Repository Mismatch“ meldet dann nichts.
 - Wird das Paket gekürzt, nennt das Ergebnis die weggelassenen Pfade.
 - Die Landing sagt heute nicht, dass unslop das Repo liest. Bis Stufe 1 live belegt ist, bleibt das so.
+
+### 9.3 Nachtrag 2026-10-05: Bau-Entscheidungen Stufe 1a/1b
+
+Was beim Bau anders oder genauer entschieden wurde als oben beschrieben. Der Code hält sich an diesen Abschnitt.
+
+1. **Condition 12 ohne eigenen Schalter.** „Repository Mismatch“ steht als `COND-012` in der Registry (und damit im Cache-Prefix), ist aber nicht je Repo wählbar: sie ist aktiv genau dann, wenn `pipeline_config.repoContext.enabled` gilt (`resolveActiveConditionIds`). Grund: persistierte Configs zählen ihre Conditions einzeln auf (`unslopai/test` hat elf, live gelesen 2026-10-05); eine neue ID bliebe dort still aus. Die Settings-Seite bietet sie nicht an, der Validator speichert sie nicht.
+2. **Der Paket-Schritt steht in keiner `enabledStepIds`-Liste.** Der Worker hängt `repo-context-loader` direkt vor `draft-reviewer` ein, aus demselben Grund. Keine Daten-Migration nötig.
+3. **Rekursiver Tree statt Verzeichnis-Abrufen** (anders als die Empfehlung in §6.2): das Schema liegt in der Regel nicht in einem Elternverzeichnis der geänderten Datei (`db/schema.sql` neben `services/catalog/main.go`). Ein abgeschnittener Tree (`truncated`) macht das Paket unvollständig; dann ist kein Condition-12-Befund CRITICAL.
+4. **Schweregrad und Beleg** nach §7.1 an der Validation-Boundary (`repository-mismatch.ts`): CRITICAL nur, wenn keine Datei der tragenden Art ausgelassen wurde und, beim Schema, genau ein Kandidat existiert; „Zustand im Speicher“ und „zweite Datenbank“ immer WARNING. Verworfen wird ein Befund ohne Paket, ohne zitierte Datei im Paket des Calls oder mit einer Art, die nicht zur zitierten Datei passt (Schema-Arten brauchen eine Schema-Datei, Manifest-Arten ein Manifest, „wird nie geladen“ den Einstiegspunkt; Dateibaum und Aufrufer-Liste belegen nichts). Verlangt wird die Kontextdatei, nicht wie in §7.1 formuliert auch die Zeile: „fehlt im Manifest“ hat keine.
+4a. **Manifeste:** A1 liefert das nächste Manifest und die gleichnamigen seiner Elternverzeichnisse, weil in einem Workspace oft erst die Wurzel deklariert, was ein Paket importiert. Der Verifier bekommt zu einem Manifest-Claim alle Manifeste der Datei, zu einem Schema-Claim alle gezeigten Schema-Dateien und, wenn Schema-Dateien fehlen, einen Hinweis; die Frage verlangt dann UNCERTAIN.
+5. **Zwei Zusatzfelder im Befund** (`context_path`, `mismatch_kind`), aus denen die feste Verifier-Frage je Art entsteht. Mehrere Befunde derselben Datei werden je (Art, Kontextdatei) gebündelt, nicht je Regel, weil jede Gruppe ihre eigene Frage hat.
+6. **Der Auftragssatz steht zweimal:** statisch in beiden Draft-Protokollen (Hinweis auf das Paket, Priority 3 des RAG-Protokolls) und als Fußzeile des Pakets im dynamischen Teil. V2 und V3 der Probe (§8) unterscheiden sich genau um diesen Satz hinter dem Paket.
+7. **Schema-Reduktion** nennt je Datei immer zuerst alle definierten Tabellen. Nur so ist „Tabelle fehlt“ am Ausschnitt prüfbar, wenn bei vielen Migrationen nur die Statements zu im Diff genannten Tabellen gezeigt werden.
+8. **Budget und Deckel:** die Obergrenze gilt für das ganze gerenderte Paket inklusive Kopf, Fuß und der Zeile der Auslassungen (600 Tokens Reserve, höchstens 20 Pfade à 100 Zeichen). Gelesen werden höchstens 6 Schema-Dateien (`schema.*` zuerst, dann die jüngsten Migrationen) bis je 60 KB; ältere Migrationen stehen als eine Auslassung `not_selected` im Ergebnis, machen das Schema unvollständig, lösen aber keinen Nutzer-Hinweis aus. Zeilen im Inhalt, die wie ein Rahmen des Prompts aussehen, werden entschärft (`| ` davor). Ein Abschnitt, der nicht passt, fällt ganz weg; ein kleinerer späterer darf noch hinein. Bei Datei-Batches wird das Paket einmal gebaut und je Batch auf dessen Dateien gefiltert, kein zweiter Abruf.
+9. **Serverseitiger Secret-Filter** (§6.5): im Paket fällt ein Abschnitt mit Treffer weg. Im Diff wird das Material ersetzt (`<redacted-secret>`), nicht die Zeile: Zeilenzahl, Hunks und der Name der Variable bleiben, damit das Modell „hier steht ein Literal“ weiter melden kann und Zeilennummern stimmen. Ein unquotierter Wert, der ein Bezeichner, Zugriff oder Aufruf ist (`OTHER_CONSTANT`, `process.env.X`), bleibt stehen, ebenso eine quotierte Adresse ohne Zugangsdaten; Key-Prefixe zählen nur an einer Wortgrenze (`task-list-item` ist kein `sk-`-Schlüssel). Redigiert wird nur, was ein Modell liest; der Pre-Scanner liest die unveränderten Dateien. Das Ergebnis nennt je Zeile Datei und Musterklasse (`result.secret_redactions`).
+10. **Upload-Feld:** `contextPackage` neben `diff`, strukturell validiert, höchstens 64 KB Abschnittsinhalt. Ein ungültiges Feld lehnt den Scan mit 422 ab, statt still ohne Kontext zu laufen. Gespeichert wird das geparste Paket, und nur bis der Job startet: der CliDiffLoaderStep ersetzt es als Erstes und ohne Bedingung im Payload durch Pfadliste und Größe (früher als „nach Job-Ende“ aus Frage 3, damit auch nach einem abgebrochenen oder gescheiterten Job nichts liegen bleibt). Ein Job, der nie startet, behält das Paket, bis seine Zeile gelöscht wird.
+11. **Aufrufer** (nur CLI, Extension, MCP): Namen, die auf geänderten Zeilen bestehender Dateien deklariert werden, höchstens 10, je höchstens 5 Treffer aus `git grep -w -F`, als Liste `symbol: pfad:zeile`.
+12. **Telemetrie:** `review_job_llm_calls.repo_context_tokens` (Migration 055) je Draft- und Verifier-Call, `result.repo_context` je Job (Status, Pfade, Tokens, Bytes, Auslassungen, Obergrenze, Ladezeit, Grund eines Ausfalls). Ohne die Migration schreibt der Call seine Zeile ohne die Spalte.
+13. **Rollback ohne Deploy:** `UNSLOP_REPO_CONTEXT_DISABLED=1` schaltet Paket und Condition 12 für jeden Job ab.
+14. **Nicht gebaut, wie freigegeben:** A5, A6, Stufe 1c, der Schattenlauf aus §10 und die Kontroll-Fixture „Injection in einer Kontextdatei“ (beide als To-Do in ROADMAP §1).
 
 ## 10. Vorregistrierter Messplan
 
@@ -449,6 +598,9 @@ Festgelegt mit dieser Spec, vor dem Bau. Änderungen nur mit Datum und Begründu
 - **Trefferquote der Evidence-Search aus den Logs:** Vercel-Runtime-Logs reichen auf Hobby eine Stunde zurück, die Abfrage nach `[RagLoader]` über 7 Tage war leer. Die Quote ist damit ungeprüft, nicht null. Ersatzindikator in §2.3.
 - **Vertex-Doku zu Function Calling mit Explicit Cache:** Die Seiten ließen sich nicht laden. Die Aussage in §4 stützt sich auf die Gemini-API-Referenz, die Firebase-Doku und den eigenen Befund F1.
 - **Einzelne Herstellerseiten** (CodeRabbit „Agentic vs. RAG“, LanceDB-Fallstudie, Qodo-Doku zum dynamischen Kontext, Greptile-Doku zur Index-Aktualisierung) ließen sich nicht laden; die betroffenen Angaben sind als „Snippet“ oder „nicht belegt“ markiert.
+
+- **Kosten des ersten Laufs der Regressionsprobe vom 2026-10-05** (r05, r10, r13, r18, r25): Der Benchmark-Runner löscht seine Jobs ohne `--keep`, die Telemetrie-Zeilen sind damit weg; `benchmark-cost.ts` fand 0 Calls. Die Kosten dieses einen Laufs sind nicht gemessen. Der zweite Lauf derselben Fixtures mit `--keep` kostete 0,1231 USD.
+- **Pull Requests aus Forks:** nicht geprüft, weil die Session keine Test-PRs öffnen durfte. Kein Befund über das Verhalten.
 
 ## Anhang A: Rohantworten der Probe
 

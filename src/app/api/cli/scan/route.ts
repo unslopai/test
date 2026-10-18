@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { resolveApiKey } from '@/lib/api-keys';
 import { resolveEntitlement, consumeScanQuota, quotaRetryAfterSeconds } from '@/lib/billing/entitlements';
 import { processReviewJob } from '@/lib/worker';
+import { parseUploadedContextPackage } from '@unslop/shared/repo-context';
 
 // 300s: worst case der Router-Cascade sind 3 sequentielle LLM-Calls
 // (Draft + Verify + Pro-Re-Verify) bzw. ein Pro-Volldurchlauf.
@@ -32,6 +33,8 @@ interface ScanRequestBody {
     diff?: string;
     source?: string;
     rerollLimit?: number;
+    /** Vom Client gebautes Repo-Kontextpaket (REPO_CONTEXT_SPEC §9 1b); fehlt bei alten Clients. */
+    contextPackage?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -97,6 +100,12 @@ export async function POST(request: Request) {
                 head_sha: requestBody!.headSha ?? null,
                 dirty: requestBody!.dirty ?? false,
                 reroll_limit: clampRerollLimit(requestBody!.rerollLimit),
+                // Gespeichert wird das geparste Paket (nur bekannte Felder), und
+                // nur bis der Worker es geladen hat: der RepoContextLoaderStep
+                // ersetzt den Inhalt durch Pfadliste und Größe (Spec §12 Frage 3).
+                ...(requestBody!.contextPackage !== undefined
+                    ? { context_package: parseUploadedContextPackage(requestBody!.contextPackage) }
+                    : {}),
             },
         })
         .select('id')
@@ -141,7 +150,19 @@ function validateScanRequest(requestBody: ScanRequestBody | null): string | null
     if (!requestBody.diff.includes('diff --git')) {
         return 'diff_not_unified_format';
     }
-    return null;
+    return validateContextPackage(requestBody.contextPackage);
+}
+
+/**
+ * Das Feld ist optional; ist es da, muss es die Form des Pakets haben und
+ * unter seiner eigenen Größengrenze bleiben (`MAX_CONTEXT_UPLOAD_BYTES`,
+ * neben den 300 KB des Diffs). Ein kaputtes oder zu großes Paket lehnt den
+ * Scan ab, statt still ohne Kontext zu laufen: der Client hat es gebaut und
+ * kann es weglassen.
+ */
+function validateContextPackage(rawContextPackage: unknown): string | null {
+    if (rawContextPackage === undefined) return null;
+    return parseUploadedContextPackage(rawContextPackage) === null ? 'invalid_context_package' : null;
 }
 
 /** [0, 50]-Clamp der Client-Schwelle (§4.5); fehlend/ungültig ⇒ null = Server-Default 3. */

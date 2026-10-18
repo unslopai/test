@@ -119,6 +119,10 @@ async function runSecondOpinionReview(
         renderedLawRuleIds: renderedLaw.ruleIds,
         issueSource: 'second-opinion-reviewer',
         adoptSelfReportedConfidence: true,
+        // Die Zweitmeinung sieht das Datei-Subset ohne Kontextpaket (REPO_CONTEXT_SPEC
+        // Stufe 1: Paket nur im Draft); Condition-12-Befunde fallen hier deshalb weg.
+        repoContextPackage: null,
+        repoContextTokens: 0,
     });
 
     const additiveIssues = dropDuplicateFindings(

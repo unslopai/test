@@ -10,10 +10,12 @@
  *    (Kampagne große PRs 2026-09-30; seit 2026-10-03 auch in CLI, MCP und
  *    Extension über `result.prescan` der Poll-Route, die Extension mit einer
  *    Kopie samt Parity-Test in prescanNotice.ts).
+ *  - ein fehlendes oder gekürztes Repo-Kontextpaket (REPO_CONTEXT_SPEC §9.2).
  * Weder ein Zeit-Skip noch ein halber Draft noch ein ausgefallener Pre-Scan
  * darf auf irgendeiner Fläche wie ein vollständiger Lauf aussehen.
  */
 import type { DraftFailureReason, SkippedStage } from './index.js';
+import type { RepoContextStatus } from './repo-context.js';
 
 const STAGE_LABELS: Readonly<Record<SkippedStage, string>> = {
     second_opinion: 'second opinion',
@@ -143,4 +145,31 @@ export function formatPrescanUnavailableNotice(
     }
     return 'Reduced coverage: the deterministic pre-scanner failed on this change — only the model review ran, '
         + 'and files it does not read were not checked.';
+}
+
+/** So viele ausgelassene Kontextdateien nennt der Hinweis beim Namen; die ganze Liste steht im Job-Ergebnis. */
+const MAX_NAMED_CONTEXT_OMISSIONS = 20;
+
+/**
+ * Repo-Kontextpaket (REPO_CONTEXT_SPEC §9.2): kam keines zustande
+ * (Degradation `repo_context_unavailable`), lief die Review nur auf dem Diff
+ * und sagt das; wurde es gekürzt, nennt der Satz die weggelassenen Dateien.
+ * null = Paket vollständig, für das Repo abgeschaltet oder vom Client nicht
+ * mitgeliefert, keine Zeile.
+ */
+export function formatRepoContextNotice(
+    contextStatus: RepoContextStatus | undefined,
+    omittedPaths?: readonly string[],
+): string | null {
+    if (contextStatus === 'unavailable') {
+        return 'Reduced coverage: the repository context could not be loaded, so this review saw only the diff '
+            + 'and did not check it against the manifests, schema or entry point of the repository.';
+    }
+    if (contextStatus !== 'loaded' || !omittedPaths || omittedPaths.length === 0) return null;
+    const namedPaths = omittedPaths.slice(0, MAX_NAMED_CONTEXT_OMISSIONS);
+    const unnamedCount = omittedPaths.length - namedPaths.length;
+    const unnamedNote = unnamedCount > 0 ? `, and ${unnamedCount} more (full list in the job result)` : '';
+    const fileNoun = omittedPaths.length === 1 ? 'file' : 'files';
+    return `Reduced coverage: the repository context left out ${omittedPaths.length} ${fileNoun} `
+        + `(too large, over budget, unreadable or withheld by the secret filter) — not checked against: ${namedPaths.join(', ')}${unnamedNote}.`;
 }

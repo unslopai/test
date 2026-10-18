@@ -77,6 +77,7 @@ function buildDeps(overrides: Partial<ToolDeps> = {}): ToolDeps {
             headSha: 'b'.repeat(40),
         }),
         buildDiff: () => HARMLESS_DIFF,
+        buildContextPackage: () => Promise.resolve(null),
         baseUrl: 'https://unslop.codes',
         rerollLimit: 3,
         waitMs: vi.fn().mockResolvedValue(undefined),
@@ -228,6 +229,25 @@ describe('unslop_scan — envelope (MCP_SPEC §5.2)', () => {
         expect(envelopeSection).toContain('bounds checking');
         expect(envelopeSection).toContain('strlcpy');
         expect(envelopeSection).toContain('deterministic findings; LLM analysis running.');
+    });
+});
+
+describe('unslop_scan — repository context (REPO_CONTEXT_SPEC §9 1b)', () => {
+    it('uploads the context package next to the diff, and scans the diff only when none could be built', async () => {
+        const contextPackage = {
+            sections: [{ kind: 'manifest' as const, path: 'package.json', content: '{"name":"widgets"}', relatedPaths: [] }],
+            omissions: [],
+            schemaCandidateCount: 0,
+            pathListTruncated: false,
+        };
+        const withContext = buildDeps({ buildContextPackage: () => Promise.resolve(contextPackage) });
+        const withoutContext = buildDeps();
+
+        await runScanTool(withContext, {});
+        await runScanTool(withoutContext, {});
+
+        expect(withContext.api.submitScan).toHaveBeenCalledWith(expect.objectContaining({ contextPackage }));
+        expect(withoutContext.api.submitScan).toHaveBeenCalledWith(expect.objectContaining({ contextPackage: null }));
     });
 });
 

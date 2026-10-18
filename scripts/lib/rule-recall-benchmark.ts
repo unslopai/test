@@ -76,8 +76,11 @@ import {
 import type { ProductionLane, ProductionPathPlan } from '@/lib/benchmark/production-path';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import { buildCombinedDiff } from '@/lib/pipeline/helpers';
+import { redactSecretsInFiles } from '@/lib/pipeline/secret-redaction';
 import {
     DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REPO_CONTEXT_CONFIG,
+    buildInitialRepoContextState,
     DEFAULT_REVIEW_SCOPE_CONFIG,
     GATED_LLM_EXTENSIONS,
     INITIAL_CASCADE_STATE,
@@ -94,6 +97,7 @@ import { escalationReviewerStep } from '@/lib/pipeline/steps/escalation-reviewer
 import { secondOpinionReviewerStep } from '@/lib/pipeline/steps/second-opinion-reviewer-step';
 import { integrityScorerStep } from '@/lib/pipeline/steps/integrity-scorer-step';
 import type { PullRequestFile } from '@/lib/github';
+import type { RepoContextPackage } from '@unslop/shared/repo-context';
 import type { CascadeConfig, PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
 
 const RULE_RECALL_DIR = path.join(process.cwd(), 'fixtures', 'rule-recall');
@@ -278,6 +282,11 @@ export interface CascadeInput {
     readonly fixtureFiles: readonly PullRequestFile[];
     readonly reviewableFiles: readonly PullRequestFile[];
     readonly detectedEcosystems: readonly string[] | null;
+    /**
+     * Repo-Kontextpaket zu den Dateien (REPO_CONTEXT_SPEC §8-Probe auf dem
+     * Pipeline-Pfad). Fixtures sind Diffs ohne Repo und lassen das Feld weg.
+     */
+    readonly contextPackage?: RepoContextPackage;
 }
 
 /** Die Laufparameter, die eine Kaskade braucht — ohne die Pfadwahl des Benchmarks. */
@@ -306,7 +315,9 @@ function buildContext(
     cascadeInput: CascadeInput,
     cascadeSettings: CascadeRunSettings,
 ): PipelineContext {
-    const { fixtureFiles, reviewableFiles, detectedEcosystems } = cascadeInput;
+    const { fixtureFiles, detectedEcosystems } = cascadeInput;
+    // Wie die Diff-Loader: was ein Modell liest, geht vorher durch den Secret-Filter.
+    const { redactedFiles: reviewableFiles, secretRedactions } = redactSecretsInFiles(cascadeInput.reviewableFiles);
     const { ownerUserId } = cascadeSettings;
     const cascadeConfig = resolveRunCascadeConfig(cascadeSettings);
     return {
@@ -344,6 +355,13 @@ function buildContext(
         cascadeConfig,
         prescanConfig: DEFAULT_PRESCAN_CONFIG,
         reviewScopeConfig: { llmExtensions: cascadeSettings.llmExtensions },
+        // Fixtures sind Diffs ohne Repo: kein Kontextpaket. Condition 12 steht
+        // über ALL_CONDITION_IDS trotzdem im Prompt, wie beim Default in Produktion.
+        repoContextConfig: DEFAULT_REPO_CONTEXT_CONFIG,
+        repoContext: cascadeInput.contextPackage
+            ? { status: 'loaded', contextPackage: cascadeInput.contextPackage, loadMs: null, unavailableReason: null }
+            : buildInitialRepoContextState(DEFAULT_REPO_CONTEXT_CONFIG),
+        secretRedactions,
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,

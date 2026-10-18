@@ -14,7 +14,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { CONDITION_REGISTRY, ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
+import { CONDITION_REGISTRY, SELECTABLE_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import type { ReviewCondition } from '@/lib/pipeline/conditions';
 // `import type` ONLY: the catalog values (blueprint vocabulary) must stay out
 // of this client chunk — the server page passes them as a prop (D5/V3).
@@ -35,7 +35,7 @@ interface SettingsClientProps {
 }
 
 /**
- * Client-side mirror of PipelineConfig. `cascade`/`prescan`/`reviewScope` are pass-through
+ * Client-side mirror of PipelineConfig. `cascade`/`prescan`/`reviewScope`/`repoContext` are pass-through
  * blocks the 3-field UI never renders — they must survive Save AND Reset
  * untouched (dropping them on save was the original prescan-loss bug; dropping
  * them on reset was the two-click path back into the parked prod OOM, D10).
@@ -47,6 +47,7 @@ interface PipelineConfigState {
     cascade?: Record<string, number>;
     prescan?: unknown;
     reviewScope?: unknown;
+    repoContext?: unknown;
 }
 
 type LoadState = 'loading' | 'loaded' | 'error' | 'saving';
@@ -167,11 +168,11 @@ export default function SettingsClient({ repoId, fullName, availableSteps }: Set
         }));
     };
 
-    const macroConditions = ALL_CONDITION_IDS
+    const macroConditions = SELECTABLE_CONDITION_IDS
         .map((conditionId) => CONDITION_REGISTRY.get(conditionId))
         .filter((condition): condition is ReviewCondition => condition !== undefined && condition.category === 'macro');
 
-    const reactConditions = ALL_CONDITION_IDS
+    const reactConditions = SELECTABLE_CONDITION_IDS
         .map((conditionId) => CONDITION_REGISTRY.get(conditionId))
         .filter((condition): condition is ReviewCondition => condition !== undefined && condition.category === 'react_nextjs');
 
