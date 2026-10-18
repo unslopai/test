@@ -636,6 +636,33 @@ The §1 table was the v1 plan; the v2/v3/v4 detectors diverged from it. Migratio
 - Live distribution after the migration: `full` 47 / `partial` 42 / `none` 30 (before: 53 / 36 / 30 as verified for 030) — the expected shift of six `full` → `partial`, TEST-005 `none` → `partial`, MAINT-009 `partial` → `none`.
 - No runtime effect: nothing in `src/` or `packages/` reads these columns (only a comment in `rules/registry.ts`), so the Law block and the prompts are unchanged and no benchmark run is needed. `golden_standards.updated_at` has no update trigger and did not move — it is no evidence of when metadata changed.
 
+## 10. Condition 2/3 deterministic — COND-002 / COND-003 (2026-10-03)
+
+Motivation: on real PRs the draft model missed `@ts-ignore`, `any` and `as unknown as` at seven places in non-test code (unslopai/test#30, job `9260a5cc`) and `data` / `e` in a new 9-line file (test#36, job `93236c5c`). Both conditions have a part that needs no model. Receipts: `docs/benchmarks/LARGE_PR_CAMPAIGN.md` §4, `docs/benchmarks/RULE_RECALL_BENCHMARK.md` (2026-10-03).
+
+The rule IDs are the Condition IDs of `src/lib/pipeline/conditions.ts`, as for COND-011. The registry titles equal the Condition names, so a pre-scan finding and a model finding carry the same label (`COND-002 (Type Capitulation)`) and the label-based dedupe applies. `golden_standards` has no row for a Condition; MAINT-004 there is the redundant-alias rule, not the generic-name list.
+
+| Rule | Engine | Severity | Languages | Test files |
+|---|---|---|---|---|
+| COND-002 Type Capitulation (`rules/ast/type-rules.ts`) | tree-sitter | WARNING | TS/TSX; the directives also in JS | reported |
+| COND-003 Lexical Slop, generic names (`rules/ast/lexical-rules.ts`) | tree-sitter | WARNING | TS/TSX/JS | not reported |
+
+**COND-002** reports (a) explicit `any` in any type position (`predefined_type` node with text `any`: annotation, generic argument, `as any`, type-parameter default), (b) `@ts-ignore` and `@ts-nocheck`, and `@ts-expect-error` without a reason, read only at the start of a comment the way the compiler reads them, (c) the double cast `as unknown as T`, also as `(value as unknown) as T`. An `@ts-expect-error` followed by any reason text is the accepted form and stays silent.
+
+**COND-003** reports the names THE LAW lists (`data`, `result`, `item`, `temp`, also numbered like `temp1`, and `e` in a `catch`) only on a binding the author introduced: a plain `const`/`let`/`var` declaration, a parameter (plain, with a default value or rest) of a function declaration, a class method or a function assigned to a variable, class field or export (ES or `module.exports` / `exports.x`), and the `catch` parameter. Numbered names count with up to two digits. Silent by design: destructuring (the name belongs to the foreign API), property access and object keys, parameters of inline callbacks (call argument, JSX attribute, object property) and of functions assigned to anything but a CommonJS export, signatures without a body, ambient declarations (`declare const data`), `for … of` loop variables, `e` outside `catch`, and test code. Emojis in comments, the other half of Condition 3, stay with the model. Test code means `isTestFile` plus any path below a test directory (`test/`, `tests/`, `__tests__/`, `__mocks__/`, `fixtures/`, `spec/`, `e2e/`, `testdata/`): `isTestFile` does not cover those yet, and the first corpus sample had 9 of 28 naming hits there.
+
+**Test files.** The only other Condition rule, COND-011, skips tests under the TEST-010 exemption for structural rules. That is no line for these two, so the fallback of the task applies: type capitulation is reported in tests too (THE LAW applies to tests, and `as any` in a test file was one of the misses, unslopai/test#29), generic names are not.
+
+**Added lines only.** Each finding sits on the single line of its token (`addAstLineFinding`: `line == endLine`, the whole source line as quote), so the existing `filterToAddedLines` keeps exactly the hits whose `any`, directive or binding is on an added line.
+
+**Why tree-sitter and not `@typescript-eslint`** (`no-explicit-any`, `ban-ts-comment`), which §0 would suggest for TS/JS: (1) the ESLint engine is the largest RSS driver of the prescan route (§7.7), and loading `@typescript-eslint/eslint-plugin` adds 29–34 MB RSS before the first file (measured unbundled, two runs); (2) the `Linter` API honors inline `eslint-disable` comments, and six of the seven missed places in test#30 sit behind one; (3) `as unknown as` needs a custom rule in either engine.
+
+**Memory.** `identifier`, `predefined_type` and `comment` are the most frequent nodes of a TS file. They are bucketed through a text filter at the cursor (`NodeTextFilter` in `ast-shared.ts`): only identifiers with one of the generic names, the types `any`/`unknown` and comments containing `@ts-` become JS objects. Measured on the built route handler with the 40 JS/TS files of unslopai/test#29 in batches of 12, three rounds, log line `[PrescanRoute] RSS-Zuwachs je Engine`: tree-sitter +35 MB → +39 MB in the first request (grammar load), +26 MB → +12 MB summed over all 12 requests. The ESLint engine is untouched; its sum moved +153 MB → +220 MB between the two server processes, which is the noise floor of this measurement.
+
+**Repeated hits** go through the existing cap (`src/lib/pipeline/prescan-hit-cap.ts`): three individual findings per rule and severity, one collective finding for the rest.
+
+**Divergence, recorded:** the prompt text of Condition 2 (`conditions.ts`) still says "exceeds 5% of type declarations", THE LAW says forbidden outright. The deterministic rule follows THE LAW; the prompt is out of scope here and tracked in ROADMAP §1.
+
 ---
 
 ## Appendix A — Research sources

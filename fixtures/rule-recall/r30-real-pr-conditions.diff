@@ -1,0 +1,123 @@
+=== FILE: adapters/netlify/src/handler.ts (modified) ===
+@@ -1,0 +1,11 @@
++// Fixture note: the three adapters/ files in this bundle are verbatim from honojs/hono#5463 (MIT License, Copyright (c) 2021 - present, Yusuke Wada and Hono contributors), replayed as unslopai/test#30.
++/* eslint-disable @typescript-eslint/no-explicit-any */
++import type { Hono } from 'hono'
++
++export const handle = (
++  app: Hono<any, any>
++): ((req: Request, context: any) => Response | Promise<Response>) => {
++  return (req: Request, context: any) => {
++    return app.fetch(req, { context })
++  }
++}
+
+=== FILE: adapters/cloudflare-workers/src/serve-static.ts (modified) ===
+@@ -1,0 +1,42 @@
++import { serveStatic as baseServeStatic } from 'hono/serve-static'
++import type { ServeStaticOptions as BaseServeStaticOptions } from 'hono/serve-static'
++import type { Env, MiddlewareHandler } from 'hono/types'
++import { getContentFromKVAsset } from './utils'
++
++export type ServeStaticOptions<E extends Env = Env> = BaseServeStaticOptions<E> & {
++  // namespace is KVNamespace
++  namespace?: unknown
++  manifest?: object | string
++}
++
++/**
++ * @deprecated
++ * `serveStatic` in the Cloudflare Workers adapter is deprecated.
++ * You can serve static files directly using Cloudflare Static Assets.
++ * @see https://developers.cloudflare.com/workers/static-assets/
++ * Cloudflare Static Assets is currently in open beta. If this doesn't work for you,
++ * please consider using Cloudflare Pages. You can start to create the Cloudflare Pages
++ * application with the `npm create hono@latest` command.
++ */
++export const serveStatic = <E extends Env = Env>(
++  options: ServeStaticOptions<E> = {}
++): MiddlewareHandler => {
++  return async function serveStatic(c, next) {
++    const getContent = async (path: string) => {
++      return getContentFromKVAsset(path, {
++        manifest: options.manifest,
++        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
++        // @ts-ignore
++        namespace: options.namespace
++          ? options.namespace
++          : c.env
++            ? c.env.__STATIC_CONTENT
++            : undefined,
++      })
++    }
++    return baseServeStatic({
++      ...options,
++      getContent,
++    })(c, next)
++  }
++}
+
+=== FILE: adapters/cloudflare-workers/src/utils.ts (modified) ===
+@@ -1,0 +1,50 @@
++// __STATIC_CONTENT is KVNamespace
++declare const __STATIC_CONTENT: unknown
++declare const __STATIC_CONTENT_MANIFEST: string
++
++export type KVAssetOptions = {
++  manifest?: object | string
++  // namespace is KVNamespace
++  namespace?: unknown
++}
++
++export const getContentFromKVAsset = async (
++  path: string,
++  options?: KVAssetOptions
++): Promise<ReadableStream | null> => {
++  let ASSET_MANIFEST: Record<string, string>
++
++  if (options && options.manifest) {
++    if (typeof options.manifest === 'string') {
++      ASSET_MANIFEST = JSON.parse(options.manifest)
++    } else {
++      ASSET_MANIFEST = options.manifest as Record<string, string>
++    }
++  } else {
++    if (typeof __STATIC_CONTENT_MANIFEST === 'string') {
++      ASSET_MANIFEST = JSON.parse(__STATIC_CONTENT_MANIFEST)
++    } else {
++      ASSET_MANIFEST = __STATIC_CONTENT_MANIFEST
++    }
++  }
++
++  // ASSET_NAMESPACE is KVNamespace
++  let ASSET_NAMESPACE: unknown
++  if (options && options.namespace) {
++    ASSET_NAMESPACE = options.namespace
++  } else {
++    ASSET_NAMESPACE = __STATIC_CONTENT
++  }
++
++  const key = ASSET_MANIFEST[path]
++  if (!key) {
++    return null
++  }
++
++  // @ts-expect-error ASSET_NAMESPACE is not typed
++  const content = await ASSET_NAMESPACE.get(key, { type: 'stream' })
++  if (!content) {
++    return null
++  }
++  return content as unknown as ReadableStream
++}
+
+=== FILE: src/lib/pipeline/retry-budget.ts (modified) ===
+@@ -1,0 +1,9 @@
++export async function loadRetryBudget(accountId: string): Promise<number> {
++    try {
++        const response = await fetch(`https://internal.example.com/budgets/${accountId}`);
++        const data = await response.json();
++        return data.remaining;
++    } catch (e) {
++    }
++    return 0;
++}

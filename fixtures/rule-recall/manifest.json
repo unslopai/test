@@ -216,7 +216,7 @@
       },
       {
         "path": "services/invoicing/total-calculator.ts",
-        "ruleContains": "Condition 3|MAINT-004"
+        "ruleContains": "Condition 3|MAINT-004|COND-003"
       },
       {
         "path": "services/alerts/channel-formatters.ts",
@@ -267,11 +267,11 @@
       },
       {
         "path": "lib/api/webhook-parser.ts",
-        "ruleContains": "Condition 2"
+        "ruleContains": "Condition 2|COND-002"
       },
       {
         "path": "components/reports/ReportList.tsx",
-        "ruleContains": "Condition 3|MAINT-004"
+        "ruleContains": "Condition 3|MAINT-004|COND-003"
       },
       {
         "path": "lib/format/order-sorting.ts",
@@ -795,7 +795,7 @@
       },
       {
         "path": "xl/services/invoicing/total-calculator.ts",
-        "ruleContains": "Condition 3|MAINT-004"
+        "ruleContains": "Condition 3|MAINT-004|COND-003"
       },
       {
         "path": "xl/services/alerts/channel-formatters.ts",
@@ -831,11 +831,11 @@
       },
       {
         "path": "xl/lib/api/webhook-parser.ts",
-        "ruleContains": "Condition 2"
+        "ruleContains": "Condition 2|COND-002"
       },
       {
         "path": "xl/components/reports/ReportList.tsx",
-        "ruleContains": "Condition 3|MAINT-004"
+        "ruleContains": "Condition 3|MAINT-004|COND-003"
       },
       {
         "path": "xl/lib/format/order-sorting.ts",
@@ -987,5 +987,35 @@
     ],
     "negativeControl": true,
     "expected": []
+  },
+  "r30-real-pr-conditions.diff": {
+    "description": "Real-PR misses of the large-PR campaign (2026-09-30), verbatim instead of planted: three adapter files from honojs/hono#5463 (MIT, replayed as unslopai/test#30) carrying explicit any behind an eslint-disable, @ts-ignore and `as unknown as`, plus the 9-line retry-budget.ts from unslopai/test#36 with `data`, `e` and an empty catch; the Condition 2/3 hits are expected from the pre-scanner (COND-002, COND-003)",
+    "detectedEcosystems": [
+      "typescript",
+      "nodejs"
+    ],
+    "negativeControl": false,
+    "expected": [
+      {
+        "path": "adapters/netlify/src/handler.ts",
+        "ruleContains": "Condition 2|COND-002"
+      },
+      {
+        "path": "adapters/cloudflare-workers/src/serve-static.ts",
+        "ruleContains": "Condition 2|COND-002"
+      },
+      {
+        "path": "adapters/cloudflare-workers/src/utils.ts",
+        "ruleContains": "Condition 2|COND-002"
+      },
+      {
+        "path": "src/lib/pipeline/retry-budget.ts",
+        "ruleContains": "Condition 3|COND-003"
+      },
+      {
+        "path": "src/lib/pipeline/retry-budget.ts",
+        "ruleContains": "MAINT-001"
+      }
+    ]
   }
 }
