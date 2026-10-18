@@ -104,8 +104,9 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
     });
 
     const escalationIdSet = new Set(context.cascade.escalationClaimIds);
-    const markedClaims = buildBlindClaims(context.issues)
-        .filter((blindClaim) => escalationIdSet.has(blindClaim.claimId));
+    const markedClaims = orderGatekeeperClaimsFirst(
+        buildBlindClaims(context.issues).filter((blindClaim) => escalationIdSet.has(blindClaim.claimId)),
+    );
     const claimBatches = chunkClaims(markedClaims, context.cascadeConfig.verifierBatchCap);
 
     const proVerdicts: ClaimVerdict[] = [];
@@ -129,6 +130,17 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
             : context.tokenUsage,
     };
     return applyProVerdicts(reverifiedContext, proVerdicts);
+}
+
+/**
+ * A12c: GATE-001-Claims (feste Prüffrage) zuerst — reicht das Zeitbudget nur
+ * für den ersten Batch, wird die Injection-Frage auf jeden Fall arbitriert.
+ * Sonst stabile Reihenfolge nach Claim-Index.
+ */
+export function orderGatekeeperClaimsFirst(markedClaims: readonly BlindClaim[]): BlindClaim[] {
+    const gatekeeperClaims = markedClaims.filter((blindClaim) => blindClaim.fixedVerificationQuestion !== undefined);
+    const otherClaims = markedClaims.filter((blindClaim) => blindClaim.fixedVerificationQuestion === undefined);
+    return [...gatekeeperClaims, ...otherClaims];
 }
 
 /**

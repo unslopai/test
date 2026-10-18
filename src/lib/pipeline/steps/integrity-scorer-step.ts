@@ -12,6 +12,7 @@ import {
     haveDraftFindingsChanged,
     type VerdictOutcomeCounts,
 } from '@/lib/pipeline/final-summary';
+import { isGatekeeperRule, keepUnresolvedGatekeeperIssue } from '@/lib/pipeline/gatekeeper-rules';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
 import type { IssueVerification } from '@unslop/shared';
 import type {
@@ -121,12 +122,18 @@ function applyVerdictsToIssues(
             survivingIssues.push(labelIssueWithoutVerdict(draftIssue));
             return;
         }
+        const arbitrationSkipped = escalationSkipped && escalationIdSet.has(claimId);
+        if (isGatekeeperRule(draftIssue.rule) && claimVerdict.verdict !== 'CONFIRMED') {
+            const gatekeeperOutcome = resolveGatekeeperClaim(draftIssue, claimVerdict, arbitrationSkipped, cascade);
+            if (gatekeeperOutcome === null) refutedCount += 1;
+            else survivingIssues.push(gatekeeperOutcome);
+            return;
+        }
         if (claimVerdict.verdict === 'REFUTED') {
             // Ein Flash-REFUTED auf einem eskalations-markierten Claim, den Pro
             // nie geprüft hat, darf NICHT still sterben (False-Refutation-Risiko,
             // PR-#13-Vorfall) — er überlebt sichtbar als downgraded WARNING.
-            const refutedWithoutProReview = escalationSkipped && escalationIdSet.has(claimId);
-            if (!refutedWithoutProReview) {
+            if (!arbitrationSkipped) {
                 refutedCount += 1;
                 return;
             }
@@ -135,13 +142,39 @@ function applyVerdictsToIssues(
             return;
         }
 
-        const downgradeReason = resolveDowngradeReason(claimVerdict, escalationSkipped, escalationIdSet.has(claimId));
+        const downgradeReason = resolveDowngradeReason(claimVerdict, arbitrationSkipped);
         if (downgradeReason) downgradedCount += 1;
 
         survivingIssues.push(decorateIssue(draftIssue, claimVerdict, downgradeReason));
     });
 
     return { survivingIssues, refutedCount, downgradedCount };
+}
+
+/**
+ * A12c (SPEC.md §12.4): ein GATE-001-Claim ohne CONFIRMED. Nur ein
+ * Arbiter-REFUTED auf die feste Frage verwirft ihn (null); ohne Arbiter oder
+ * bei UNCERTAIN bleibt er CRITICAL — nie WARNING, nie `contested`.
+ */
+function resolveGatekeeperClaim(
+    draftIssue: PipelineIssue,
+    claimVerdict: ClaimVerdict,
+    arbitrationSkipped: boolean,
+    cascade: CascadeState,
+): PipelineIssue | null {
+    if (arbitrationSkipped) {
+        return keepUnresolvedGatekeeperIssue(draftIssue, 'arbitration_skipped', describeSkippedArbitration(cascade));
+    }
+    if (claimVerdict.verdict === 'REFUTED') return null;
+    return keepUnresolvedGatekeeperIssue(draftIssue, 'verdict_uncertain', '');
+}
+
+/** Grund-Label für die Annotation, in der Reihenfolge, in der die Stufe scheitern kann. */
+function describeSkippedArbitration(cascade: CascadeState): string {
+    if (cascade.degradations.includes('time_budget_exhausted')) return 'time budget exhausted';
+    if (cascade.degradations.includes('pro_budget_exhausted')) return 'escalation budget exhausted';
+    if (cascade.degradations.includes('pro_api_error')) return 'escalation model unavailable';
+    return 'escalation unavailable';
 }
 
 /**
@@ -155,11 +188,10 @@ type DowngradeReason = 'uncertain_verdict' | 'escalation_skipped' | null;
 
 function resolveDowngradeReason(
     claimVerdict: ClaimVerdict,
-    escalationSkipped: boolean,
-    claimMarkedForEscalation: boolean,
+    arbitrationSkipped: boolean,
 ): DowngradeReason {
     if (claimVerdict.verdict === 'UNCERTAIN') return 'uncertain_verdict';
-    if (escalationSkipped && claimMarkedForEscalation) return 'escalation_skipped';
+    if (arbitrationSkipped) return 'escalation_skipped';
     return null;
 }
 

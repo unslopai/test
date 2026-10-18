@@ -17,6 +17,7 @@ import { fetchRenderedLawBlock } from '@/lib/law';
 import { MODEL_VERIFIER } from '@/lib/pipeline/models';
 import { resolvePromptEnvelope } from '@/lib/pipeline/context-cache';
 import { addTokenUsage } from '@/lib/pipeline/helpers';
+import { isGatekeeperRule } from '@/lib/pipeline/gatekeeper-rules';
 import type { FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import { hasBudgetForCall, markStageSkippedForTime } from '@/lib/pipeline/deadline';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
@@ -250,8 +251,11 @@ function selectEscalationClaimIds(
         const isContestedCritical = draftIssue.severity === 'CRITICAL'
             && (claimVerdict.verdict === 'REFUTED'
                 || (claimVerdict.verdict === 'CONFIRMED' && claimVerdict.confidence < confidenceThreshold));
+        // A12c: ein widerlegter GATE-001-Claim geht immer zum Arbiter,
+        // unabhängig von der Severity, die das Modell geliefert hat.
+        const isRefutedGatekeeperClaim = claimVerdict.verdict === 'REFUTED' && isGatekeeperRule(draftIssue.rule);
 
-        return isUncertain || isContestedCritical ? [claimId] : [];
+        return isUncertain || isContestedCritical || isRefutedGatekeeperClaim ? [claimId] : [];
     });
 }
 
