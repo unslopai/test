@@ -106,16 +106,14 @@ function extensionKey(relativePath: string): string {
     return CORPUS_BASENAMES.has(basename) ? basename : path.extname(basename).toLowerCase();
 }
 
-async function main(): Promise<void> {
-    const rootDir = path.resolve(readFlag('--root'));
-    const corpusLabel = readFlag('--label');
-    const reportPath = readFlag('--out');
-    const maxFiles = Number(readFlag('--max-files', '400'));
+interface CorpusScan {
+    readonly findings: readonly CorpusFinding[];
+    readonly totalDurationMs: number;
+    readonly maxScanDurationMs: number;
+}
 
-    const corpusPaths: string[] = [];
-    collectCorpusPaths(rootDir, rootDir, corpusPaths);
-    const selectedPaths = corpusPaths.sort().slice(0, maxFiles);
-
+/** Scannt die Dateien in 25er-Gruppen, wie ein PR mit vielen neuen Dateien. */
+async function scanCorpus(rootDir: string, selectedPaths: readonly string[]): Promise<CorpusScan> {
     const companionFiles = loadWorkspaceManifests(rootDir);
     const findings: CorpusFinding[] = [];
     let totalDurationMs = 0;
@@ -134,19 +132,33 @@ async function main(): Promise<void> {
             exactQuote: finding.exactQuote.slice(0, 160),
         })));
     }
+    return { findings, totalDurationMs, maxScanDurationMs };
+}
 
-    const filesByExtension = new Map<string, number>();
-    for (const relativePath of selectedPaths) {
-        filesByExtension.set(extensionKey(relativePath), (filesByExtension.get(extensionKey(relativePath)) ?? 0) + 1);
+function countByKey(groupKeys: readonly string[]): Map<string, number> {
+    const countsByKey = new Map<string, number>();
+    for (const groupKey of groupKeys) {
+        countsByKey.set(groupKey, (countsByKey.get(groupKey) ?? 0) + 1);
     }
-    const findingsByExtensionAndRule = new Map<string, number>();
-    for (const finding of findings) {
-        const groupKey = `${extensionKey(finding.path)} ${finding.ruleId} ${finding.severity}`;
-        findingsByExtensionAndRule.set(groupKey, (findingsByExtensionAndRule.get(groupKey) ?? 0) + 1);
-    }
+    return countsByKey;
+}
 
-    console.log(`Korpus ${corpusLabel}: ${selectedPaths.length} Dateien (von ${corpusPaths.length} Kandidaten), ` +
-        `${findings.length} Findings, Prescan gesamt ${totalDurationMs} ms, langsamster 25er-Scan ${maxScanDurationMs} ms`);
+interface CorpusSelection {
+    readonly corpusLabel: string;
+    readonly candidateCount: number;
+    readonly selectedPaths: readonly string[];
+}
+
+function printCorpusSummary(corpusSelection: CorpusSelection, corpusScan: CorpusScan): void {
+    const { findings } = corpusScan;
+    const filesByExtension = countByKey(corpusSelection.selectedPaths.map(extensionKey));
+    const findingsByExtensionAndRule = countByKey(
+        findings.map((finding) => `${extensionKey(finding.path)} ${finding.ruleId} ${finding.severity}`),
+    );
+
+    console.log(`Korpus ${corpusSelection.corpusLabel}: ${corpusSelection.selectedPaths.length} Dateien `
+        + `(von ${corpusSelection.candidateCount} Kandidaten), ${findings.length} Findings, `
+        + `Prescan gesamt ${corpusScan.totalDurationMs} ms, langsamster 25er-Scan ${corpusScan.maxScanDurationMs} ms`);
     console.log('Dateien je Typ:', JSON.stringify(Object.fromEntries(filesByExtension)));
     for (const [groupKey, findingCount] of [...findingsByExtensionAndRule.entries()].sort()) {
         console.log(`  ${groupKey}: ${findingCount}`);
@@ -158,18 +170,39 @@ async function main(): Promise<void> {
     for (const gateFinding of gateFindings) {
         console.log(`  ${gateFinding.ruleId} ${gateFinding.path}:${gateFinding.line} | ${gateFinding.exactQuote}`);
     }
+}
 
+function writeCorpusReport(reportPath: string, corpusSelection: CorpusSelection, corpusScan: CorpusScan): void {
     fs.mkdirSync(path.dirname(reportPath), { recursive: true });
     fs.writeFileSync(reportPath, JSON.stringify({
         capturedAt: new Date().toISOString(),
-        corpusLabel,
-        fileCount: selectedPaths.length,
-        filesByExtension: Object.fromEntries(filesByExtension),
-        totalDurationMs,
-        maxScanDurationMs,
-        findings,
+        corpusLabel: corpusSelection.corpusLabel,
+        fileCount: corpusSelection.selectedPaths.length,
+        filesByExtension: Object.fromEntries(countByKey(corpusSelection.selectedPaths.map(extensionKey))),
+        totalDurationMs: corpusScan.totalDurationMs,
+        maxScanDurationMs: corpusScan.maxScanDurationMs,
+        findings: corpusScan.findings,
     }, null, 2));
     console.log(`Report geschrieben: ${reportPath}`);
+}
+
+async function main(): Promise<void> {
+    const rootDir = path.resolve(readFlag('--root'));
+    const corpusLabel = readFlag('--label');
+    const reportPath = readFlag('--out');
+    const maxFiles = Number(readFlag('--max-files', '400'));
+
+    const corpusPaths: string[] = [];
+    collectCorpusPaths(rootDir, rootDir, corpusPaths);
+    const corpusSelection: CorpusSelection = {
+        corpusLabel,
+        candidateCount: corpusPaths.length,
+        selectedPaths: corpusPaths.sort().slice(0, maxFiles),
+    };
+
+    const corpusScan = await scanCorpus(rootDir, corpusSelection.selectedPaths);
+    printCorpusSummary(corpusSelection, corpusScan);
+    writeCorpusReport(reportPath, corpusSelection, corpusScan);
 }
 
 main().catch((corpusError: unknown) => {

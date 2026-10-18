@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
-import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
 /**
@@ -42,7 +42,7 @@ export const resultPersisterStep: PipelineStep = {
             ? {
                 has_slop: false,
                 issues: [],
-                summary: context.abortReason ?? 'Pipeline aborted.',
+                summary: describeNothingReviewed(context).reason,
             }
             : {
                 has_slop: reportableIssues.length > 0,

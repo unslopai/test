@@ -12,8 +12,9 @@
  * und Apply-/Suppression-Anker deterministisch — unabhängig davon, wie viele
  * weitere Vorkommen ein späterer Scan findet.
  */
+import { listHitLocations } from '@/lib/pipeline/prescan-hit-cap';
 import type { IssueOccurrence } from '@unslop/shared';
-import type { PipelineIssue } from '@/lib/pipeline/types';
+import type { PipelineIssue, PrescanHitLocation } from '@/lib/pipeline/types';
 
 /** Bare Rule-ID vor dem ersten Leerzeichen — derselbe Prefix-Split wie die Dedupe. */
 export function normalizeBareRuleId(rule: string): string {
@@ -87,26 +88,30 @@ function minimumDefinedConfidence(groupMembers: readonly PipelineIssue[]): numbe
  * Einzel-Issues verhalten sich wie vor der Aggregation (Kollision ⇒ null).
  * Bei Aggregaten fallen NUR die kollidierenden Vorkommen weg; der Rest wird
  * auf das erste verbleibende Vorkommen re-verankert. null = nichts übrig.
+ *
+ * Verglichen wird mit jeder Fundstelle, nicht mit jedem Eintrag: das
+ * Sammelfinding des E4-Deckels steht für alle Treffer ab dem vierten
+ * (`listHitLocations`), ein LLM-Finding an Treffer 5 ist also ein Duplikat.
  */
 export function subtractPrescanOverlaps(
     llmIssue: PipelineIssue,
     prescanIssues: readonly PipelineIssue[],
 ): PipelineIssue | null {
-    const collidingPrescanIssues = prescanIssues.filter(
-        (prescanIssue) => matchesPrescanRuleAndFile(llmIssue, prescanIssue),
-    );
-    if (collidingPrescanIssues.length === 0) return llmIssue;
+    const collidingPrescanHits = prescanIssues
+        .flatMap(expandToPrescanHits)
+        .filter((prescanHit) => matchesPrescanRuleAndFile(llmIssue, prescanHit));
+    if (collidingPrescanHits.length === 0) return llmIssue;
 
     if (!llmIssue.occurrences) {
-        const topLevelCollides = collidingPrescanIssues.some(
-            (prescanIssue) => rangesOverlap(llmIssue, prescanIssue),
+        const topLevelCollides = collidingPrescanHits.some(
+            (prescanHit) => rangesOverlap(llmIssue, prescanHit),
         );
         return topLevelCollides ? null : llmIssue;
     }
 
     const remainingOccurrences = llmIssue.occurrences.filter(
-        (occurrence) => !collidingPrescanIssues.some(
-            (prescanIssue) => rangesOverlap(occurrence, prescanIssue),
+        (occurrence) => !collidingPrescanHits.some(
+            (prescanHit) => rangesOverlap(occurrence, prescanHit),
         ),
     );
 
@@ -115,17 +120,26 @@ export function subtractPrescanOverlaps(
     return reanchorToRemaining(llmIssue, remainingOccurrences);
 }
 
-function matchesPrescanRuleAndFile(llmIssue: PipelineIssue, prescanIssue: PipelineIssue): boolean {
-    if (llmIssue.path !== prescanIssue.path) return false;
-    const prescanRuleId = prescanIssue.rule.split(' ')[0];
+/** Ein Pre-Scanner-Treffer mit seiner Regel — das Sammelfinding liefert davon einen je Fundstelle. */
+interface PrescanHit extends PrescanHitLocation {
+    readonly rule: string;
+}
+
+function expandToPrescanHits(prescanIssue: PipelineIssue): PrescanHit[] {
+    return listHitLocations(prescanIssue).map((hitLocation) => ({ ...hitLocation, rule: prescanIssue.rule }));
+}
+
+function matchesPrescanRuleAndFile(llmIssue: PipelineIssue, prescanHit: PrescanHit): boolean {
+    if (llmIssue.path !== prescanHit.path) return false;
+    const prescanRuleId = prescanHit.rule.split(' ')[0];
     return Boolean(prescanRuleId) && llmIssue.rule.includes(prescanRuleId);
 }
 
 function rangesOverlap(
     lineRange: { readonly line: number; readonly endLine: number },
-    prescanIssue: PipelineIssue,
+    prescanHit: PrescanHit,
 ): boolean {
-    return lineRange.line <= prescanIssue.endLine && prescanIssue.line <= lineRange.endLine;
+    return lineRange.line <= prescanHit.endLine && prescanHit.line <= lineRange.endLine;
 }
 
 /**

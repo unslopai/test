@@ -274,6 +274,37 @@ describe('githubReporterStep', () => {
         expect(postedBody).not.toContain('Cognitive Integrity Score');
     });
 
+    it('meldet einen ausgefallenen Pre-Scan bei vorhandenen Lane-Dateien als Ausfall — kein ✅ „No reviewable code files“', async () => {
+        const degradedPrescanContext = buildPipelineContext({
+            prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
+            llmSkipped: true,
+            abortReason: 'No reviewable code files in this pull request.',
+            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            prescanStats: {
+                degraded: true,
+                degradedReason: 'internal route timeout',
+                findingsCount: 0,
+                criticalCount: 0,
+                rulesEvaluated: 0,
+                rulesDisabled: [],
+                filesScanned: 0,
+                filesSkipped: [],
+                skippedChecks: [{ ruleId: '*', reason: 'step-failure' }],
+                llmSkipped: false,
+                durationMs: 0,
+                engineVersions: null,
+            },
+        });
+
+        await githubReporterStep.execute(degradedPrescanContext);
+
+        const postedComment = postPRCommentMock.mock.calls[0][3];
+        expect(postedComment).toMatch(/^⚠️ \*\*Anti-Slop Gatekeeper\*\*: Not reviewed: the deterministic pre-scanner failed/);
+        expect(postedComment).not.toContain('✅');
+        expect(postedComment).not.toContain('No reviewable code files');
+        expect(createPullRequestReviewMock).not.toHaveBeenCalled();
+    });
+
     // Check Runs gehören dem Worker (nach der Persistenz), nicht dem Reporter:
     // der Reporter ist abschaltbar, und ein Fehler beim Check-Run-Abschluss darf
     // das bereits gepostete Review nicht mehr aus der DB kippen.

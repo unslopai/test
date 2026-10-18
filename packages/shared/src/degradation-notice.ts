@@ -4,9 +4,11 @@
  *  - Stufen, die der Deadline Guard aus Zeitgründen übersprungen oder
  *    abgebrochen hat (DEADLINE_GUARD_SPEC.md §3.4);
  *  - Dateien, deren Draft-Batch gescheitert ist (LARGE_DIFF_RECALL_SPEC
- *    Option A, Degradation `draft_partial`).
- * Weder ein Zeit-Skip noch ein halber Draft darf auf irgendeiner Fläche wie
- * ein vollständiger Lauf aussehen.
+ *    Option A, Degradation `draft_partial`);
+ *  - ein ausgefallener Pre-Scan in einem Lauf ohne Modell-Review
+ *    (LANGUAGE_COVERAGE_SPEC §6.2).
+ * Weder ein Zeit-Skip noch ein halber Draft noch ein ausgefallener Pre-Scan
+ * darf auf irgendeiner Fläche wie ein vollständiger Lauf aussehen.
  */
 import type { SkippedStage } from './index.js';
 
@@ -57,4 +59,14 @@ const DETERMINISTIC_ONLY_NOTICES: Readonly<Record<DeterministicOnlySurface, stri
  */
 export function formatDeterministicOnlyNotice(surface: DeterministicOnlySurface): string {
     return DETERMINISTIC_ONLY_NOTICES[surface];
+}
+
+/**
+ * Der Pre-Scan war die einzige Prüfung eines Laufs ohne Modell-Review und ist
+ * ausgefallen (Fail-Safe-Pfad des Steps). Das ist kein „nichts zu prüfen“: es
+ * gab prüfbare Dateien, geprüft wurde keine.
+ */
+export function formatPrescanFailedNotice(): string {
+    return 'Not reviewed: the deterministic pre-scanner failed on this change, and no model reviews it '
+        + 'because it changes no TypeScript or JavaScript file. Nothing was checked; re-run the review to try again.';
 }

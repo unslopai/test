@@ -13,12 +13,15 @@
  * reguläre Datei ist (Symlink, Submodul): beides heißt „unbekannt“, nicht „fehlt“.
  *
  * Zweite Begleitdatei-Art (LANGUAGE_COVERAGE_SPEC §4.4, SEC-035): ändert der
- * Diff eine `package.json`, kommen die Manifeste der npm-Workspaces mit. Der
+ * Diff eine `package.json`, kommen die Manifeste der Workspaces mit (npm/Yarn
+ * über `workspaces` der Root-`package.json`, pnpm über `pnpm-workspace.yaml`). Der
  * Core liest daraus nur die Paketnamen, damit ein Workspace-Paket wie
  * `@unslop/shared` nicht als „existiert nicht auf npm“ gemeldet wird. Hier
  * gilt fail-soft: ein nicht lesbares Manifest fehlt einfach, das Paket wird
  * dann wie bisher gegen die Registry geprüft.
  */
+import { parse as parseYaml } from 'yaml';
+import { mapWithConcurrency } from '@/lib/concurrency';
 import { GitHubApiError, fetchFileContent, githubFetch } from '@/lib/github';
 import type { PrescanCompanionFile } from '@unslop/prescan';
 
@@ -35,8 +38,15 @@ const COMPANION_FETCH_TIMEOUT_MS = 10_000;
 /** Die Contents API liefert pro Verzeichnis höchstens 1000 Einträge, ohne Pagination. */
 const CONTENTS_LISTING_LIMIT = 1000;
 const PACKAGE_MANIFEST_NAME = 'package.json';
+const PNPM_WORKSPACE_NAME = 'pnpm-workspace.yaml';
 /** Deckel für Workspace-Manifeste je Scan: ein GitHub-Request pro Manifest. */
 const WORKSPACE_MANIFEST_LIMIT = 40;
+/**
+ * Gleichzeitige GitHub-Requests für Workspace-Listings und -Manifeste. Wie der
+ * File-Content-Loader: seriell kosteten 40 Manifeste bis 40 × 10 s, ungedeckelt
+ * 40 parallele Requests je Scan.
+ */
+const WORKSPACE_FETCH_CONCURRENCY = 4;
 
 export interface CompanionLoaderParams {
     readonly githubToken: string;
@@ -101,22 +111,49 @@ function readPackagesField(declaredWorkspaces: unknown): unknown[] {
     return declaredWorkspaces.packages;
 }
 
+/**
+ * `packages` der `pnpm-workspace.yaml`. pnpm liest `workspaces` der
+ * `package.json` nicht; ohne diese Datei blieben pnpm-Workspace-Pakete
+ * Registry-Kandidaten. Negationen (`!**\/test/**`) schließen nur aus und
+ * fallen weg.
+ */
+export function parsePnpmWorkspacePatterns(pnpmWorkspaceText: string): string[] {
+    const pnpmWorkspace: unknown = parseYaml(pnpmWorkspaceText);
+    return readPackagesField(pnpmWorkspace)
+        .filter((pattern): pattern is string => typeof pattern === 'string' && !pattern.startsWith('!'));
+}
+
+async function readWorkspacePatterns(port: CompanionGitHubPort): Promise<string[]> {
+    const [rootManifestText, pnpmWorkspaceText] = await Promise.all([
+        port.readFile(PACKAGE_MANIFEST_NAME),
+        port.readFile(PNPM_WORKSPACE_NAME),
+    ]);
+    const workspacePatterns = [
+        ...(rootManifestText === null ? [] : parseWorkspacePatterns(rootManifestText)),
+        ...(pnpmWorkspaceText === null ? [] : parsePnpmWorkspacePatterns(pnpmWorkspaceText)),
+    ];
+    return [...new Set(workspacePatterns)];
+}
+
+/** Listings und Manifeste parallel, je höchstens WORKSPACE_FETCH_CONCURRENCY Requests gleichzeitig. */
 async function loadWorkspaceManifests(port: CompanionGitHubPort): Promise<PrescanCompanionFile[]> {
     try {
-        const rootManifestText = await port.readFile(PACKAGE_MANIFEST_NAME);
-        if (rootManifestText === null) return [];
-
-        const manifestPaths: string[] = [];
-        for (const workspacePattern of parseWorkspacePatterns(rootManifestText)) {
-            manifestPaths.push(...await resolveWorkspaceManifestPaths(workspacePattern, port));
-        }
-
-        const workspaceManifests: PrescanCompanionFile[] = [];
-        for (const manifestPath of manifestPaths.slice(0, WORKSPACE_MANIFEST_LIMIT)) {
-            const manifestText = await readCompanionOrNull(manifestPath, port);
-            if (manifestText !== null) workspaceManifests.push({ path: manifestPath, content: manifestText });
-        }
-        return workspaceManifests;
+        const workspacePatterns = await readWorkspacePatterns(port);
+        const manifestPathsByPattern = await mapWithConcurrency(
+            workspacePatterns,
+            WORKSPACE_FETCH_CONCURRENCY,
+            (workspacePattern) => resolveWorkspaceManifestPaths(workspacePattern, port),
+        );
+        const manifestPaths = [...new Set(manifestPathsByPattern.flat())].slice(0, WORKSPACE_MANIFEST_LIMIT);
+        const manifestTexts = await mapWithConcurrency(
+            manifestPaths,
+            WORKSPACE_FETCH_CONCURRENCY,
+            (manifestPath) => readCompanionOrNull(manifestPath, port),
+        );
+        return manifestPaths.flatMap((manifestPath, manifestIndex) => {
+            const manifestText = manifestTexts[manifestIndex];
+            return manifestText === null ? [] : [{ path: manifestPath, content: manifestText }];
+        });
     } catch (workspaceError: unknown) {
         // Fail-soft mit Recovery: ohne Workspace-Namen prüft der Core die
         // Pakete wie vor diesem Loader gegen die Registry.
