@@ -1,8 +1,7 @@
 import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
 
@@ -15,7 +14,7 @@ export const config = {
      * - favicon.ico   (favicon)
      * - Public assets (svg, png, jpg, jpeg, gif, webp)
      *
-     * This ensures the middleware only runs for actual page/API requests,
+     * This ensures the proxy only runs for actual page/API requests,
      * avoiding unnecessary auth checks on static resources.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',

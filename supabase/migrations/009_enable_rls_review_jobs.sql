@@ -1,0 +1,1 @@
+ALTER TABLE public.review_jobs ENABLE ROW LEVEL SECURITY;
