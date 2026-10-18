@@ -19,9 +19,10 @@ export { normalizeBareRuleId };
 // =============================================================================
 
 /**
- * Merge-Punkt der beiden Issue-Lanes — genau DREI Konsumenten: github-reporter,
- * result-persister und der Check-Run-Abschluss des Workers. Der Integrity-
- * Scorer und der claim-verifier arbeiten weiter NUR auf context.issues
+ * Merge-Punkt der beiden Issue-Lanes — Konsumenten: github-reporter,
+ * result-persister, der Check-Run-Abschluss des Workers und die finale
+ * Summary des Integrity-Scorers (zählt nur, SPEC.md §12.4 A12a). Verdicts
+ * wenden Scorer und claim-verifier weiter NUR auf context.issues an
  * (PROC-001: deterministische Findings werden nie LLM-re-judged).
  *
  * Kollidiert ein LLM-Issue mit einem deterministischen Finding (gleiche Datei,

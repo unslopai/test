@@ -193,6 +193,65 @@ describe('integrityScorerStep', () => {
             .toEqual(['confirmed', 'uncertain']);
     });
 
+    describe('final summary from the final state (SPEC.md §12.4 A12a)', () => {
+        const staleDraftSummary = "Found 1 critical issue: an undeclared identifier 'listError' in a catch block.";
+
+        it('replaces the draft summary once a refuted CRITICAL survives only as a WARNING (job f2c676ba)', async () => {
+            const skippedEscalationContext = buildPipelineContext({
+                issues: [buildReviewIssue({ severity: 'CRITICAL' })],
+                prescanIssues: [
+                    buildReviewIssue({ rule: 'ARCH-002 (Nesting)', severity: 'WARNING', source: 'pre-scanner', path: 'src/index.ts' }),
+                ],
+                reviewSummary: staleDraftSummary,
+                cascade: buildCascadeState({
+                    verdicts: [buildClaimVerdict({ claimId: 'c1', verdict: 'REFUTED', confidence: 90 })],
+                    escalationClaimIds: ['c1'],
+                    escalated: false,
+                    degradations: ['time_budget_exhausted'],
+                }),
+            });
+
+            const scoredContext = await integrityScorerStep.execute(skippedEscalationContext);
+
+            expect(scoredContext.reviewSummary, 'the stale draft sentence must not be published').not.toContain('critical issue');
+            expect(scoredContext.reviewSummary, 'counts must match the reportable issues').toContain('0 critical and 2 warning findings');
+            expect(scoredContext.reviewSummary, 'the downgrade must be named').toContain('1 draft finding was downgraded to warning');
+        });
+
+        it('keeps the draft summary when every draft finding survived unchanged', async () => {
+            const confirmedContext = buildPipelineContext({
+                issues: [buildReviewIssue({ severity: 'CRITICAL' })],
+                reviewSummary: staleDraftSummary,
+                cascade: buildCascadeState({
+                    verdicts: [buildClaimVerdict({ claimId: 'c1', verdict: 'CONFIRMED', confidence: 92 })],
+                }),
+            });
+
+            const scoredContext = await integrityScorerStep.execute(confirmedContext);
+
+            expect(scoredContext.reviewSummary).toBe(staleDraftSummary);
+        });
+
+        it('does not claim "no confirmed AI slop" when deterministic findings remain after all draft claims were refuted', async () => {
+            const refutedWithPrescanContext = buildPipelineContext({
+                issues: [buildReviewIssue({ severity: 'WARNING' })],
+                prescanIssues: [
+                    buildReviewIssue({ rule: 'SEC-029 (Banned libc API)', severity: 'CRITICAL', source: 'pre-scanner', path: 'src/native.c' }),
+                ],
+                reviewSummary: 'AI slop detected: something scary.',
+                cascade: buildCascadeState({
+                    verdicts: [buildClaimVerdict({ claimId: 'c1', verdict: 'REFUTED', confidence: 95 })],
+                }),
+            });
+
+            const scoredContext = await integrityScorerStep.execute(refutedWithPrescanContext);
+
+            expect(scoredContext.reviewSummary, 'the prescan CRITICAL is still published').not.toContain('no confirmed AI slop');
+            expect(scoredContext.reviewSummary, 'counts must match the reportable issues').toContain('1 critical and 0 warning findings');
+            expect(scoredContext.reviewSummary, 'the removal must be named').toContain('1 draft finding was refuted');
+        });
+    });
+
     it('downgrades escalation-marked issues when Pro never ran (budget or API degraded)', async () => {
         const escalationSkippedContext = buildPipelineContext({
             issues: [buildReviewIssue({ severity: 'CRITICAL' })],
