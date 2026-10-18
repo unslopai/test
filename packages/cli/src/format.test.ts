@@ -119,6 +119,41 @@ describe('printHumanResult — nothing-reviewed honesty (ROADMAP §3)', () => {
         expect(terminalOutput).toContain('src/lib/huge-b.ts');
     });
 
+    it('zeigt einen Lauf ohne Modell-Review als „Deterministic checks only“, mit Findings und ohne Clean-Haken', () => {
+        const deterministicOnlyOutput = capturedOutput({
+            hasSlop: true,
+            issues: [{
+                id: 'd'.repeat(16),
+                rule: 'SEC-035 (Package does not exist on its registry)',
+                severity: 'CRITICAL',
+                path: 'requirements.txt',
+                line: 3,
+                endLine: 3,
+                exactQuote: 'hallucinated-http-kit==1.2.0',
+                critique: 'This declared package does not exist on the public registry.',
+            }],
+            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            filesReviewed: 0,
+            filesScanned: 2,
+            outcome: 'deterministic_only',
+            omittedFiles: [],
+            cognitiveIntegrityScore: null,
+        });
+        const withoutFindingsOutput = capturedOutput({
+            ...NOTHING_REVIEWED_RESULT,
+            summary: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            outcome: 'deterministic_only',
+            omittedFiles: [],
+        });
+
+        expect(deterministicOnlyOutput).toContain('Deterministic checks only — no model reviewed this diff.');
+        expect(deterministicOnlyOutput).toContain('requirements.txt:3');
+        expect(deterministicOnlyOutput).not.toContain('Nothing was reviewed');
+        expect(deterministicOnlyOutput).not.toContain('Cognitive Integrity Score');
+        expect(withoutFindingsOutput).toContain('No deterministic findings. This is NOT a clean verdict.');
+        expect(withoutFindingsOutput).not.toContain('No AI slop found');
+    });
+
     it('behandelt Legacy-Ergebnisse ohne outcome-Feld über filesReviewed === 0 gleich', () => {
         // So kommt ein Alt-Ergebnis wirklich an: als Wire-JSON ohne die neuen
         // Felder — derselbe Parse-Cast wie im echten Poll-Pfad.

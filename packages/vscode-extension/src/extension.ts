@@ -15,7 +15,7 @@ import { collectGitFacts, initGitRepository, originRefsPresent, repoHasCommits }
 import { resolveCliConfig } from './cliConfig';
 import { runLoginFlow } from './loginFlow';
 import { runConnectFlow } from './connectFlow';
-import { changeTouchesAnchor, classifyMergeBaseRemedy } from './stateMachine';
+import { changeTouchesAnchor, classifyMergeBaseRemedy, classifyScanCoverage } from './stateMachine';
 import { sanitizeModelText } from './sanitize';
 import { describeFindingVerification } from './verificationSummary';
 import type { IntegrityNotice, NothingReviewedNotice } from './stateMachine';
@@ -347,10 +347,10 @@ async function scanChanges(alreadyRetriedAfterConnect = false): Promise<void> {
                 score: scanOutcome.result.cognitiveIntegrityScore,
                 verificationSummary: describeFindingVerification(scanOutcome.result.issues),
             };
-            const scanReviewedNothing = scanOutcome.result.outcome === 'nothing_reviewed'
-                || scanOutcome.result.filesReviewed === 0;
-            lastNothingReviewed = scanReviewedNothing
+            const scanCoverage = classifyScanCoverage(scanOutcome.result.outcome, scanOutcome.result.filesReviewed);
+            lastNothingReviewed = scanCoverage !== 'full'
                 ? {
+                    coverage: scanCoverage,
                     // summary/paths cross the wire — same ingest hygiene as diagnostics (ROADMAP §12).
                     reason: sanitizeModelText(scanOutcome.result.summary),
                     omittedFiles: (scanOutcome.result.omittedFiles ?? []).map(sanitizeModelText),

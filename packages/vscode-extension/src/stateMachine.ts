@@ -52,8 +52,27 @@ export interface IntegrityNotice {
  * the paths dropped by the review size cap.
  */
 export interface NothingReviewedNotice {
+    /**
+     * 'none' = zero files reviewed at all; 'deterministic_only' = no model read
+     * the diff (no TypeScript or JavaScript file), only the deterministic
+     * pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2). Neither is a clean verdict.
+     */
+    readonly coverage: 'none' | 'deterministic_only';
     readonly reason: string;
     readonly omittedFiles: readonly string[];
+}
+
+/**
+ * How much of the diff a finished scan covered. `filesReviewed === 0` doubles
+ * as the guard for legacy results without an outcome — but only when the scan
+ * is not deterministic-only, where zero model-reviewed files is the normal case.
+ */
+export function classifyScanCoverage(
+    scanOutcome: string | undefined,
+    filesReviewed: number,
+): NothingReviewedNotice['coverage'] | 'full' {
+    if (scanOutcome === 'deterministic_only') return 'deterministic_only';
+    return scanOutcome === 'nothing_reviewed' || filesReviewed === 0 ? 'none' : 'full';
 }
 
 export function presentState(
@@ -152,7 +171,7 @@ function presentResults(
     nothingReviewed: NothingReviewedNotice | null,
 ): StatePresentation {
     // Honesty gate before the clean branch: zero files reviewed is not a verdict.
-    if (nothingReviewed) {
+    if (nothingReviewed?.coverage === 'none') {
         return {
             text: '$(shield) Nothing reviewed',
             background: 'warning',
@@ -163,6 +182,20 @@ function presentResults(
     }
 
     const totalFindings = findingCounts.critical + findingCounts.warning;
+    // No model read the diff: findings from the pre-scanner render as usual,
+    // but the tooltip says why there is no score, and zero findings is no "✓".
+    const deterministicOnlyReason = nothingReviewed?.coverage === 'deterministic_only'
+        ? nothingReviewed.reason
+        : null;
+
+    if (totalFindings === 0 && deterministicOnlyReason !== null) {
+        return {
+            text: '$(shield) Deterministic only',
+            background: 'warning',
+            tooltip: `${deterministicOnlyReason}\n\nNo model reviewed these changes — `
+                + 'this is NOT a clean verdict. Click to re-scan.',
+        };
+    }
 
     if (totalFindings === 0) {
         return {
@@ -187,7 +220,9 @@ function presentResults(
         background: findingCounts.stale === totalFindings
             ? 'warning'
             : findingCounts.critical > 0 ? 'error' : 'warning',
-        tooltip: findingsTooltip + integrityScoreTooltip(integrity),
+        tooltip: findingsTooltip + (deterministicOnlyReason !== null
+            ? `\n\n${deterministicOnlyReason}`
+            : integrityScoreTooltip(integrity)),
     };
 }
 

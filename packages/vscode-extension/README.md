@@ -17,7 +17,7 @@ Deterministic review for AI-generated code, before it reaches a pull request. Th
 
 ## How it works
 
-The extension is a thin client: it shells out to the `unslop` CLI, which sends your change diff to the hosted review pipeline (a complexity-routed cascade of a draft reviewer, a blind claim verifier, and an escalation model, scored for cognitive integrity). No analysis happens locally and no rules ship in this package. Currently reviewable file types: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`.
+The extension is a thin client: it shells out to the `unslop` CLI, which sends your change diff to the hosted review pipeline (a complexity-routed cascade of a draft reviewer, a blind claim verifier, and an escalation model, scored for cognitive integrity). No analysis happens locally and no rules ship in this package. The model review reads `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` and `.cjs` files. A diff without such files gets deterministic checks only (regex and registry rules, no model); the status bar then shows “Deterministic only” instead of a clean verdict.
 
 Every transmitted byte passes a secret filter (key/token patterns plus high-entropy detection) before upload.
 

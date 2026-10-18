@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
     changeTouchesAnchor,
     classifyMergeBaseRemedy,
+    classifyScanCoverage,
     classifyScanFailure,
     presentState,
 } from './stateMachine';
@@ -191,6 +192,7 @@ describe('presentState — RESULTS variants (§2.1)', () => {
             { critical: 0, warning: 0, stale: 0 },
             null,
             {
+                coverage: 'none',
                 reason: 'All changed code files exceed the review size cap.',
                 omittedFiles: ['src/lib/huge-a.ts', 'src/lib/huge-b.ts'],
             },
@@ -211,12 +213,32 @@ describe('presentState — RESULTS variants (§2.1)', () => {
             'RESULTS',
             { critical: 0, warning: 0, stale: 0 },
             null,
-            { reason: 'All changed code files exceed the review size cap.', omittedFiles },
+            { coverage: 'none', reason: 'All changed code files exceed the review size cap.', omittedFiles },
         );
 
         expect(presentation.tooltip).toContain('src/file-4.ts');
         expect(presentation.tooltip).not.toContain('src/file-5.ts');
         expect(presentation.tooltip).toContain('and 3 more');
+    });
+
+    it('renders a deterministic-only scan as "Deterministic only", never "No slop ✓"; findings keep their count', () => {
+        const deterministicOnlyNotice = {
+            coverage: 'deterministic_only' as const,
+            reason: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, so no model reviewed it.',
+            omittedFiles: [],
+        };
+        const withoutFindings = presentState('RESULTS', { critical: 0, warning: 0, stale: 0 }, null, deterministicOnlyNotice);
+        const withFindings = presentState('RESULTS', { critical: 1, warning: 0, stale: 0 }, null, deterministicOnlyNotice);
+
+        expect(withoutFindings.text).toBe('$(shield) Deterministic only');
+        expect(withoutFindings.background).toBe('warning');
+        expect(withoutFindings.tooltip).toContain('NOT a clean verdict');
+        expect(withFindings.text).toBe('$(shield) 1 critical');
+        expect(withFindings.tooltip).toContain('no model reviewed it');
+        expect(withFindings.tooltip).not.toContain('Cognitive Integrity Score');
+        expect(classifyScanCoverage('deterministic_only', 0)).toBe('deterministic_only');
+        expect(classifyScanCoverage('nothing_reviewed', 0)).toBe('none');
+        expect(classifyScanCoverage('reviewed', 3)).toBe('full');
     });
 
     it('keeps the clean rendering when the scan reviewed files (no nothing-reviewed notice)', () => {

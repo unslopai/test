@@ -33,7 +33,7 @@
     "copyFailed": "Kopieren fehlgeschlagen — bitte kopiere den Befehl manuell.",
     "copyCommand": "Befehl kopieren",
     "guideLink": "Ausführliche Anleitung →",
-    "honestyFileTypes": "Geprüft werden nur .ts-, .tsx-, .js-, .jsx-, .mjs- und .cjs-Dateien — andere Dateitypen werden übersprungen.",
+    "honestyFileTypes": "Das Modell-Review liest nur .ts-, .tsx-, .js-, .jsx-, .mjs- und .cjs-Dateien. Ein Pull Request ohne solche Dateien bekommt nur deterministische Prüfungen, und das Ergebnis sagt das.",
     "honestyMergeBase": "Geprüft werden deine Änderungen gegen die Merge-Base — bereits committeter und gepushter Code ist nicht Teil des Diff-Scans.",
     "tabs": {
       "github": "PR-Reviews auf GitHub",
@@ -493,7 +493,7 @@
         },
         "languages": {
           "question": "Welche Sprachen werden abgedeckt?",
-          "answer": "Das Modell-Review liest TypeScript- und JavaScript-Dateien. Der deterministische Pre-Scan deckt zusätzlich Python, Java, Go, Rust, C und C++ sowie gängige Config-Dateien ab. Heute wird ein Pull Request nur geprüft, wenn er mindestens eine TypeScript- oder JavaScript-Datei enthält; sonst endet der Check als neutral mit „Nothing to review“."
+          "answer": "Das Modell-Review liest TypeScript- und JavaScript-Dateien. Der deterministische Pre-Scan deckt zusätzlich Python, Java, Go, Rust, C und C++ sowie gängige Config-Dateien ab. Ein Pull Request ohne TypeScript- oder JavaScript-Datei bekommt nur deterministische Prüfungen, wenn er Python-, Java-, Go-, C-, C++-, PowerShell-, Terraform-, YAML- oder JSON-Dateien ändert. Dann liest kein Modell mit: Der Check heißt „Deterministic checks only“ und bleibt neutral, solange kein kritisches Finding ihn scheitern lässt. Alles andere, etwa ein reiner Doku-Pull-Request, endet weiter als neutral mit „Nothing to review“."
         },
         "outage": {
           "question": "Was passiert, wenn ein Review scheitert?",

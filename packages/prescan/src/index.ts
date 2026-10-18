@@ -36,7 +36,7 @@ import type {
 export * from './types';
 export { DEFAULT_PRESCAN_CONFIG, resolvePrescanConfig } from './config';
 export { RULE_REGISTRY, IMPLEMENTED_RULE_IDS } from './rules/registry';
-export { detectLanguage, isTestFile } from './language';
+export { detectLanguage, isDeterministicLaneFile, isTestFile } from './language';
 export { extractAddedLines } from './diff/added-lines';
 export { shannonEntropy } from './engines/regex-engine';
 

@@ -6,7 +6,7 @@
  * Merge-Blocker macht, wird vom Team abgeschaltet, und dann schützt er nichts mehr.
  */
 import { describe, expect, it } from 'vitest';
-import { deriveReviewConclusion } from '@/lib/check-run';
+import { deriveDeterministicOnlyConclusion, deriveReviewConclusion } from '@/lib/check-run';
 import { buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
 
 describe('deriveReviewConclusion', () => {
@@ -103,5 +103,29 @@ describe('deriveReviewConclusion — Slop Score Gating (Upcoming §6)', () => {
 
         expect(criticalResult.conclusion).toBe('failure');
         expect(criticalResult.title).toContain('critical slop finding');
+    });
+});
+
+describe('deriveDeterministicOnlyConclusion (LANGUAGE_COVERAGE_SPEC §6.2, E2)', () => {
+    const deterministicOnlySummary = 'Deterministic checks only: this pull request changes no TypeScript or '
+        + 'JavaScript file, so no model reviewed it. The pre-scanner checked 2 files and found nothing.';
+
+    it('is neutral with the title "Deterministic checks only" when nothing was found — never success', () => {
+        expect(deriveDeterministicOnlyConclusion([], deterministicOnlySummary)).toEqual({
+            conclusion: 'neutral',
+            title: 'Deterministic checks only',
+            summary: deterministicOnlySummary,
+        });
+    });
+
+    it('still fails on a CRITICAL and says that no model reviewed the change', () => {
+        const criticalResult = deriveDeterministicOnlyConclusion(
+            [buildReviewIssue({ severity: 'CRITICAL', source: 'pre-scanner' })],
+            deterministicOnlySummary,
+        );
+
+        expect(criticalResult.conclusion).toBe('failure');
+        expect(criticalResult.title).toBe('1 critical slop finding');
+        expect(criticalResult.summary).toContain('no model reviewed it');
     });
 });

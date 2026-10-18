@@ -14,6 +14,7 @@
  * `resolvePublishedSummary` ist deshalb die einzige Stelle, aus der Persister
  * und Reporter ihre Summary beziehen.
  */
+import { resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import type { PipelineContext, PipelineIssue } from '@/lib/pipeline/types';
 
 /** Summary eines Laufs ohne jedes Finding. */
@@ -81,6 +82,9 @@ export function buildFinalStateSummary(
  * Die veröffentlichte Summary: nie ein Satz, dem das veröffentlichte
  * `issues[]` widerspricht.
  *
+ *  - Nur deterministisch geprüft (LANGUAGE_COVERAGE_SPEC §6.2): der Satz, dass
+ *    kein Modell gelesen hat und warum, dann das Ergebnis des Pre-Scanners.
+ *    Auch ohne Finding nie der Clean-Satz.
  *  - Kein Finding: die Modell-Summary, sonst der Clean-Satz.
  *  - Short-Circuit (`llmSkipped`): der Pre-Scanner-Step hat die Summary selbst
  *    geschrieben, sie nennt seine Findings schon.
@@ -90,9 +94,12 @@ export function buildFinalStateSummary(
  *    nichts gemeldet, ersetzt dieser Satz den Clean-Text.
  */
 export function resolvePublishedSummary(
-    context: Pick<PipelineContext, 'reviewSummary' | 'llmSkipped'>,
+    context: SummaryContext,
     reportableIssues: readonly PipelineIssue[],
 ): string {
+    if (resolveReviewOutcome(context) === 'deterministic_only') {
+        return buildDeterministicOnlySummary(context, reportableIssues);
+    }
     if (reportableIssues.length === 0) return context.reviewSummary || CLEAN_REVIEW_SUMMARY;
 
     const deterministicIssues = reportableIssues.filter((reportableIssue) => reportableIssue.source === 'pre-scanner');
@@ -105,6 +112,23 @@ export function resolvePublishedSummary(
     return modelFindingCount > 0 && modelSummary.length > 0
         ? `${modelSummary} ${deterministicSentence}`
         : `${deterministicSentence} The model review reported no further findings.`;
+}
+
+type SummaryContext = Pick<
+    PipelineContext,
+    'reviewSummary' | 'llmSkipped' | 'shouldAbort' | 'deterministicOnlyReason' | 'prescanStats'
+>;
+
+/** "<Grund>. The deterministic pre-scanner found … / checked N files and found nothing." */
+export function buildDeterministicOnlySummary(
+    context: Pick<PipelineContext, 'deterministicOnlyReason' | 'prescanStats'>,
+    reportableIssues: readonly PipelineIssue[],
+): string {
+    const filesScanned = context.prescanStats?.filesScanned ?? 0;
+    const resultSentence = reportableIssues.length > 0
+        ? describeDeterministicFindings(reportableIssues)
+        : `The pre-scanner checked ${filesScanned} ${filesScanned === 1 ? 'file' : 'files'} and found nothing.`;
+    return `${context.deterministicOnlyReason ?? ''} ${resultSentence}`.trim();
 }
 
 const NO_VERDICT_CHANGES: VerdictOutcomeCounts = { refutedCount: 0, downgradedCount: 0 };
