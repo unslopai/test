@@ -14,9 +14,6 @@ const API_KEY_RANDOM_BYTES = 32;
 /** Zeichen des Klartext-Keys, die im Dashboard zur Wiedererkennung angezeigt werden. */
 const KEY_PREFIX_DISPLAY_LENGTH = 12;
 
-const RATE_LIMIT_WINDOW_SECONDS = 3600;
-const DEFAULT_SCANS_PER_WINDOW = 30;
-
 // =============================================================================
 // Key-Erzeugung
 // =============================================================================
@@ -83,46 +80,10 @@ export async function resolveApiKey(request: Request): Promise<ResolvedApiKey | 
 }
 
 // =============================================================================
-// Rate Limiting
-// =============================================================================
-
-/**
- * Verbraucht einen Request aus dem Fixed-Window-Kontingent des Keys.
- * true = Request erlaubt, false = Limit erschöpft (429 senden).
- */
-export async function consumeRateLimit(keyId: string): Promise<boolean> {
-    const scansPerWindow = parseScansPerWindow(process.env.CLI_SCAN_RATE_LIMIT);
-
-    const { data: requestAllowed, error: rateLimitError } = await supabase.rpc(
-        'consume_api_key_rate_limit',
-        {
-            target_key_id: keyId,
-            window_seconds: RATE_LIMIT_WINDOW_SECONDS,
-            max_requests: scansPerWindow,
-        },
-    );
-
-    if (rateLimitError) {
-        // Fail-closed: ohne funktionierendes Limit keine anonym skalierbaren LLM-Kosten.
-        console.error('[ApiKeys] Rate-Limit-RPC fehlgeschlagen:', rateLimitError.message);
-        return false;
-    }
-
-    return requestAllowed === true;
-}
-
-export function rateLimitRetryAfterSeconds(): number {
-    return RATE_LIMIT_WINDOW_SECONDS;
-}
-
-function parseScansPerWindow(rawValue: string | undefined): number {
-    const parsedValue = Number.parseInt(rawValue ?? '', 10);
-    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : DEFAULT_SCANS_PER_WINDOW;
-}
-
-// =============================================================================
 // Interner Service-Auth (Worker/Health-Endpoints)
 // =============================================================================
+// HINWEIS: Rate-Limiting ist seit Migration 019 per USER statt per Key —
+// siehe @/lib/billing/entitlements (consumeScanQuota).
 
 /**
  * Prüft den x-internal-secret Header gegen WORKER_INTERNAL_SECRET.

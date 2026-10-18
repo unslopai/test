@@ -8,7 +8,8 @@
 import { NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { resolveApiKey, consumeRateLimit, rateLimitRetryAfterSeconds } from '@/lib/api-keys';
+import { resolveApiKey } from '@/lib/api-keys';
+import { resolveEntitlement, consumeScanQuota, quotaRetryAfterSeconds } from '@/lib/billing/entitlements';
 import { processReviewJob } from '@/lib/worker';
 
 export const maxDuration = 60;
@@ -29,11 +30,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'invalid_api_key' }, { status: 401 });
     }
 
-    const requestAllowed = await consumeRateLimit(apiKey.keyId);
+    // Paid-only (STRIPE_SPEC S2): ohne aktives Abo/Trial/Comp-Grant 0 Scans.
+    const entitlement = await resolveEntitlement(apiKey.userId);
+    if (!entitlement.entitled) {
+        return NextResponse.json({ error: entitlement.reason }, { status: 402 });
+    }
+
+    // Per-User-Quota, über alle Keys summiert (S7): Stunden- + Monats-Fenster.
+    const requestAllowed = await consumeScanQuota(apiKey.userId, entitlement.plan);
     if (!requestAllowed) {
         return NextResponse.json(
             { error: 'rate_limit_exceeded' },
-            { status: 429, headers: { 'Retry-After': String(rateLimitRetryAfterSeconds()) } },
+            { status: 429, headers: { 'Retry-After': String(quotaRetryAfterSeconds()) } },
         );
     }
 

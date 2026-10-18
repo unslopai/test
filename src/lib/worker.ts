@@ -343,8 +343,9 @@ export async function processReviewJob(jobId: string, userId: string) {
 
 /**
  * Entschlüsselt den GitHub Token eines Users aus der DB.
+ * Exportiert für den Billing-Paused-Kommentar (Webhook-Gate).
  */
-async function resolveGithubToken(userId: string): Promise<string> {
+export async function resolveGithubToken(userId: string): Promise<string> {
     const { data: tokenRow, error: tokenError } = await supabase
         .from('github_tokens')
         .select('encrypted_token, token_iv, token_tag')

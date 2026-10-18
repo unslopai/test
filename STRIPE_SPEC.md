@@ -168,7 +168,7 @@ const ENTITLED_STATUSES = new Set(['trialing', 'active', 'complimentary']);
 Creates the Checkout session and returns `{ url }` for redirect:
 - `mode: 'subscription'`, `line_items: [{ price: STRIPE_PRICE_PRO_MONTHLY, quantity: 1 }]`
 - `client_reference_id: user.id` (S4 — the user↔customer binding), `customer_email: user.email` (first checkout) **or** `customer: stripe_customer_id` (returning customer from an existing row)
-- `subscription_data: { trial_period_days: 14 }` — **only if the user has never had a subscription** (`billing_customers` row absent or `stripe_subscription_id is null`); returning customers get no second trial
+- `subscription_data: { trial_period_days: 14, metadata: { user_id: user.id } }` — the **metadata makes every subscription webhook event self-describing** (no API fetch, no event-ordering races); trial only **if the user has never had a subscription** (`billing_customers` row absent or `stripe_subscription_id is null`); returning customers get no second trial
 - `payment_method_collection: 'always'` (card required upfront, S2)
 - `automatic_tax: { enabled: true }`, `tax_id_collection: { enabled: true }`, `billing_address_collection: 'required'` (S8)
 - `success_url: {APP_BASE_URL}/dashboard/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`, `cancel_url: …?checkout=cancelled`
@@ -184,9 +184,9 @@ Returns `{ status, planName, trialEndsAt, currentPeriodEnd }` for the billing pa
 ### 7.4 `POST /api/stripe/webhook`
 
 - **Raw body**: `await request.text()` before any JSON parsing; verify with `stripe.webhooks.constructEvent(rawBody, request.headers.get('stripe-signature'), STRIPE_WEBHOOK_SECRET)`; invalid ⇒ 400. Never trust unverified payloads.
-- **Events** (all handled as idempotent upserts keyed on `stripe_customer_id` — replaying an event is harmless):
-  - `checkout.session.completed`: `client_reference_id` = our `user_id`; upsert row with `stripe_customer_id`, `stripe_subscription_id`; then fetch the subscription once for `status`/`price_id`/`trial_end`/`current_period_end`.
-  - `customer.subscription.created|updated|deleted`: update `status`, `price_id`, `trial_ends_at`, `current_period_end` on the row matching `stripe_customer_id`. `deleted` ⇒ status `canceled`. `updated` with `past_due` ⇒ instant 0 scans (S3) — no special handling needed, the status mapping does it.
+- **Events** (implemented — zero Stripe API calls in the handler, order-independent, replay-idempotent):
+  - `customer.subscription.created|updated|deleted`: each event carries `metadata.user_id` (set via `subscription_data.metadata` at checkout, §7.1) ⇒ **upsert by `user_id`** with `stripe_customer_id`, `stripe_subscription_id`, `price_id` (first item), `status` (`deleted` ⇒ `canceled`), `trial_ends_at`, `current_period_end` (from the subscription item, per the current API shape). `past_due` ⇒ instant 0 scans (S3) purely via the status mapping. Events without `metadata.user_id` are logged and acked (200) — retrying would never succeed.
+  - `checkout.session.completed`: log-only (the binding is fully covered by the subscription events).
 - Unknown event types: ack 200 and ignore. Log every transition (`[StripeWebhook] user=… status=…`).
 
 ## 8. Enforcement integration (every token-burning path)
@@ -194,7 +194,7 @@ Returns `{ status, planName, trialEndsAt, currentPeriodEnd }` for the billing pa
 | Path | Check | Failure response |
 |------|-------|------------------|
 | `POST /api/cli/scan` | `resolveEntitlement` → `consumeScanQuota` (replaces the per-key limiter; key auth unchanged) | `402 { error: 'subscription_inactive' }` / `429` + Retry-After |
-| `POST /api/webhook` (GitHub PR) | after repo lookup: `resolveEntitlement(repo.user_id)` **before** inserting the job | Skip job + LLM entirely; post **one** PR comment (S10) |
+| `POST /api/webhook` (GitHub PR) | after signature verify: `resolveEntitlement(repo.user_id)` **and** `consumeScanQuota` before inserting the job — webhook reviews count against the same per-user quota, otherwise the monthly cost bound would be bypassable via the PR path | Skip job + LLM entirely; post **one** deduplicated PR comment per reason (billing-paused or quota-exceeded, S10) |
 | `POST /api/repos/connect` | entitled + `count(active repos) < plan.maxActiveRepos` | `402` / `409 { error: 'repo_limit_reached' }` |
 | `POST /api/keys` | entitled + `plan.maxApiKeys` (replaces the hardcoded 10) | `402` / `409` |
 

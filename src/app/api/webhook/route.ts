@@ -17,6 +17,11 @@ import { NextResponse, after } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { processReviewJob } from "@/lib/worker";
 import { verifyWebhookSignature } from "@/lib/github";
+import { resolveEntitlement, consumeScanQuota } from "@/lib/billing/entitlements";
+import {
+    postBillingPausedCommentOnce,
+    postQuotaExceededCommentOnce,
+} from "@/lib/billing/billing-paused-comment";
 
 export const maxDuration = 60;
 
@@ -108,6 +113,37 @@ export async function POST(request: Request) {
                 { error: 'Ungültige Webhook-Signatur.' },
                 { status: 401 },
             );
+        }
+
+        // Paid-only-Gate (STRIPE_SPEC S2/S10): ohne aktives Abo/Trial/Comp-Grant
+        // KEIN LLM-Call — stattdessen genau ein Hinweis-Kommentar pro PR.
+        const ownerUserId = repoEntry.user_id as string;
+        const entitlement = await resolveEntitlement(ownerUserId);
+        if (!entitlement.entitled) {
+            console.log(
+                `[Webhook] Review übersprungen (${entitlement.reason}) für ${repoFullName}#${prNumber}.`,
+            );
+            after(async () => {
+                await postBillingPausedCommentOnce(ownerUserId, repoFullName, prNumber);
+            });
+            return NextResponse.json({
+                success: true,
+                message: `Review übersprungen: keine aktive Subscription (${entitlement.reason}).`,
+            });
+        }
+
+        // Auch Webhook-Reviews zählen gegen die per-User-Quota (Stunden + Monat) —
+        // sonst wäre die Monats-Kosten-Schranke über den PR-Pfad umgehbar.
+        const quotaAvailable = await consumeScanQuota(ownerUserId, entitlement.plan);
+        if (!quotaAvailable) {
+            console.log(`[Webhook] Review übersprungen (Quota erschöpft) für ${repoFullName}#${prNumber}.`);
+            after(async () => {
+                await postQuotaExceededCommentOnce(ownerUserId, repoFullName, prNumber);
+            });
+            return NextResponse.json({
+                success: true,
+                message: 'Review übersprungen: Scan-Quota erschöpft.',
+            });
         }
 
         // Job in review_jobs speichern

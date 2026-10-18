@@ -138,6 +138,25 @@ export default function DashboardClient({ userEmail, userName }: DashboardClient
     }, []);
 
 
+    // Billing-Banner: Scans sind ohne aktives Abo/Trial pausiert (STRIPE_SPEC §9).
+    const [scansArePaused, setScansArePaused] = useState(false);
+
+    useEffect(() => {
+        const billingAbortController = new AbortController();
+
+        void fetch('/api/billing/status', { signal: billingAbortController.signal })
+            .then(async (response) => {
+                if (!response.ok) return;
+                const billingStatus = await response.json() as { entitled: boolean };
+                setScansArePaused(!billingStatus.entitled);
+            })
+            .catch(() => {
+                // Banner ist rein informativ — Fehler hier nie eskalieren.
+            });
+
+        return () => billingAbortController.abort();
+    }, []);
+
     const activeCount = repos.filter((repo) => repo.gatekeeper_status === 'active').length;
 
     return (
@@ -169,6 +188,14 @@ export default function DashboardClient({ userEmail, userName }: DashboardClient
             </header>
 
             <main className="mx-auto max-w-5xl px-6 py-10">
+                {scansArePaused && (
+                    <div className="mb-6 rounded-lg border border-yellow-700 bg-yellow-950/60 px-4 py-3 text-sm">
+                        ⚠️ Scans are paused — no active subscription or trial.{' '}
+                        <a href="/dashboard/settings/billing" className="font-medium text-yellow-300 underline hover:text-yellow-200">
+                            Start your 14-day trial
+                        </a>
+                    </div>
+                )}
                 <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-2xl font-semibold">Deine Repositories</h2>
                     <button
