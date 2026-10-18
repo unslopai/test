@@ -65,16 +65,13 @@ Konstanten im Stil von `REFERENCE_PRACTICE_GATES` (`defaults.ts`) — bewusst KE
 export const SECOND_OPINION_GATES = {
     /** T1: Anteil Test-Dateien an den reviewable Files, ab dem der Diff als test-lastig gilt. */
     testFileShareThreshold: 0.5,
-    /** T2: Prescan-Findings, ab denen ein 0-Findings-Draft als Divergenz gilt. */
-    divergenceMinPrescanFindings: 3,
     /** Obergrenze des Subset-Prompts (Schutz vor Kostenexplosion). */
     maxSubsetTokens: 12000,
 } as const;
 ```
 
 - **T1 „Test-Gap"** *(Amendment nach Phase 0, 2026-08-26)*: `testFileShare ≥ 0.5` → Pro reviewt **die Test-Dateien, in denen KEINE Lane ein Finding hat** (per Datei, nicht ganz-oder-gar-nicht). Die ursprüngliche „0 Findings in Test-Dateien insgesamt"-Fassung hätte den Zielfall r17 verfehlt: dort finden Draft/Prescan ~5 Findings in Test-Dateien, und die Misses (TEST-003/007/011) liegen in den drei finding-losen Dateien daneben. Kosten-Trade-off dokumentiert: test-lastige PRs mit sauberen Tests zahlen einen Subset-Pro-Call. Test-Datei-Klassifikator als pure Funktion (`second-opinion.ts: isTestFilePath`): `.test.`/`.spec.`-Infix, `_test.go`/`_test.py`, `test_*.py`, `/__tests__/`, `/tests?/`, `/test/`-Segment — mit Unit-Tests für jede Sprache und Gegenbeispiele (`contest.ts`, `attest.go`, `src/testing/` dürfen NICHT matchen).
-- **T2 „Prescan-Divergenz"** (der echte Prod-Fall vom 2026-08-23): Prescan-Lane hat `≥ 3` Findings UND der Draft hat **0** Issues → Pro reviewt den vollen Diff (gedeckelt auf `maxSubsetTokens`, sonst die N größten Dateien bis zum Deckel). Bewusst NICHT „0 Findings auf großem Diff" allein — das würde auf jedem sauberen großen PR feuern (Kosten + FP-Risiko genau auf Clean-PRs, siehe E5). Die Divergenz ist das belastbare Signal: zwei unabhängige Lanes widersprechen sich.
-- T1 und T2 können beide feuern ⇒ EIN Call auf der Vereinigungsmenge der Dateien.
+- **T2 „Prescan-Divergenz" — GESTRICHEN 2026-09-29** (LARGE_DIFF_RECALL_SPEC §3.3, §9.4). Ursprünglich: Prescan-Lane `≥ 3` Findings UND Draft **0** Issues → Pro reviewt den vollen Diff (gedeckelt). Seit der Draft die Prescan-Tupel als `<already_flagged>` bekommt und sie laut Prompt NICHT erneut melden soll, misst dieses Signal auf sauberem Code **Compliance, nicht Divergenz**: es feuert genau dann, wenn der Prescan etwas findet und der Draft sich an die Anweisung hält — auf unslopai/test#16/#17 zwei Pro-Eskalationen für 1 bzw. 0 Findings. `divergenceMinPrescanFindings` und `hasPrescanDivergence` sind entfernt, `SecondOpinionReason` kennt nur noch `'test-gap'`; ein Ersatzsignal (`omitted_files`, `draft_partial`) ist ohne Messung nicht belegt und bewusst nicht gebaut. Die Warnung „NICHT ‚0 Findings auf großem Diff' allein" gilt unverändert (E5).
 
 ### §4.3 Budget, Fehler, Degradation (D10/D11-konform)
 - `consumeProEscalationBudget(ownerUserId)` genau EINMAL unmittelbar vor dem Call — **dieselbe Semantik wie `escalation-reviewer`** (Interview-Entscheidung: zählt als Pro-Eskalation). Verweigert ⇒ Degradation `pro_budget_exhausted` + Telemetrie `skipped_budget`, nie ein Job-Fehler.

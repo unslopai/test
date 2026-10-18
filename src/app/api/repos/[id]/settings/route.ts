@@ -151,6 +151,8 @@ const CASCADE_OVERRIDE_FIELDS = [
     'heuristicMaxFiles',
     'proDirectMaxDiffTokens',
     'verifierBatchCap',
+    // Datei-Batch-Chunking des Drafts (LARGE_DIFF_RECALL_SPEC Option A).
+    'draftBatchMaxTokens',
     // Slop Score Gating (Upcoming §6): 1-100; weglassen/0 = Gate aus.
     'minIntegrityScore',
 ] as const;

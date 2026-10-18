@@ -232,6 +232,31 @@ describe('GET /api/cli/scan/[jobId] — phase contract (MCP_SPEC §4.1)', () => 
 
         expect(pollResponse.result.degradations).toEqual(['time_budget_exhausted']);
         expect(pollResponse.result.skippedStages).toEqual(['second_opinion']);
+        // Ohne Feld im Blob (Alt-Ergebnis) eine leere Liste, nie undefined.
+        expect(pollResponse.result.draftUnreviewedFiles).toEqual([]);
+    });
+
+    it('reicht die Dateien gescheiterter Draft-Batches durch und verwirft Nicht-Listen (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                ...PERSISTED_RESULT_FIXTURE,
+                degradations: ['draft_partial'],
+                draft_unreviewed_files: ['src/lib/alpha.ts', 'src/lib/beta.ts'],
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.degradations).toEqual(['draft_partial']);
+        expect(pollResponse.result.draftUnreviewedFiles).toEqual(['src/lib/alpha.ts', 'src/lib/beta.ts']);
+
+        mockJobRow({
+            status: 'done',
+            result: { ...PERSISTED_RESULT_FIXTURE, draft_unreviewed_files: 'src/lib/alpha.ts' },
+        });
+        const malformedResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+        expect(malformedResponse.result.draftUnreviewedFiles).toEqual([]);
     });
 
     it('plant nach erfolgreicher Key-Prüfung ein Lazy Reaping ein (DEADLINE_GUARD_SPEC D10)', async () => {

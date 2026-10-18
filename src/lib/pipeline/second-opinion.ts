@@ -1,11 +1,16 @@
 /**
  * Second-Opinion-Trigger (LLM_LANE_QUALITY_SPEC §4.2) — pure, LLM-frei.
  *
- * Deterministische Signale für Draft-Under-Reporting, auf die der
+ * Deterministisches Signal für Draft-Under-Reporting, auf das der
  * second-opinion-reviewer einen gezielten Pro-Review fährt:
- *   T1 "test-gap":          test-lastiger Diff, aber keine Lane fand dort etwas
- *   T2 "prescan-divergence": Prescan hat Findings, der Draft gar keine
- *                            (der 928-Zeilen-Honesty-Fall vom 2026-08-23)
+ *   T1 "test-gap": test-lastiger Diff, aber keine Lane fand dort etwas
+ *
+ * T2 "prescan-divergence" (Prescan ≥ 3, Draft 0) ist seit 2026-09-29
+ * abgeschaltet (LARGE_DIFF_RECALL_SPEC §3.3, §9): der Draft bekommt die
+ * Prescan-Tupel als <already_flagged> und soll sie NICHT erneut melden — auf
+ * sauberem Code maß T2 damit Compliance, nicht Divergenz, und kostete pro
+ * großem sauberen PR eine Pro-Eskalation (unslopai/test#16/#17: zwei
+ * Eskalationen für 1 bzw. 0 Findings).
  *
  * Bewusst KEIN "0 Findings auf großem Diff"-Trigger: der würde auf jedem
  * sauberen großen PR feuern — Kosten und FP-Risiko genau dort, wo der
@@ -18,15 +23,13 @@ import type { PipelineContext } from '@/lib/pipeline/types';
 export const SECOND_OPINION_GATES = {
     /** T1: Anteil Test-Dateien an den reviewable Files, ab dem der Diff als test-lastig gilt. */
     testFileShareThreshold: 0.5,
-    /** T2: Prescan-Findings, ab denen ein 0-Findings-Draft als Divergenz gilt. */
-    divergenceMinPrescanFindings: 3,
     /** Obergrenze des Subset-Prompts in geschätzten Tokens (chars/4, wie der Router). */
     maxSubsetTokens: 12000,
 } as const;
 
 const CHARS_PER_TOKEN_ESTIMATE = 4;
 
-export type SecondOpinionReason = 'test-gap' | 'prescan-divergence';
+export type SecondOpinionReason = 'test-gap';
 
 export interface SecondOpinionTrigger {
     readonly reasons: readonly SecondOpinionReason[];
@@ -58,27 +61,13 @@ export function isTestFilePath(filePath: string): boolean {
 // =============================================================================
 
 export function evaluateSecondOpinionTrigger(context: PipelineContext): SecondOpinionTrigger | null {
-    const reasons: SecondOpinionReason[] = [];
-    const targetFileNames = new Set<string>();
-
     const uncoveredTestFiles = collectUncoveredTestFiles(context);
-    if (uncoveredTestFiles.length > 0) {
-        reasons.push('test-gap');
-        uncoveredTestFiles.forEach((file) => targetFileNames.add(file.filename));
-    }
+    if (uncoveredTestFiles.length === 0) return null;
 
-    if (hasPrescanDivergence(context)) {
-        reasons.push('prescan-divergence');
-        context.reviewableFiles.forEach((file) => targetFileNames.add(file.filename));
-    }
-
-    if (reasons.length === 0) return null;
-
-    const orderedTargets = context.reviewableFiles.filter((file) => targetFileNames.has(file.filename));
-    const { cappedFiles, truncatedFileCount } = capFilesByTokenBudget(orderedTargets);
+    const { cappedFiles, truncatedFileCount } = capFilesByTokenBudget(uncoveredTestFiles);
     if (cappedFiles.length === 0) return null;
 
-    return { reasons, targetFiles: cappedFiles, truncatedFileCount };
+    return { reasons: ['test-gap'], targetFiles: cappedFiles, truncatedFileCount };
 }
 
 /**
@@ -86,6 +75,7 @@ export function evaluateSecondOpinionTrigger(context: PipelineContext): SecondOp
  * Bewusst per Datei statt "0 Findings insgesamt": der gemessene Draft-Blind-
  * Spot (r17: 2/7) liegt in einzelnen Test-Dateien NEBEN gefundenen — ein
  * Ganz-oder-gar-nicht-Gate würde exakt den Zielfall verfehlen (Phase-0-Lehre).
+ * Reihenfolge = reviewableFiles (Diff-Reihenfolge).
  */
 function collectUncoveredTestFiles(context: PipelineContext): PullRequestFile[] {
     if (context.reviewableFiles.length === 0) return [];
@@ -97,12 +87,6 @@ function collectUncoveredTestFiles(context: PipelineContext): PullRequestFile[] 
         [...context.issues, ...context.prescanIssues].map((issue) => issue.path),
     );
     return testFiles.filter((file) => !pathsWithFindings.has(file.filename));
-}
-
-/** T2: die deterministische Lane fand deutlich etwas, der Draft gar nichts. */
-function hasPrescanDivergence(context: PipelineContext): boolean {
-    return context.issues.length === 0
-        && context.prescanIssues.length >= SECOND_OPINION_GATES.divergenceMinPrescanFindings;
 }
 
 /** Deckelt das Subset auf maxSubsetTokens (Reihenfolge der reviewableFiles bleibt). */

@@ -300,6 +300,27 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
         });
     });
 
+    it('nennt die Dateien eines gescheiterten Draft-Batches in der Check-Summary (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', async () => {
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            cascade: {
+                ...initialContext.cascade,
+                integrityScore: null,
+                degradations: ['draft_partial'],
+                draftUnreviewedFiles: ['src/lib/alpha.ts', 'src/lib/beta.ts'],
+            },
+        }));
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunResult).toMatchObject({
+            summary: expect.stringContaining(
+                'Reduced coverage: the AI review failed on 2 files — not reviewed: src/lib/alpha.ts, src/lib/beta.ts.',
+            ),
+        });
+    });
+
     it('ein schon finalisierter Job (Reaper war schneller) behält Status und roten Check', async () => {
         const { JobAlreadyFinalizedError } = await import('@/lib/pipeline/steps/result-persister-step');
         runPipelineMock.mockRejectedValue(new JobAlreadyFinalizedError('job-under-test'));

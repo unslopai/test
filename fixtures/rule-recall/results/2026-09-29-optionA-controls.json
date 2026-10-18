@@ -1,0 +1,82 @@
+{
+  "capturedAt": "2026-09-29T15:04:58.368Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "results": [
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "b81471df-9381-4d8e-81d0-4210493e5ca0",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 119,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r15-clean-c.diff",
+      "jobId": "ac7a425f-51e8-44ad-8004-d762c4427488",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 18,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r18-clean-ts.diff",
+      "jobId": "d0974363-6866-4482-9009-ce9ce261c1dd",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 4928,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r21-clean-go.diff",
+      "jobId": "b40a5a3f-06b9-4449-9cc9-9f6219932478",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 2,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 11,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r23-clean-reviewer-mentions.diff",
+      "jobId": "c6a257a4-ef0d-4eeb-9c23-eb668dc4f85f",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 10,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

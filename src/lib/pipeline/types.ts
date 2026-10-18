@@ -80,7 +80,13 @@ type CascadeDegradation =
     /** D8 (PROMPT_CACHING_SPEC §6.3): Explicit-Cache-Pfad fiel auf inline zurück. */
     | 'cache_fallback'
     /** DEADLINE_GUARD_SPEC D6: mindestens eine Stufe lief wegen des Job-Budgets nicht (voll). */
-    | 'time_budget_exhausted';
+    | 'time_budget_exhausted'
+    /**
+     * LARGE_DIFF_RECALL_SPEC Option A: mindestens ein paralleler Draft-Batch
+     * ist gescheitert, die übrigen zählen; die nicht geprüften Dateien stehen
+     * in `draftUnreviewedFiles`, der Score ist null.
+     */
+    | 'draft_partial';
 
 /** Stufen, die der Deadline Guard übersprungen oder abgebrochen hat (D6) — Wire-Typ aus dem Shared-Contract. */
 type SkippableStage = SkippedStage;
@@ -106,6 +112,11 @@ interface CascadeState {
     readonly degradations: readonly CascadeDegradation[];
     /** Vom Deadline Guard übersprungene/abgebrochene Stufen; leer = alles lief. */
     readonly skippedStages: readonly SkippableStage[];
+    /**
+     * Dateien gescheiterter Draft-Batches (Degradation `draft_partial`), in
+     * Diff-Reihenfolge; leer = der Draft hat jede reviewbare Datei gesehen.
+     */
+    readonly draftUnreviewedFiles: readonly string[];
 }
 
 /** Schwellenwerte der Cascade — pro Repo in pipeline_config.cascade (SPEC.md §7). */
@@ -126,6 +137,15 @@ interface CascadeConfig {
     readonly proDirectMaxDiffTokens: number;
     /** Max. Claims pro Verifier-Call; darüber wird gechunkt. */
     readonly verifierBatchCap: number;
+    /**
+     * Datei-Batch-Chunking des Drafts (LARGE_DIFF_RECALL_SPEC Option A,
+     * Bau-Entscheid 2026-09-29: 20k, 12k an Gate 4 verworfen): liegt die
+     * Token-Schätzung des Diffs darüber, fährt der Draft parallele Batches
+     * mit je höchstens so vielen geschätzten Tokens. Darunter bleibt der
+     * Draft-Request byte-identisch zum Einzel-Call. Bewusst getrennt von
+     * `heuristicMaxDiffTokens` (Routing) — zwei Fragen, zwei Schrauben.
+     */
+    readonly draftBatchMaxTokens: number;
     /**
      * Slop Score Gating: liegt der finale Cognitive Integrity Score STRIKT
      * unter diesem Wert, schließt der GitHub-Check als `failure` ab.

@@ -215,6 +215,20 @@ describe('resultPersisterStep — degradations im result (DEADLINE_GUARD_SPEC D6
         const persistedResult = terminalUpdateMock.mock.calls[0][0].result;
         expect(persistedResult.degradations).toEqual(['cache_fallback', 'time_budget_exhausted']);
         expect(persistedResult.skipped_stages).toEqual(['second_opinion', 'escalation']);
+        expect(persistedResult.draft_unreviewed_files).toEqual([]);
+    });
+
+    it('persistiert die Dateien gescheiterter Draft-Batches (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            cascade: buildCascadeState({
+                degradations: ['draft_partial'],
+                draftUnreviewedFiles: ['src/lib/alpha.ts', 'src/lib/beta.ts'],
+            }),
+        }));
+
+        const persistedResult = terminalUpdateMock.mock.calls[0][0].result;
+        expect(persistedResult.degradations).toEqual(['draft_partial']);
+        expect(persistedResult.draft_unreviewed_files).toEqual(['src/lib/alpha.ts', 'src/lib/beta.ts']);
     });
 });
 

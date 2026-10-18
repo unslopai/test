@@ -119,6 +119,7 @@ interface PersistedResultBlob {
     cognitive_integrity_score?: number | null;
     degradations?: unknown;
     skipped_stages?: unknown;
+    draft_unreviewed_files?: unknown;
 }
 
 /**
@@ -147,10 +148,10 @@ function toScanResult(persistedResult: unknown, options: { terminal: boolean }):
         cognitiveIntegrityScore: resultBlob.cognitive_integrity_score ?? null,
         degradations: parseStringList(resultBlob.degradations),
         skippedStages: parseSkippedStages(resultBlob.skipped_stages),
+        draftUnreviewedFiles: parseStringList(resultBlob.draft_unreviewed_files),
     };
 }
 
-/** Strukturelle Validierung an der DB-Grenze (ARCH-002): alles außer string[] wird []. */
 /** Strukturelle Validierung eines persistierten String-Arrays (ARCH-002); alles andere wird []. */
 function parseStringList(rawStringList: unknown): readonly string[] {
     const isStringArray = Array.isArray(rawStringList)

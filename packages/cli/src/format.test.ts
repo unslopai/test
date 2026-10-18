@@ -215,6 +215,25 @@ describe('printHumanResult — Score-Tagline zählt den Verifikationsstatus (SPE
         expect(terminalOutput).toContain('Reduced confidence: time budget exhausted — skipped: blind verification (some or all findings).');
     });
 
+    it('nennt die Dateien eines gescheiterten Draft-Batches, sanitisiert (draft_partial, LARGE_DIFF_RECALL_SPEC §9)', () => {
+        const terminalOutput = capturedOutput({
+            hasSlop: true,
+            issues: [buildFinding('confirmed', 10)],
+            summary: 'AI slop detected.',
+            filesReviewed: 3,
+            outcome: 'reviewed',
+            omittedFiles: [],
+            cognitiveIntegrityScore: null,
+            degradations: ['draft_partial'],
+            draftUnreviewedFiles: ['src/lib/alpha.ts', `src/lib/beta.ts${OSC_TITLE_ATTACK}`],
+        });
+
+        expect(terminalOutput).toContain(
+            'Reduced coverage: the AI review failed on 2 files — not reviewed: src/lib/alpha.ts, src/lib/beta.ts',
+        );
+        expect(containsControlBytes(terminalOutput)).toBe(false);
+    });
+
     it('behauptet auf pro-direct keine Blind-Verifikation (self-reported)', () => {
         const terminalOutput = capturedOutput({
             hasSlop: true,

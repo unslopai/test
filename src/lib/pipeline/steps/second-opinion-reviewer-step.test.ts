@@ -37,10 +37,17 @@ const { secondOpinionReviewerStep } = await import(
     '@/lib/pipeline/steps/second-opinion-reviewer-step'
 );
 
-/** Kontext, in dem T2 (prescan-divergence) sicher feuert. */
+/**
+ * Kontext, in dem T1 (test-gap) sicher feuert: eine Test-Datei ohne Finding
+ * neben einer Quelldatei, deren Prescan-Findings die Dedupe testen. (T2 ist
+ * seit 2026-09-29 abgeschaltet, LARGE_DIFF_RECALL_SPEC §9.)
+ */
 function buildTriggeringContext(overrides: Parameters<typeof buildPipelineContext>[0] = {}) {
     return buildPipelineContext({
-        reviewableFiles: [buildPullRequestFile({ filename: 'src/native/session.c' })],
+        reviewableFiles: [
+            buildPullRequestFile({ filename: 'tests/native/session.test.ts' }),
+            buildPullRequestFile({ filename: 'src/native/session.c' }),
+        ],
         issues: [],
         prescanIssues: [
             buildReviewIssue({ rule: 'SEC-027 (gets)', path: 'src/native/session.c', source: 'pre-scanner' }),
@@ -115,7 +122,7 @@ describe('Budget-Gate (D11)', () => {
 describe('Erfolgs-Pfad', () => {
     it('haengt deduplizierte Findings ans ENDE, markiert die Eskalation und ersetzt die Clean-Summary', async () => {
         const freshFinding = buildReviewIssue({
-            rule: 'SEC-001 (Unbounded copy)', path: 'src/native/session.c', source: 'second-opinion-reviewer',
+            rule: 'TEST-003 (Happy path only)', path: 'tests/native/session.test.ts', source: 'second-opinion-reviewer',
         });
         const duplicateOfPrescan = buildReviewIssue({
             rule: 'SEC-027 (Banned input API)', path: 'src/native/session.c', source: 'second-opinion-reviewer',

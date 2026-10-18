@@ -32,3 +32,18 @@ describe('resolveCascadeConfig — minIntegrityScore', () => {
         expect(resolvedConfig.verifierBatchCap).toBe(15);
     });
 });
+
+describe('resolveCascadeConfig — draftBatchMaxTokens (LARGE_DIFF_RECALL_SPEC §9)', () => {
+    it('defaults to the 20k batch size that passed gates 1–4, separate from the routing threshold', () => {
+        const resolvedConfig = resolveCascadeConfig(undefined);
+
+        expect(resolvedConfig.draftBatchMaxTokens).toBe(20000);
+        expect(resolvedConfig.heuristicMaxDiffTokens).toBe(12000);
+    });
+
+    it('accepts a per-repo override and falls back on garbage', () => {
+        expect(resolveCascadeConfig({ draftBatchMaxTokens: 30000 }).draftBatchMaxTokens).toBe(30000);
+        expect(resolveCascadeConfig({ draftBatchMaxTokens: 0 }).draftBatchMaxTokens).toBe(20000);
+        expect(resolveCascadeConfig({ draftBatchMaxTokens: Number.NaN }).draftBatchMaxTokens).toBe(20000);
+    });
+});

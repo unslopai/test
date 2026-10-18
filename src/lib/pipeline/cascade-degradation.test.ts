@@ -9,10 +9,13 @@
 import { ApiError } from '@google/genai';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { claimVerifierStep } from '@/lib/pipeline/steps/claim-verifier-step';
+import { draftReviewerStep } from '@/lib/pipeline/steps/draft-reviewer-step';
 import { escalationReviewerStep } from '@/lib/pipeline/steps/escalation-reviewer-step';
 import { integrityScorerStep } from '@/lib/pipeline/steps/integrity-scorer-step';
+import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import { DEFAULT_CASCADE_CONFIG } from '@/lib/pipeline/defaults';
 import { normalizeGatekeeperIssue } from '@/lib/pipeline/gatekeeper-rules';
+import { buildCombinedDiff } from '@/lib/pipeline/helpers';
 import {
     buildCascadeState,
     buildClaimVerdict,
@@ -622,5 +625,79 @@ describe('cascade replay — GATE-001 instruction override (SPEC.md §12.4 A12c)
                 ]),
             }),
         );
+    });
+});
+
+// =============================================================================
+// draft_partial: halber Draft läuft durch Verifier und Scorer (LARGE_DIFF_RECALL_SPEC Option A, §9)
+// =============================================================================
+
+const ALPHA_FILE_HEADER = '=== FILE: src/lib/alpha.ts (modified) ===';
+const DIFF_REVIEW_PROTOCOL = '=== TASK PROTOCOL: PULL REQUEST DIFF REVIEW';
+
+/** Zwei Dateien über einer winzigen Batch-Grenze ⇒ zwei parallele Draft-Batches. */
+function buildTwoBatchDraftContext(): PipelineContext {
+    const reviewableFiles = [
+        buildPullRequestFile({ filename: 'src/lib/alpha.ts', patch: '@@ -40,3 +40,5 @@\n+catch (e) {} // alpha' }),
+        buildPullRequestFile({ filename: 'src/lib/beta.ts', patch: '@@ -40,3 +40,5 @@\n+catch (e) {} // beta' }),
+    ];
+    return buildPipelineContext({
+        reviewableFiles,
+        combinedDiff: buildCombinedDiff(reviewableFiles),
+        cascadeConfig: { ...DEFAULT_CASCADE_CONFIG, draftBatchMaxTokens: 30 },
+        promptConfig: {
+            activeConditionIds: ALL_CONDITION_IDS,
+            filePaths: reviewableFiles.map((file) => file.filename),
+            overrideSmartDetection: false,
+        },
+    });
+}
+
+function buildBetaDraftResponse() {
+    return {
+        text: JSON.stringify({
+            has_slop: true,
+            issues: [{
+                rule: 'Condition 1 (Silent Error Swallowing)', severity: 'CRITICAL', path: 'src/lib/beta.ts',
+                line: 42, end_line: 42, exact_quote: 'catch (e) {}', critique: 'Empty catch block.',
+            }],
+            summary: 'beta review',
+        }),
+        usageMetadata: { promptTokenCount: 500, cachedContentTokenCount: 0, candidatesTokenCount: 120 },
+    };
+}
+
+describe('cascade degradation replay — draft_partial (LARGE_DIFF_RECALL_SPEC Option A)', () => {
+    beforeEach(() => {
+        generateContentMock.mockReset();
+        recordLlmCallMock.mockClear();
+        consumeProEscalationBudgetMock.mockReset();
+        consumeProEscalationBudgetMock.mockResolvedValue(true);
+    });
+
+    it('Batch 1 von 2 scheitert: Batch-2-Claims werden verifiziert, Job endet done, Score ehrlich null, Dateien genannt', async () => {
+        generateContentMock.mockImplementation((request: { contents: string }) => {
+            if (!request.contents.startsWith(DIFF_REVIEW_PROTOCOL)) {
+                return Promise.resolve(buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'CONFIRMED', confidence: 92 }]));
+            }
+            return request.contents.includes(ALPHA_FILE_HEADER)
+                ? Promise.reject(new Error('500 INTERNAL nach 70 s'))
+                : Promise.resolve(buildBetaDraftResponse());
+        });
+
+        const draftedContext = await draftReviewerStep.execute(buildTwoBatchDraftContext());
+        const finalContext = await runCascadeTail(draftedContext);
+
+        // 2 Draft-Batches + 1 Verify-Batch — keine Eskalation, kein Job-Fehler.
+        expect(generateContentMock).toHaveBeenCalledTimes(3);
+        expect(finalContext.cascade.degradations).toEqual(['draft_partial']);
+        expect(finalContext.cascade.draftUnreviewedFiles).toEqual(['src/lib/alpha.ts']);
+        expect(finalContext.issues).toHaveLength(1);
+        expect(finalContext.issues[0].path).toBe('src/lib/beta.ts');
+        expect(finalContext.issues[0].verification).toBe('confirmed');
+        expect(finalContext.issues[0].confidence).toBe(92);
+        expect(finalContext.cascade.integrityScore, 'kein Score über einen halben Draft').toBeNull();
+        expect(recordLlmCallMock).toHaveBeenCalledWith(expect.objectContaining({ phase: 'draft', status: 'api_error' }));
+        expect(recordLlmCallMock).toHaveBeenCalledWith(expect.objectContaining({ phase: 'verify', status: 'ok' }));
     });
 });

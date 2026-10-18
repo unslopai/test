@@ -55,6 +55,10 @@ export const DEFAULT_CASCADE_CONFIG: Readonly<CascadeConfig> = {
     // und damit den Monats-Worst-Case pro Kunde auf einen margensicheren Wert.
     proDirectMaxDiffTokens: 25000,
     verifierBatchCap: 15,
+    // Gate-Messung 2026-09-29 (LARGE_DIFF_RECALL_SPEC §3.5/§6): 20k-Batches
+    // Recall 42,7 vs. 41,7/48 am Stück, max Batch 66 s, +47 % Draft-Kosten;
+    // 12k reißt Gate 4 (+77 %). Greift auf flash-cascade also erst > 25k.
+    draftBatchMaxTokens: 20000,
     // Slop Score Gating aus per Default: bestehende Repos dürfen durch das
     // Feature keinen neuen Merge-Blocker bekommen (opt-in via pipeline_config).
     minIntegrityScore: 0,
@@ -71,6 +75,7 @@ export const INITIAL_CASCADE_STATE: Readonly<CascadeState> = {
     integrityScore: null,
     degradations: [],
     skippedStages: [],
+    draftUnreviewedFiles: [],
 };
 
 /**
@@ -96,6 +101,9 @@ export function resolveCascadeConfig(
         ),
         verifierBatchCap: resolvePositiveNumber(
             partialCascadeConfig?.verifierBatchCap, DEFAULT_CASCADE_CONFIG.verifierBatchCap,
+        ),
+        draftBatchMaxTokens: resolvePositiveNumber(
+            partialCascadeConfig?.draftBatchMaxTokens, DEFAULT_CASCADE_CONFIG.draftBatchMaxTokens,
         ),
         minIntegrityScore: resolveScoreThreshold(
             partialCascadeConfig?.minIntegrityScore, DEFAULT_CASCADE_CONFIG.minIntegrityScore,

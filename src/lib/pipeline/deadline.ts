@@ -99,6 +99,9 @@ export function remainingLlmMs(jobClock: Pick<JobClock, 'deadlineAtMs'>, nowMs: 
  * Call-Deadline in ms für einen LLM-Call (§3.2); null = keine Deadline.
  * Draft und Verifier bekommen das Restbudget, die Eskalation zusätzlich
  * ihren eigenen 150-s-Deckel. Nie negativ: ein Call ohne Rest bricht sofort ab.
+ * Gilt JE CALL, zum Zeitpunkt seines Versuchs — also auch für jeden der
+ * parallelen Draft-Batches (LARGE_DIFF_RECALL_SPEC Option A): sie teilen den
+ * Envelope, und jeder Batch-Versuch löst sein Signal hier selbst auf.
  */
 export function resolveCallDeadlineMs(
     role: CascadeRole,
