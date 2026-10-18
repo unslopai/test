@@ -145,6 +145,9 @@ function reportScanError(scanError: unknown): number {
         if (scanError instanceof ApiError && scanError.httpStatus === 401) {
             console.error('Hint: check your API key (unslop login) — it may be revoked.');
         }
+        if (scanError instanceof ApiError && scanError.httpStatus === 402) {
+            console.error('Hint: no active subscription or trial — manage billing in the Gatekeeper dashboard.');
+        }
         return 2;
     }
     console.error(`Unexpected error: ${(scanError as Error).message}`);

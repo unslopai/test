@@ -361,6 +361,25 @@ export async function postPRComment(
     });
 }
 
+/** Ein Issue-Kommentar auf einem PR (nur die für Dedupe nötigen Felder). */
+export interface PRIssueComment {
+    body: string;
+}
+
+/**
+ * Listet die Issue-Kommentare eines Pull Requests (für Marker-Dedupe).
+ */
+export async function listPRComments(
+    token: string,
+    repoFullName: string,
+    prNumber: number,
+): Promise<PRIssueComment[]> {
+    return githubFetchPaginated<PRIssueComment>(
+        `/repos/${repoFullName}/issues/${prNumber}/comments`,
+        token,
+    );
+}
+
 /**
  * Holt den HEAD-Commit-SHA eines Pull Requests.
  * Wird benötigt, um PR-Reviews an den richtigen Commit anzuheften.

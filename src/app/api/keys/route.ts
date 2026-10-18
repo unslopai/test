@@ -8,9 +8,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabase as supabaseAdmin } from '@/lib/supabase';
 import { generateApiKey } from '@/lib/api-keys';
+import { resolveEntitlement } from '@/lib/billing/entitlements';
 
 const MAX_LABEL_LENGTH = 60;
-const MAX_KEYS_PER_USER = 10;
 
 export async function GET() {
     const supabase = await createClient();
@@ -46,14 +46,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'invalid_label' }, { status: 422 });
     }
 
+    // Paid-only-Gate + Key-Cap des Plans (STRIPE_SPEC §8).
+    const entitlement = await resolveEntitlement(user.id);
+    if (!entitlement.entitled) {
+        return NextResponse.json({ error: 'subscription_inactive' }, { status: 402 });
+    }
+
     const { count: activeKeyCount } = await supabaseAdmin
         .from('api_keys')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .is('revoked_at', null);
 
-    if ((activeKeyCount ?? 0) >= MAX_KEYS_PER_USER) {
-        return NextResponse.json({ error: 'key_limit_reached' }, { status: 409 });
+    if ((activeKeyCount ?? 0) >= entitlement.plan.maxApiKeys) {
+        return NextResponse.json(
+            { error: 'key_limit_reached', limit: entitlement.plan.maxApiKeys },
+            { status: 409 },
+        );
     }
 
     const generatedKey = generateApiKey();

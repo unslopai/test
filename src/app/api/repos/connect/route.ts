@@ -13,6 +13,7 @@ import { createWebhook } from '@/lib/github';
 import { decryptToken } from '@/lib/crypto';
 import { extractErrorMessage } from '@/lib/errors';
 import { ingestRepository } from '@/lib/skeleton';
+import { resolveEntitlement } from '@/lib/billing/entitlements';
 import * as crypto from 'crypto';
 
 
@@ -45,6 +46,27 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { error: 'repoId und fullName sind erforderlich.' },
                 { status: 400 },
+            );
+        }
+
+        // Paid-only-Gate (STRIPE_SPEC §8): Connect löst Skeleton-Ingestion aus
+        // (Embedding-Kosten) und braucht deshalb eine aktive Subscription.
+        const entitlement = await resolveEntitlement(user.id);
+        if (!entitlement.entitled) {
+            return NextResponse.json({ error: 'subscription_inactive' }, { status: 402 });
+        }
+
+        // Repo-Cap des Plans (zählt alle nicht-deaktivierten Repos des Users).
+        const { count: connectedRepoCount } = await supabaseAdmin
+            .from('repositories')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .neq('status', 'deactivated');
+
+        if ((connectedRepoCount ?? 0) >= entitlement.plan.maxActiveRepos) {
+            return NextResponse.json(
+                { error: 'repo_limit_reached', limit: entitlement.plan.maxActiveRepos },
+                { status: 409 },
             );
         }
 

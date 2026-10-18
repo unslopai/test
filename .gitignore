@@ -44,3 +44,6 @@ next-env.d.ts
 
 # workspace build artifacts
 packages/*/dist/
+
+# Stripe CLI binary (npm global shim drops it in cwd)
+stripe.exe
