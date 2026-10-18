@@ -4,8 +4,33 @@
  */
 import { describe, expect, it } from 'vitest';
 import { describeFindingVerification as sharedDescribeFindingVerification } from '@unslop/shared/node';
+import { presentState } from './stateMachine';
 import { describeFindingVerification } from './verificationSummary';
 import type { VerifiedFinding } from './verificationSummary';
+
+describe('Statusleisten-Tooltip nach Verifikations-Mix (ROADMAP §3)', () => {
+    it('drops "every finding survived" next to deterministic findings and words it like the PR review', () => {
+        const mixedFindings: readonly VerifiedFinding[] = [
+            { verification: 'confirmed' },
+            { verification: 'deterministic' },
+            { verification: 'deterministic' },
+        ];
+
+        const presentation = presentState(
+            'RESULTS',
+            { critical: 1, warning: 2, stale: 0 },
+            { score: 98, verificationSummary: describeFindingVerification(mixedFindings) },
+        );
+
+        expect(presentation.tooltip).not.toContain('every finding survived');
+        expect(presentation.tooltip).toContain(
+            'Cognitive Integrity Score: 98/100 — 3 findings: 1 survived independent blind re-verification, '
+            + '2 deterministic (no LLM claim to verify).',
+        );
+        // Same source as the GitHub review block (github-reporter-step.ts).
+        expect(presentation.tooltip).toContain(sharedDescribeFindingVerification(mixedFindings));
+    });
+});
 
 describe('describeFindingVerification (Extension-Kopie)', () => {
     it('claims full survival only when every finding is confirmed', () => {

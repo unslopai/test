@@ -8,17 +8,34 @@
  * Verhalten byte-identisch zum bisherigen CLI-Code.
  */
 import { execFileSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 export class GitError extends Error {}
 
-function runGit(gitArgs: readonly string[], cwd?: string): string {
+/** Output ceiling of one git call; beyond it execFileSync fails with ENOBUFS. */
+const GIT_OUTPUT_BUFFER_BYTES = 10 * 1024 * 1024;
+
+/** Extra process input for a single git call (temporary index, pathspec list on stdin). */
+interface GitCallOptions {
+    readonly env?: Readonly<Record<string, string>>;
+    readonly stdinText?: string;
+    /** `-z` output: a leading space belongs to the first path and must survive. */
+    readonly keepWhitespace?: boolean;
+}
+
+function runGit(gitArgs: readonly string[], cwd?: string, callOptions: GitCallOptions = {}): string {
     try {
-        return execFileSync('git', [...gitArgs], {
+        const gitOutput = execFileSync('git', [...gitArgs], {
             encoding: 'utf-8',
-            maxBuffer: 10 * 1024 * 1024,
-            stdio: ['ignore', 'pipe', 'pipe'],
+            maxBuffer: GIT_OUTPUT_BUFFER_BYTES,
+            stdio: [callOptions.stdinText === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
+            ...(callOptions.stdinText === undefined ? {} : { input: callOptions.stdinText }),
+            ...(callOptions.env ? { env: { ...process.env, ...callOptions.env } } : {}),
             ...(cwd ? { cwd } : {}),
-        }).trim();
+        });
+        return callOptions.keepWhitespace ? gitOutput : gitOutput.trim();
     } catch (gitError: unknown) {
         const stderr = (gitError as { stderr?: string }).stderr ?? '';
         throw new GitError(`git ${gitArgs[0]} failed: ${stderr.trim() || String(gitError)}`);
@@ -205,10 +222,21 @@ function currentLocalBranch(cwd?: string): string {
     }
 }
 
+export interface DiffOptions {
+    /**
+     * Also diff untracked files that `.gitignore` does not exclude, as new
+     * files (CLI and VS Code extension). A freshly generated file is the most
+     * common AI-code case; without this the scan said "Nothing reviewed".
+     */
+    readonly includeUntracked?: boolean;
+}
+
 /**
  * Produces the diff of tracked changes (committed + staged + unstaged)
- * against the merge-base. Untracked files are NOT included
- * (workaround: `git add -N <file>`). CRLF is normalized to LF.
+ * against the merge-base, plus — with `includeUntracked` — untracked,
+ * non-ignored files as new files. They are part of the same diff string, so
+ * the secret filter and the upload limit cover them like any other change.
+ * CRLF is normalized to LF.
  * `pathFilters` schränkt auf repo-relative Pfade ein (MCP `paths`, §3.5) —
  * kann den Diff nur verengen, nie erweitern.
  */
@@ -216,20 +244,94 @@ export function computeDiff(
     mergeBaseSha: string,
     cwd?: string,
     pathFilters?: readonly string[],
+    diffOptions: DiffOptions = {},
 ): string {
     const diffArgs = ['diff', '--no-color', '--no-ext-diff', '-U3', mergeBaseSha];
     if (pathFilters && pathFilters.length > 0) {
         diffArgs.push('--', ...pathFilters);
     }
-    const rawDiff = runGit(diffArgs, cwd);
-    return rawDiff.replace(/\r\n/g, '\n');
+    const untrackedPaths = diffOptions.includeUntracked ? listUntrackedFiles(cwd, pathFilters) : [];
+    if (untrackedPaths.length === 0) {
+        return runGit(diffArgs, cwd).replace(/\r\n/g, '\n');
+    }
+    assertUntrackedFilesFitBuffer(untrackedPaths, resolveGitRoot(cwd));
+    return diffWithIntentToAdd(diffArgs, untrackedPaths, cwd).replace(/\r\n/g, '\n');
+}
+
+/**
+ * Untracked, non-ignored files, repo-root-relative (the same form `git diff`
+ * prints). Listed from `cwd` so `pathFilters` mean the same as for `git diff`;
+ * `:/` widens the unfiltered listing to the whole work tree. Entries ending in
+ * `/` are nested repositories — not content of this one, and `git add -N`
+ * rejects them.
+ */
+function listUntrackedFiles(cwd?: string, pathFilters?: readonly string[]): string[] {
+    const pathspecs = pathFilters && pathFilters.length > 0 ? pathFilters : [':/'];
+    const listOutput = runGit(
+        ['ls-files', '--others', '--exclude-standard', '--full-name', '-z', '--', ...pathspecs],
+        cwd,
+        { keepWhitespace: true },
+    );
+    return listOutput.split('\0').filter((untrackedPath) => untrackedPath.length > 0 && !untrackedPath.endsWith('/'));
+}
+
+/**
+ * Untracked content beyond this size cannot become an uploadable diff anyway
+ * (MAX_DIFF_UPLOAD_BYTES is far lower), but it would overflow the git output
+ * buffer and abort with a cryptic ENOBUFS. Typical cause: `node_modules/`,
+ * build output or a data dump without a `.gitignore` entry.
+ */
+const UNTRACKED_BYTES_CEILING = 8 * 1024 * 1024;
+
+function assertUntrackedFilesFitBuffer(untrackedPaths: readonly string[], gitRoot: string): void {
+    let untrackedBytes = 0;
+    for (const untrackedPath of untrackedPaths) {
+        untrackedBytes += fs.lstatSync(path.join(gitRoot, untrackedPath), { throwIfNoEntry: false })?.size ?? 0;
+        if (untrackedBytes > UNTRACKED_BYTES_CEILING) {
+            throw new GitError(
+                `${untrackedPaths.length} untracked file(s) hold more than ${UNTRACKED_BYTES_CEILING / (1024 * 1024)} MB `
+                + `(e.g. ${untrackedPath}); the scan includes untracked files that .gitignore does not exclude. `
+                + 'Add generated files, dependencies or data dumps to .gitignore, then scan again.',
+            );
+        }
+    }
+}
+
+/**
+ * The documented `git add -N` workaround, applied to a throwaway COPY of the
+ * index: the user's real index (staging area) is never touched. Literal
+ * pathspecs, so no file name is read as glob or pathspec magic. Without a
+ * real index (a `--no-checkout` clone) the scratch index starts empty, which
+ * is what git itself would diff against.
+ */
+function diffWithIntentToAdd(diffArgs: readonly string[], untrackedPaths: readonly string[], cwd?: string): string {
+    const realIndexPath = path.resolve(cwd ?? process.cwd(), runGit(['rev-parse', '--git-path', 'index'], cwd));
+    const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'unslop-index-'));
+    try {
+        const scratchIndexPath = path.join(scratchDir, 'index');
+        if (fs.existsSync(realIndexPath)) fs.copyFileSync(realIndexPath, scratchIndexPath);
+        const scratchIndexEnv = { GIT_INDEX_FILE: scratchIndexPath };
+        runGit(
+            ['add', '--intent-to-add', '--pathspec-from-file=-', '--pathspec-file-nul'],
+            resolveGitRoot(cwd),
+            { env: { ...scratchIndexEnv, GIT_LITERAL_PATHSPECS: '1' }, stdinText: untrackedPaths.join('\0') },
+        );
+        return runGit(diffArgs, cwd, { env: scratchIndexEnv });
+    } finally {
+        fs.rmSync(scratchDir, { recursive: true, force: true });
+    }
 }
 
 export function resolveHeadSha(cwd?: string): string {
     return runGit(['rev-parse', 'HEAD'], cwd);
 }
 
-/** true, wenn Staged/Unstaged-Änderungen an getrackten Dateien existieren. */
-export function isWorkingTreeDirty(cwd?: string): boolean {
-    return runGit(['status', '--porcelain', '--untracked-files=no'], cwd).length > 0;
+/**
+ * true, wenn Staged/Unstaged-Änderungen an getrackten Dateien existieren —
+ * mit `includeUntracked` auch, wenn nicht ignorierte untracked Dateien
+ * existieren (die scannt das CLI mit, und ihr Inhalt liegt nicht in git).
+ */
+export function isWorkingTreeDirty(cwd?: string, dirtyOptions: DiffOptions = {}): boolean {
+    const untrackedMode = dirtyOptions.includeUntracked ? '--untracked-files=all' : '--untracked-files=no';
+    return runGit(['status', '--porcelain', untrackedMode], cwd).length > 0;
 }

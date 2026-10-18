@@ -496,7 +496,7 @@ describe('githubReporterStep — KI-Kennzeichnung', () => {
         await githubReporterStep.execute(mixedContext);
 
         const deterministicComment = postedInlineBodies().find((inlineBody) => inlineBody.includes('SEC-035'));
-        const modelComment = postedInlineBodies().find((inlineBody) => inlineBody.includes('Condition 3'));
+        const modelComment = postedInlineBodies().find((inlineBody) => inlineBody.includes('COND-003'));
         expect(deterministicComment).toBeDefined();
         expect(deterministicComment).not.toContain('AI-generated');
         expect(deterministicComment).not.toContain(AI_MARKER);
@@ -588,5 +588,38 @@ describe('githubReporterStep — KI-Kennzeichnung', () => {
         expect(postedComment).not.toContain('AI-generated');
         expect(postedComment).not.toContain(AI_MARKER);
         expect(createPullRequestReviewMock).not.toHaveBeenCalled();
+    });
+});
+
+describe('githubReporterStep — Regel-Label statt Condition-Nummer (ROADMAP §3)', () => {
+    beforeEach(() => {
+        resetReporterMocks();
+    });
+
+    it('labels a condition finding "COND-001 (Silent Error Swallowing)" inline and in the body, never "Condition 1"', async () => {
+        const reviewedFile = buildPullRequestFile({
+            patch: '@@ -40,3 +40,5 @@\n+try { syncOrders(); } catch { return []; }\n+const pending = 1;',
+        });
+        const conditionContext = buildPipelineContext({
+            issues: [
+                buildReviewIssue({ rule: 'Condition 1 (Silent Error Swallowing)', line: 41, endLine: 41 }),
+                buildReviewIssue({ rule: 'Condition 1 (Silent Error Swallowing)', line: 99, endLine: 99 }),
+            ],
+            prFiles: [reviewedFile],
+            reviewableFiles: [reviewedFile],
+            reviewSummary: 'One swallowed error.',
+            githubToken: 'token-under-test',
+            cascade: buildCascadeState({ integrityScore: 91, verdicts: [] }),
+        });
+
+        await githubReporterStep.execute(conditionContext);
+
+        const [inlineComment] = createPullRequestReviewMock.mock.calls[0][5];
+        const reviewBody = createPullRequestReviewMock.mock.calls[0][4];
+        expect(inlineComment.body).toContain('COND-001 (Silent Error Swallowing)');
+        // Line 99 lies outside the hunk, so this finding lands in the review body.
+        expect(reviewBody).toContain('COND-001 (Silent Error Swallowing)');
+        expect(inlineComment.body).not.toContain('Condition 1');
+        expect(reviewBody).not.toContain('Condition 1');
     });
 });

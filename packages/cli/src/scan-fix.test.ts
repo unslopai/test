@@ -30,7 +30,7 @@ vi.mock('@unslop/shared/node', async (importOriginal) => {
     };
 });
 
-import { findDiffUploadRefusal, isWorkingTreeDirty, resolveRepoFullName } from '@unslop/shared/node';
+import { computeDiff, findDiffUploadRefusal, isWorkingTreeDirty, resolveRepoFullName } from '@unslop/shared/node';
 
 let fixtureRoot: string;
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
@@ -120,6 +120,13 @@ describe('runScan — Dirty-Tree-Guard', () => {
         expect(exitCode).toBe(2);
         expect(String(stderrSpy.mock.calls[0][0])).toContain('--allow-dirty');
         expect(resolveRepoFullName).not.toHaveBeenCalled();
+    });
+
+    it('scannt untracked Dateien mit und zählt sie im --fix-Guard als dirty (ROADMAP §3)', async () => {
+        await runScan({ ...BASE_OPTIONS, fixMode: 'apply' });
+
+        expect(isWorkingTreeDirty).toHaveBeenCalledWith(undefined, { includeUntracked: true });
+        expect(computeDiff).toHaveBeenCalledWith('a'.repeat(40), undefined, undefined, { includeUntracked: true });
     });
 
     it('lässt --fix mit --allow-dirty trotz dirtym Tree weiterlaufen', async () => {

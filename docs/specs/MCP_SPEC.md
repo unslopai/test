@@ -167,6 +167,8 @@ git diff <mergeBase>                             →  the diff (tracked files, w
 
 Untracked files are excluded. This is a deliberate coverage sacrifice: a brand-new file the agent just wrote is exactly where a hardcoded key lives, and `.gitignore` is the only signal available for what the user considers private. `git diff` over tracked files honours `.gitignore` by construction. The `paths` argument (§3.5) lets the agent narrow further but never widen.
 
+This exclusion is MCP-only. Since 2026-09-30, `unslop scan` (CLI, and with it the VS Code extension) adds untracked files that `.gitignore` does not exclude, as new files (`computeDiff(…, { includeUntracked: true })` in `packages/shared/src/node/git.ts`). A person starts that scan by hand, and a fresh, never-added file was the most common reason for "Nothing reviewed". Those files are part of the same diff string, so the secret filter and `MAX_DIFF_UPLOAD_BYTES` refuse them exactly like tracked changes.
+
 **Local secret filter (`secret-filter.ts`).** Runs on the assembled diff *before* upload. On any hit the tool hard-refuses with the offending path and line and uploads nothing. The refusal message names the location and pattern class — never the secret material itself.
 
 Detected patterns:
@@ -236,7 +238,7 @@ The 10s ceiling is a client-side budget, chosen to stay far inside every known M
 { "jobId": { "type": "string" } }
 ```
 
-Returns `{ jobId, phase, status, findings, summary, filesReviewed, cognitiveIntegrityScore, rerollNotice? }`.
+Returns `{ jobId, phase, status, findings, summary, filesReviewed, outcome, aiGenerated, omittedFiles, cognitiveIntegrityScore, degradations, skippedStages, draftUnreviewedFiles, rerollNotice? }`. The three degradation fields (since 2026-09-30) carry server codes, stage names and diff paths only, never model text, and are empty when nothing degraded; they explain a `null` score or a skipped stage.
 
 `phase` is `submitted` | `deterministic` | `complete`. On `error`, the typed error contract applies (§6), including `job_stalled` after the existing 5-minute threshold.
 

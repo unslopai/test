@@ -100,6 +100,43 @@ describe('unslop_get_result', () => {
         expect(safePayload.omittedFiles).toEqual(['src/lib/huge-a.ts']);
     });
 
+    it('names the degradations behind a null score in the safe payload, outside the model envelope', async () => {
+        const deps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'done',
+            phase: 'complete',
+            result: {
+                ...COMPLETE_RESULT_FIXTURE,
+                cognitiveIntegrityScore: null,
+                degradations: ['draft_partial', 'time_budget_exhausted'],
+                skippedStages: ['second_opinion', 'verifier'],
+                draftUnreviewedFiles: ['src/lib/batch-two.ts'],
+            },
+        } satisfies ScanPollResponse));
+
+        const toolResult = await runGetResultTool(deps, { jobId: 'job-under-test' });
+
+        const safePayload = parseSafeSection(toolResult.content[0].text);
+        expect(safePayload.cognitiveIntegrityScore).toBeNull();
+        expect(safePayload.degradations).toEqual(['draft_partial', 'time_budget_exhausted']);
+        expect(safePayload.skippedStages).toEqual(['second_opinion', 'verifier']);
+        expect(safePayload.draftUnreviewedFiles).toEqual(['src/lib/batch-two.ts']);
+    });
+
+    it('reports empty degradation lists for a result from a server that predates the fields', async () => {
+        const deps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'done',
+            phase: 'complete',
+            result: COMPLETE_RESULT_FIXTURE,
+        } satisfies ScanPollResponse));
+
+        const toolResult = await runGetResultTool(deps, { jobId: 'job-under-test' });
+
+        const safePayload = parseSafeSection(toolResult.content[0].text);
+        expect(safePayload.degradations).toEqual([]);
+        expect(safePayload.skippedStages).toEqual([]);
+        expect(safePayload.draftUnreviewedFiles).toEqual([]);
+    });
+
     it('maps a stalled job onto the retryable job_stalled error', async () => {
         const deps = buildDeps(vi.fn().mockResolvedValue({
             status: 'error',

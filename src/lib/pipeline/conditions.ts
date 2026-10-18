@@ -143,3 +143,27 @@ export const CONDITION_REGISTRY: ReadonlyMap<string, ReviewCondition> = new Map(
 export const ALL_CONDITION_IDS: readonly string[] = CONDITIONS.map(
     (condition) => condition.id,
 );
+
+/** "Condition 1 (Silent Error Swallowing)" — die Referenz inkl. optionalem Klammer-Namen (eine Klammer-Ebene tief). */
+const CONDITION_LABEL_PATTERN = /^Condition (\d+)(?:\s*\((?:[^()]|\([^()]*\))*\))?/;
+
+/**
+ * Nutzer-Label einer Condition-Referenz: "Condition 1 (…)" → "COND-001
+ * (Silent Error Swallowing)" — dieselbe Form "ID (Titel)" wie Law- und
+ * Pre-Scanner-Findings. Die Nummer ist Prompt-Vokabular, kein Produkt-Label
+ * (ROADMAP §3, Befund 2026-09-30: "unslop(Condition 1 (…))" im Problems-Panel).
+ *
+ * Intern bleibt "Condition N" die Referenz (Validation, Scope-Filter,
+ * Finding-ID); umgeschrieben wird nur am Report-Merge-Punkt
+ * (collectReportableIssues). Unbekannte Nummern und Nicht-Condition-Regeln
+ * passieren unverändert; ein Anhang wie " / MAINT-001" bleibt erhalten.
+ */
+export function presentConditionRule(ruleReference: string): string {
+    const conditionMatch = CONDITION_LABEL_PATTERN.exec(ruleReference);
+    if (!conditionMatch) return ruleReference;
+
+    const condition = CONDITION_REGISTRY.get(`COND-${conditionMatch[1].padStart(3, '0')}`);
+    if (!condition) return ruleReference;
+
+    return `${condition.id} (${condition.name})${ruleReference.slice(conditionMatch[0].length)}`;
+}
