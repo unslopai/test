@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Workspace-Package wird als TS-Quelle konsumiert und muss von Next transpiliert werden.
+  transpilePackages: ["@unslop/shared"],
 };
 
 export default nextConfig;

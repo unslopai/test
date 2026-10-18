@@ -1,0 +1,80 @@
+{
+  "capturedAt": "2026-07-11T20:14:00.102Z",
+  "model": "gemini-2.5-flash",
+  "fixtures": [
+    {
+      "fixture": "001-empty-catch.diff",
+      "promptTokens": 851,
+      "cachedTokens": 0,
+      "outputTokens": 165,
+      "effectiveCostUsd": 0.0006678,
+      "foundRules": [
+        "Condition 1 (Silent Error Swallowing) @ src/lib/sync-service.ts:14"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "002-type-capitulation.diff",
+      "promptTokens": 872,
+      "cachedTokens": 0,
+      "outputTokens": 675,
+      "effectiveCostUsd": 0.0019490999999999998,
+      "foundRules": [
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:21",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:22",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:23",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:25",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:30"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "003-lexical-slop.diff",
+      "promptTokens": 873,
+      "cachedTokens": 0,
+      "outputTokens": 759,
+      "effectiveCostUsd": 0.0021594,
+      "foundRules": [
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:7",
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:12",
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:14",
+        "Condition 4 (Context Blindness/DRY) @ src/lib/report-generator.ts:15",
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:17"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": [
+        "Condition 4 (Context Blindness/DRY) @ src/lib/report-generator.ts:15"
+      ]
+    },
+    {
+      "fixture": "004-derived-state.diff",
+      "promptTokens": 1184,
+      "cachedTokens": 0,
+      "outputTokens": 232,
+      "effectiveCostUsd": 0.0009352000000000001,
+      "foundRules": [
+        "Condition 7 (Derived State Anti-Pattern) @ src/components/CartSummary.tsx:17"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "005-clean.diff",
+      "promptTokens": 906,
+      "cachedTokens": 0,
+      "outputTokens": 242,
+      "effectiveCostUsd": 0.0008768,
+      "foundRules": [
+        "Condition 4 (Context Blindness/DRY) @ src/lib/date-format.ts:21"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": [
+        "Condition 4 (Context Blindness/DRY) @ src/lib/date-format.ts:21"
+      ]
+    }
+  ],
+  "totalEffectiveCostUsd": 0.006588299999999999,
+  "parityPassed": true
+}

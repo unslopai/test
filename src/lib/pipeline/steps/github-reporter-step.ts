@@ -1,16 +1,15 @@
 /**
  * GitHubReporterStep — Postet das Review-Ergebnis als PR-Review auf GitHub.
  *
- * Terminaler Step. Konvertiert PipelineIssues zu Inline-Comments,
- * postet den Review und persistiert das Ergebnis in review_jobs.
+ * Konvertiert PipelineIssues zu Inline-Comments und postet den Review.
  * Behandelt auch den Abort-Fall (keine reviewbaren Dateien).
+ * Persistenz liegt im nachgelagerten ResultPersisterStep.
  */
-import { supabase } from '@/lib/supabase';
 import {
     createPullRequestReview,
     postPRComment,
 } from '@/lib/github';
-import { buildInlineComments, formatReviewSummary } from '@/lib/pipeline/helpers';
+import { buildInlineComments, formatReviewSummary, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
 export const githubReporterStep: PipelineStep = {
@@ -19,7 +18,7 @@ export const githubReporterStep: PipelineStep = {
 
     async execute(context: PipelineContext): Promise<PipelineContext> {
         if (context.shouldAbort) {
-            await handleAbortedPipeline(context);
+            await postAbortComment(context);
             return context;
         }
 
@@ -37,24 +36,31 @@ export const githubReporterStep: PipelineStep = {
 // Report Handlers
 // =============================================================================
 
-async function handleAbortedPipeline(context: PipelineContext): Promise<void> {
-    await persistJobResult(context.jobId, {
-        review: { has_slop: false, issues: [], summary: context.abortReason ?? 'Pipeline abgebrochen.' },
-    });
-
+async function postAbortComment(context: PipelineContext): Promise<void> {
     await postPRComment(
         context.githubToken,
         context.repoFullName,
         context.prNumber,
-        `\u2705 **Anti-Slop Gatekeeper**: ${context.abortReason ?? 'Keine reviewbaren Dateien.'}`,
+        `✅ **Anti-Slop Gatekeeper**: ${context.abortReason ?? 'No reviewable files in this pull request.'}`,
     );
 
     console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${context.abortReason}`);
 }
 
 async function postReviewWithIssues(context: PipelineContext): Promise<void> {
-    const inlineComments = buildInlineComments(context.issues, context.reviewableFiles);
-    const reviewBody = formatReviewSummary(context.issues, context.reviewSummary);
+    // Out-of-Hunk-Findings dürfen nicht inline gepostet werden — GitHub lehnt
+    // sonst den GESAMTEN Review ab. Sie wandern stattdessen in den Body.
+    const { anchoredIssues, unanchoredIssues } = partitionIssuesByAnchor(
+        context.issues,
+        context.reviewableFiles,
+    );
+    const inlineComments = buildInlineComments(anchoredIssues);
+    const reviewBody = formatReviewSummary(
+        context.issues,
+        context.reviewSummary,
+        unanchoredIssues,
+        context.omittedFiles,
+    );
 
     await createPullRequestReview(
         context.githubToken,
@@ -66,57 +72,26 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
         'REQUEST_CHANGES',
     );
 
-    await persistJobResult(context.jobId, {
-        review: {
-            has_slop: true,
-            issues: context.issues,
-            summary: context.reviewSummary,
-        },
-        files_reviewed: context.reviewableFiles.length,
-    });
-
-    console.log(`[GitHubReporter] Review mit ${inlineComments.length} Inline-Comments gepostet.`);
+    console.log(
+        `[GitHubReporter] Review gepostet: ${inlineComments.length} Inline-Comments, ` +
+        `${unanchoredIssues.length} unverankerte Findings im Body.`,
+    );
 }
 
 async function postApprovalComment(context: PipelineContext): Promise<void> {
+    const omittedNote = context.omittedFiles.length > 0
+        ? `\n\n_Not reviewed (size cap exceeded): ${context.omittedFiles.map((filePath) => `\`${filePath}\``).join(', ')}_`
+        : '';
+
     await createPullRequestReview(
         context.githubToken,
         context.repoFullName,
         context.prNumber,
         context.headSha,
-        '\u2705 **Anti-Slop Gatekeeper**: Kein AI-Slop gefunden. Der Code entspricht den Qualitätsstandards.',
+        '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.' + omittedNote,
         [],
         'COMMENT',
     );
 
-    await persistJobResult(context.jobId, {
-        review: {
-            has_slop: false,
-            issues: [],
-            summary: context.reviewSummary || 'Kein AI-Slop gefunden.',
-        },
-        files_reviewed: context.reviewableFiles.length,
-    });
-
     console.log('[GitHubReporter] Kein Slop — Approval-Comment gepostet.');
-}
-
-// =============================================================================
-// Persistence
-// =============================================================================
-
-async function persistJobResult(jobId: string, resultPayload: Record<string, unknown>): Promise<void> {
-    const { error: persistError } = await supabase
-        .from('review_jobs')
-        .update({
-            status: 'done',
-            result: resultPayload,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', jobId);
-
-    if (persistError) {
-        console.error(`[GitHubReporter] Fehler beim Persistieren des Job-Ergebnisses:`, persistError);
-        throw new Error(`Job-Ergebnis konnte nicht gespeichert werden: ${persistError.message}`);
-    }
 }

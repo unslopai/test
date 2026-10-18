@@ -5,8 +5,33 @@
  * Extrahiert aus dem ehemaligen monolithischen worker.ts.
  */
 import { extractErrorMessage } from '@/lib/errors';
+import { parseHunkRanges, isLineWithinHunks } from '@/lib/pipeline/diff-utils';
 import type { PullRequestFile, PullRequestReviewComment } from '@/lib/github';
-import type { PipelineIssue } from '@/lib/pipeline/types';
+import type { PipelineIssue, TokenUsage } from '@/lib/pipeline/types';
+
+// =============================================================================
+// Token Telemetry
+// =============================================================================
+
+/** Minimale strukturelle Sicht auf Gemini usageMetadata (alle Felder optional). */
+interface GeminiUsageMetadata {
+    promptTokenCount?: number;
+    cachedContentTokenCount?: number;
+    candidatesTokenCount?: number;
+}
+
+/** Extrahiert die Token-Zähler eines Gemini-Calls in das interne TokenUsage-Format. */
+export function extractTokenUsage(
+    usageMetadata: GeminiUsageMetadata | undefined,
+    model: string,
+): TokenUsage {
+    return {
+        promptTokens: usageMetadata?.promptTokenCount ?? 0,
+        cachedTokens: usageMetadata?.cachedContentTokenCount ?? 0,
+        outputTokens: usageMetadata?.candidatesTokenCount ?? 0,
+        model,
+    };
+}
 
 // =============================================================================
 // JSON Parsing
@@ -76,34 +101,64 @@ export function buildCombinedDiff(files: readonly PullRequestFile[]): string {
 // GitHub Comment Formatting
 // =============================================================================
 
+export interface PartitionedIssues {
+    /** Issues, deren Zeilen in einem Diff-Hunk liegen — als Inline-Comment postbar. */
+    readonly anchoredIssues: readonly PipelineIssue[];
+    /** Issues außerhalb aller Hunks (LLM-Halluzination der Zeilennummer) — nur im Body. */
+    readonly unanchoredIssues: readonly PipelineIssue[];
+}
+
 /**
- * Konvertiert PipelineIssues in GitHub PR Inline-Comments.
- * Filtert auf Dateien die tatsächlich im PR enthalten sind.
+ * Teilt Issues danach, ob GitHub sie als Inline-Comment akzeptieren würde:
+ * die Datei muss im PR sein UND die Zeile(n) innerhalb eines Diff-Hunks liegen.
+ * Ein einziger Out-of-Hunk-Comment lässt GitHub sonst den GESAMTEN Review ablehnen.
  */
-export function buildInlineComments(
+export function partitionIssuesByAnchor(
     issues: readonly PipelineIssue[],
     prFiles: readonly PullRequestFile[],
-): PullRequestReviewComment[] {
-    const prFileSet = new Set(prFiles.map((file) => file.filename));
+): PartitionedIssues {
+    const hunksByFile = new Map(
+        prFiles.map((file) => [file.filename, parseHunkRanges(file.patch ?? '')]),
+    );
 
-    return issues
-        .filter((issue) => prFileSet.has(issue.path))
-        .map((issue) => mapIssueToPrComment(issue));
+    const anchoredIssues: PipelineIssue[] = [];
+    const unanchoredIssues: PipelineIssue[] = [];
+
+    for (const issue of issues) {
+        const fileHunks = hunksByFile.get(issue.path);
+        const isAnchored = fileHunks !== undefined
+            && isLineWithinHunks(issue.line, fileHunks)
+            && isLineWithinHunks(issue.endLine, fileHunks);
+
+        (isAnchored ? anchoredIssues : unanchoredIssues).push(issue);
+    }
+
+    return { anchoredIssues, unanchoredIssues };
+}
+
+/**
+ * Konvertiert verankerte PipelineIssues in GitHub PR Inline-Comments.
+ * Erwartet bereits via partitionIssuesByAnchor validierte Issues.
+ */
+export function buildInlineComments(
+    anchoredIssues: readonly PipelineIssue[],
+): PullRequestReviewComment[] {
+    return anchoredIssues.map((issue) => mapIssueToPrComment(issue));
 }
 
 function mapIssueToPrComment(issue: PipelineIssue): PullRequestReviewComment {
-    const severityIcon = issue.severity === 'KRITISCH' ? '\uD83D\uDEA8' : '\u26A0\uFE0F';
+    const severityIcon = issue.severity === 'CRITICAL' ? '\uD83D\uDEA8' : '\u26A0\uFE0F';
 
     const commentBodyParts = [
         `${severityIcon} **${issue.rule}** (${issue.severity})`,
         '',
-        issue.germanCritique,
+        issue.critique,
     ];
 
     if (issue.fixedCodeSnippet) {
         commentBodyParts.push(
             '',
-            '\uD83D\uDCA1 **Fix-Vorschlag** (1-Click Commit):',
+            '\uD83D\uDCA1 **Suggested fix** (1-click commit):',
             '```suggestion',
             issue.fixedCodeSnippet,
             '```',
@@ -129,29 +184,50 @@ function mapIssueToPrComment(issue: PipelineIssue): PullRequestReviewComment {
 
 /**
  * Formatiert die Review-Zusammenfassung als Markdown für den PR-Body.
+ * Unverankerte Findings erscheinen NUR hier (sie können nicht inline gepostet
+ * werden); ausgelassene Dateien werden als "not reviewed" ausgewiesen.
  */
 export function formatReviewSummary(
     issues: readonly PipelineIssue[],
     summaryText: string,
+    unanchoredIssues: readonly PipelineIssue[] = [],
+    omittedFiles: readonly string[] = [],
 ): string {
-    const kritischCount = issues.filter((issue) => issue.severity === 'KRITISCH').length;
-    const warnungCount = issues.filter((issue) => issue.severity === 'WARNUNG').length;
+    const criticalCount = issues.filter((issue) => issue.severity === 'CRITICAL').length;
+    const warningCount = issues.filter((issue) => issue.severity === 'WARNING').length;
 
     const markdownLines = [
         '## \uD83D\uDEE1\uFE0F Anti-Slop Gatekeeper Review',
         '',
-        `**Ergebnis:** ${issues.length} Issue(s) gefunden`,
+        `**Result:** ${issues.length} issue(s) found`,
         '',
     ];
 
-    if (kritischCount > 0) {
-        markdownLines.push(`- \uD83D\uDEA8 **${kritischCount} KRITISCH**`);
+    if (criticalCount > 0) {
+        markdownLines.push(`- \uD83D\uDEA8 **${criticalCount} CRITICAL**`);
     }
-    if (warnungCount > 0) {
-        markdownLines.push(`- \u26A0\uFE0F **${warnungCount} WARNUNG**`);
+    if (warningCount > 0) {
+        markdownLines.push(`- \u26A0\uFE0F **${warningCount} WARNING**`);
     }
 
-    markdownLines.push('', '---', '', `**Zusammenfassung:** ${summaryText}`);
+    markdownLines.push('', '---', '', `**Summary:** ${summaryText}`);
+
+    if (unanchoredIssues.length > 0) {
+        markdownLines.push('', '### Findings outside the diff (no inline anchor)', '');
+        for (const issue of unanchoredIssues) {
+            const severityIcon = issue.severity === 'CRITICAL' ? '🚨' : '⚠️';
+            markdownLines.push(
+                `- ${severityIcon} **${issue.rule}** — \`${issue.path}:${issue.line}\` — ${issue.critique}`,
+            );
+        }
+    }
+
+    if (omittedFiles.length > 0) {
+        markdownLines.push('', '### Not reviewed (size cap exceeded)', '');
+        for (const omittedFile of omittedFiles) {
+            markdownLines.push(`- \`${omittedFile}\``);
+        }
+    }
 
     return markdownLines.join('\n');
 }

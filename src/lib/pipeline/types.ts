@@ -5,12 +5,14 @@
  * sowie den durchlaufenden PipelineContext und die Konfiguration.
  */
 import type { PullRequestFile } from '@/lib/github';
+import type { Severity } from '@unslop/shared';
 
 // =============================================================================
 // Issue Types
 // =============================================================================
 
-type IssueSeverity = 'KRITISCH' | 'WARNUNG';
+/** Alias auf den Shared-Contract — eine Quelle für Backend, CLI und Extension. */
+type IssueSeverity = Severity;
 
 /**
  * Gemeinsames Issue-Format, das jeder PipelineStep produzieren kann.
@@ -23,10 +25,25 @@ interface PipelineIssue {
     readonly line: number;
     readonly endLine: number;
     readonly exactQuote: string;
-    readonly germanCritique: string;
+    readonly critique: string;
     readonly fixedCodeSnippet?: string;
     /** Welcher PipelineStep dieses Issue erzeugt hat. */
     readonly source: string;
+}
+
+// =============================================================================
+// Token Telemetry
+// =============================================================================
+
+/**
+ * Token-Verbrauch eines LLM-Calls (aus Gemini usageMetadata).
+ * Grundlage für die Unit-Economics-Baseline und den Caching-Nachweis.
+ */
+interface TokenUsage {
+    readonly promptTokens: number;
+    readonly cachedTokens: number;
+    readonly outputTokens: number;
+    readonly model: string;
 }
 
 // =============================================================================
@@ -66,6 +83,8 @@ interface PipelineContext {
     readonly prFiles: readonly PullRequestFile[];
     readonly reviewableFiles: readonly PullRequestFile[];
     readonly combinedDiff: string;
+    /** Dateien, die wegen Größen-Caps nicht reviewt wurden (Summary-Hinweis). */
+    readonly omittedFiles: readonly string[];
     /** Akkumulierte Findings aller bisherigen Steps */
     readonly issues: readonly PipelineIssue[];
     /** LLM-generierte Zusammenfassung der Findings */
@@ -74,6 +93,8 @@ interface PipelineContext {
     readonly ragPromptSection: string;
     /** Prompt-Konfiguration für den AI-Reviewer */
     readonly promptConfig: PromptConfig;
+    /** Token-Verbrauch des Reviewer-Calls (wird vom AiReviewerStep befüllt). */
+    readonly tokenUsage: TokenUsage | null;
     /** Ob die Pipeline nach diesem Step abbrechen soll. */
     readonly shouldAbort: boolean;
     readonly abortReason?: string;
@@ -115,6 +136,7 @@ interface PipelineConfig {
 
 export type {
     IssueSeverity,
+    TokenUsage,
     PipelineIssue,
     PromptConfig,
     PipelineContext,

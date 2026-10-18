@@ -5,8 +5,9 @@
  * ruft Vertex AI auf und konvertiert die LLM-Antwort in PipelineIssues.
  */
 import { getVertexClient } from '@/lib/vertex';
-import { buildPrompt } from '@/lib/pipeline/prompt-builder';
-import { parseModelJson } from '@/lib/pipeline/helpers';
+import { fetchRenderedLawBlock } from '@/lib/law';
+import { buildPrompt, filterIssuesByScope } from '@/lib/pipeline/prompt-builder';
+import { parseModelJson, extractTokenUsage } from '@/lib/pipeline/helpers';
 import type { PipelineContext, PipelineStep, PipelineIssue, IssueSeverity } from '@/lib/pipeline/types';
 import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
 
@@ -16,12 +17,12 @@ import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
 
 interface LlmDiffIssue {
     rule: string;
-    severity: 'KRITISCH' | 'WARNUNG';
+    severity: 'CRITICAL' | 'WARNING';
     path: string;
     line: number;
     end_line: number;
     exact_quote: string;
-    german_critique: string;
+    critique: string;
     fixed_code_snippet?: string;
 }
 
@@ -43,12 +44,14 @@ export const aiReviewerStep: PipelineStep = {
         if (context.shouldAbort) return context;
 
         const promptVariant = selectPromptVariant(context.ragPromptSection);
-        const systemPrompt = buildPrompt(promptVariant, context.promptConfig);
+        const lawBlock = await fetchRenderedLawBlock();
+        const systemPrompt = buildPrompt(promptVariant, context.promptConfig, lawBlock);
         const userPrompt = buildUserPrompt(context, promptVariant);
 
+        const reviewerModel = 'gemini-2.5-flash';
         const ai = getVertexClient();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: reviewerModel,
             contents: userPrompt,
             config: {
                 systemInstruction: systemPrompt,
@@ -61,13 +64,20 @@ export const aiReviewerStep: PipelineStep = {
 
         const llmOutput = parseModelJson<LlmDiffReviewResponse>(rawResponseText, 'AiReviewer');
         const pipelineIssues = convertToPipelineIssues(llmOutput.issues);
+        const scopedIssues = filterIssuesByScope(pipelineIssues, context.promptConfig);
+        const tokenUsage = extractTokenUsage(response.usageMetadata, reviewerModel);
 
-        console.log(`[AiReviewer] ${pipelineIssues.length} Issues, has_slop: ${llmOutput.has_slop}`);
+        console.log(
+            `[AiReviewer] ${scopedIssues.length} Issues (${pipelineIssues.length - scopedIssues.length} ` +
+            `vom Scope-Post-Filter verworfen), has_slop: ${llmOutput.has_slop}, ` +
+            `Tokens: prompt=${tokenUsage.promptTokens} cached=${tokenUsage.cachedTokens} output=${tokenUsage.outputTokens}`,
+        );
 
         return {
             ...context,
-            issues: [...context.issues, ...pipelineIssues],
+            issues: [...context.issues, ...scopedIssues],
             reviewSummary: llmOutput.summary,
+            tokenUsage,
         };
     },
 };
@@ -95,7 +105,7 @@ function convertToPipelineIssues(llmIssues: readonly LlmDiffIssue[]): PipelineIs
         line: llmIssue.line,
         endLine: llmIssue.end_line,
         exactQuote: llmIssue.exact_quote,
-        germanCritique: llmIssue.german_critique,
+        critique: llmIssue.critique,
         fixedCodeSnippet: llmIssue.fixed_code_snippet,
         source: 'ai-reviewer',
     }));

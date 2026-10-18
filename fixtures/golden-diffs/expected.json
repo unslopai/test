@@ -1,0 +1,15 @@
+{
+  "001-empty-catch.diff": [
+    { "path": "src/lib/sync-service.ts", "ruleContains": "Condition 1|MAINT-001" }
+  ],
+  "002-type-capitulation.diff": [
+    { "path": "src/lib/pricing-engine.ts", "ruleContains": "Condition 2" }
+  ],
+  "003-lexical-slop.diff": [
+    { "path": "src/lib/report-generator.ts", "ruleContains": "Condition 3" }
+  ],
+  "004-derived-state.diff": [
+    { "path": "src/components/CartSummary.tsx", "ruleContains": "Condition 7" }
+  ],
+  "005-clean.diff": []
+}

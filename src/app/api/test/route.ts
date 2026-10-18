@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getVertexClient } from "@/lib/vertex";
 import { extractErrorMessage } from "@/lib/errors";
+import { hasValidInternalSecret } from "@/lib/api-keys";
 
 interface ServiceStatus {
     status: string;
@@ -18,7 +19,12 @@ interface HealthCheckResults {
     vertexAI?: ServiceStatus;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    // Gesichert: der Vertex-Check unten kostet einen echten LLM-Call.
+    if (!hasValidInternalSecret(request)) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const results: HealthCheckResults = {};
 
     try {

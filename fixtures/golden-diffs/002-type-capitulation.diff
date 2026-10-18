@@ -1,0 +1,17 @@
+=== FILE: src/lib/pricing-engine.ts (modified) ===
+@@ -20,6 +20,18 @@ const VOLUME_DISCOUNT_THRESHOLD = 50;
+
++export function calculateOrderTotal(order: any, taxConfig: any): any {
++    // @ts-ignore
++    const lineItems: any[] = order.items;
++
++    const subtotal = lineItems.reduce(
++        (runningTotal: any, lineItem: any) => runningTotal + lineItem.price * lineItem.quantity,
++        0,
++    );
++
++    // @ts-ignore
++    return subtotal * (1 + taxConfig.rate);
++}
++
+ export function applyVolumeDiscount(subtotal: number, itemCount: number): number {

@@ -11,14 +11,16 @@ import { extractErrorMessage } from '@/lib/errors';
 import { decryptToken } from '@/lib/crypto';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import { buildPrompt } from '@/lib/pipeline/prompt-builder';
-import { parseModelJson } from '@/lib/pipeline/helpers';
+import { parseModelJson, extractTokenUsage } from '@/lib/pipeline/helpers';
 import { runPipeline } from '@/lib/pipeline/runner';
 import { DEFAULT_PIPELINE_CONFIG } from '@/lib/pipeline/defaults';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
+import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
 import { ragLoaderStep } from '@/lib/pipeline/steps/rag-loader-step';
 import { aiReviewerStep } from '@/lib/pipeline/steps/ai-reviewer-step';
 import { githubReporterStep } from '@/lib/pipeline/steps/github-reporter-step';
-import type { PipelineContext, PipelineStep, PipelineConfig } from '@/lib/pipeline/types';
+import { resultPersisterStep } from '@/lib/pipeline/steps/result-persister-step';
+import type { PipelineContext, PipelineStep, PipelineConfig, TokenUsage } from '@/lib/pipeline/types';
 
 // =============================================================================
 // Interfaces (Raw-Code Review)
@@ -26,11 +28,11 @@ import type { PipelineContext, PipelineStep, PipelineConfig } from '@/lib/pipeli
 
 interface ReviewIssue {
     rule: string;
-    severity: 'KRITISCH' | 'WARNUNG';
+    severity: 'CRITICAL' | 'WARNING';
     start_line: number;
     end_line: number;
     exact_quote: string;
-    german_critique: string;
+    critique: string;
 }
 
 interface ReviewerOutput {
@@ -57,19 +59,38 @@ interface JobPayload {
 
 const STEP_REGISTRY: ReadonlyMap<string, PipelineStep> = new Map([
     [diffLoaderStep.id, diffLoaderStep],
+    [cliDiffLoaderStep.id, cliDiffLoaderStep],
     [ragLoaderStep.id, ragLoaderStep],
     [aiReviewerStep.id, aiReviewerStep],
     [githubReporterStep.id, githubReporterStep],
+    [resultPersisterStep.id, resultPersisterStep],
 ]);
 
 /**
+ * Feste Pipeline für CLI-Scans: Diff kommt aus dem Payload statt von GitHub,
+ * kein GitHub-Reporter (es gibt keinen PR). Conditions/Smart-Detection kommen
+ * weiterhin aus der Repo-Config (promptConfig).
+ */
+const CLI_PIPELINE_STEPS: readonly PipelineStep[] = [
+    cliDiffLoaderStep,
+    ragLoaderStep,
+    aiReviewerStep,
+    resultPersisterStep,
+];
+
+/**
  * Baut die Pipeline-Steps basierend auf der Konfiguration zusammen.
- * Nur aktivierte Steps werden instanziiert.
+ * Nur aktivierte Steps werden instanziiert. Der ResultPersisterStep wird
+ * immer terminal angehängt (Pflicht-Step, nicht toggelbar) — auch für
+ * bestehende pipeline_configs, die ihn noch nicht kennen.
  */
 function assembleSteps(config: PipelineConfig): PipelineStep[] {
-    return config.enabledStepIds
+    const configuredSteps = config.enabledStepIds
+        .filter((stepId) => stepId !== resultPersisterStep.id)
         .map((stepId) => STEP_REGISTRY.get(stepId))
         .filter((step): step is PipelineStep => step !== undefined);
+
+    return [...configuredSteps, resultPersisterStep];
 }
 
 // =============================================================================
@@ -80,7 +101,11 @@ function assembleSteps(config: PipelineConfig): PipelineStep[] {
  * Führt den Anti-Slop Reviewer auf Raw-Code aus.
  * Nutzt den modularen PromptBuilder für dynamische Prompt-Komposition.
  */
-async function runReviewer(code: string, filename?: string): Promise<ReviewerOutput> {
+async function runReviewer(
+    code: string,
+    filename?: string,
+): Promise<{ review: ReviewerOutput; usage: TokenUsage }> {
+    const reviewerModel = 'gemini-2.5-flash';
     const ai = getVertexClient();
 
     const numberedCode = code
@@ -89,7 +114,7 @@ async function runReviewer(code: string, filename?: string): Promise<ReviewerOut
         .join('\n');
 
     const userPrompt = filename
-        ? `Datei: ${filename}\n\n${numberedCode}`
+        ? `File: ${filename}\n\n${numberedCode}`
         : numberedCode;
 
     const systemPrompt = buildPrompt('reviewer_raw', {
@@ -99,7 +124,7 @@ async function runReviewer(code: string, filename?: string): Promise<ReviewerOut
     });
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: reviewerModel,
         contents: userPrompt,
         config: {
             systemInstruction: systemPrompt,
@@ -110,14 +135,21 @@ async function runReviewer(code: string, filename?: string): Promise<ReviewerOut
     const rawResponseText = response.text ?? '';
     console.log('[Reviewer] Raw Response:', rawResponseText.substring(0, 500));
 
-    return parseModelJson<ReviewerOutput>(rawResponseText, 'Reviewer');
+    return {
+        review: parseModelJson<ReviewerOutput>(rawResponseText, 'Reviewer'),
+        usage: extractTokenUsage(response.usageMetadata, reviewerModel),
+    };
 }
 
 /**
  * Führt den Slop-Fixer auf Code aus, der Probleme hat.
  * Der Fixer-Prompt ist statisch (keine Conditions).
  */
-async function runFixer(code: string, critique: ReviewerOutput): Promise<string> {
+async function runFixer(
+    code: string,
+    critique: ReviewerOutput,
+): Promise<{ fixedCode: string; usage: TokenUsage }> {
+    const fixerModel = 'gemini-2.5-flash';
     const ai = getVertexClient();
 
     const userPrompt = `CRITIQUE_JSON:\n${JSON.stringify(critique.issues, null, 2)}\n\nORIGINAL_CODE:\n${code}`;
@@ -129,7 +161,7 @@ async function runFixer(code: string, critique: ReviewerOutput): Promise<string>
     });
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: fixerModel,
         contents: userPrompt,
         config: {
             systemInstruction: fixerPrompt,
@@ -138,7 +170,19 @@ async function runFixer(code: string, critique: ReviewerOutput): Promise<string>
 
     const fixedCode = response.text ?? '';
     console.log('[Fixer] Output length:', fixedCode.length, 'chars');
-    return fixedCode;
+    return { fixedCode, usage: extractTokenUsage(response.usageMetadata, fixerModel) };
+}
+
+/** Summiert die Token-Zähler mehrerer LLM-Calls eines Jobs. */
+function sumTokenUsage(usages: readonly TokenUsage[]): TokenUsage | null {
+    if (usages.length === 0) return null;
+
+    return usages.reduce((total, usage) => ({
+        promptTokens: total.promptTokens + usage.promptTokens,
+        cachedTokens: total.cachedTokens + usage.cachedTokens,
+        outputTokens: total.outputTokens + usage.outputTokens,
+        model: usage.model,
+    }));
 }
 
 // =============================================================================
@@ -174,24 +218,33 @@ export async function processJob(jobId: string) {
 
     try {
         console.log(`[Worker] Job ${jobId} — Starte Reviewer...`);
-        const reviewResult = await runReviewer(payload.code, payload.filename);
+        const { review: reviewResult, usage: reviewerUsage } = await runReviewer(payload.code, payload.filename);
         console.log(`[Worker] Job ${jobId} — Reviewer fertig: ${reviewResult.issues.length} Issues, has_slop: ${reviewResult.has_slop}`);
 
         let fixedCode: string | null = null;
+        const llmUsages: TokenUsage[] = [reviewerUsage];
 
         if (reviewResult.has_slop && reviewResult.issues.length > 0) {
             console.log(`[Worker] Job ${jobId} — Starte Fixer...`);
-            fixedCode = await runFixer(payload.code, reviewResult);
+            const fixerRun = await runFixer(payload.code, reviewResult);
+            fixedCode = fixerRun.fixedCode;
+            llmUsages.push(fixerRun.usage);
             console.log(`[Worker] Job ${jobId} — Fixer fertig.`);
         } else {
             console.log(`[Worker] Job ${jobId} — Kein Slop gefunden, Fixer übersprungen.`);
         }
+
+        const jobUsage = sumTokenUsage(llmUsages);
 
         await supabase
             .from('review_jobs')
             .update({
                 status: 'done',
                 result: { review: reviewResult, fixed_code: fixedCode },
+                prompt_tokens: jobUsage?.promptTokens ?? null,
+                cached_tokens: jobUsage?.cachedTokens ?? null,
+                output_tokens: jobUsage?.outputTokens ?? null,
+                model: jobUsage?.model ?? null,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', jobId);
@@ -230,16 +283,18 @@ export async function processReviewJob(jobId: string, userId: string) {
     }
 
     const payload = job.payload as JobPayload;
+    const isCliJob = job.source === 'cli';
     const repoFullName = payload.repo_full_name;
     const prNumber = payload.pr_number;
 
-    if (!repoFullName || !prNumber) {
+    if (!repoFullName || (!prNumber && !isCliJob)) {
         await markJobError(jobId, 'Payload enthält kein repo_full_name oder pr_number.');
         return;
     }
 
     try {
-        const githubToken = await resolveGithubToken(userId);
+        // CLI-Jobs sprechen nie mit der GitHub API — kein Token nötig.
+        const githubToken = isCliJob ? '' : await resolveGithubToken(userId);
 
         const { data: repoRow } = await supabase
             .from('repositories')
@@ -248,18 +303,19 @@ export async function processReviewJob(jobId: string, userId: string) {
             .single();
 
         const pipelineConfig = parsePipelineConfig(repoRow?.pipeline_config) ?? DEFAULT_PIPELINE_CONFIG;
-        const steps = assembleSteps(pipelineConfig);
+        const steps = isCliJob ? [...CLI_PIPELINE_STEPS] : assembleSteps(pipelineConfig);
 
         const initialContext: PipelineContext = {
             jobId,
             repoFullName,
-            prNumber,
+            prNumber: prNumber ?? 0,
             headSha: '',
             githubToken,
             repositoryId: repoRow?.id ?? null,
             prFiles: [],
             reviewableFiles: [],
             combinedDiff: '',
+            omittedFiles: [],
             issues: [],
             reviewSummary: '',
             ragPromptSection: '',
@@ -268,6 +324,7 @@ export async function processReviewJob(jobId: string, userId: string) {
                 filePaths: [],
                 overrideSmartDetection: pipelineConfig.overrideSmartDetection,
             },
+            tokenUsage: null,
             shouldAbort: false,
         };
 

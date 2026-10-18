@@ -1,0 +1,15 @@
+=== FILE: src/lib/date-format.ts (modified) ===
+@@ -14,6 +14,15 @@ export function formatIsoDate(isoTimestamp: string): string {
+     return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date(isoTimestamp));
+ }
+
++export function formatRelativeDays(isoTimestamp: string, referenceDate: Date): string {
++    const elapsedMs = referenceDate.getTime() - new Date(isoTimestamp).getTime();
++    const elapsedDays = Math.floor(elapsedMs / MILLISECONDS_PER_DAY);
++
++    if (elapsedDays <= 0) return 'today';
++    if (elapsedDays === 1) return 'yesterday';
++    return new Intl.RelativeTimeFormat('en').format(-elapsedDays, 'day');
++}
++
+ export function isWithinRetentionWindow(isoTimestamp: string, retentionDays: number): boolean {

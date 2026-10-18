@@ -1,18 +1,22 @@
 /**
- * Prompt Builder — Dynamische Prompt-Komposition.
+ * Prompt Builder — Cache-optimale Prompt-Komposition.
  *
- * Ersetzt die monolithischen Prompt-Strings in prompts.ts.
- * Nimmt eine PromptConfig und baut den Prompt aus:
+ * Baut den System-Prompt als STABILEN Per-Repo-Prefix:
  * 1. Base Persona (pro Variante)
- * 2. Gefilterte Conditions (aus dem Registry)
- * 3. Output Format (pro Variante)
+ * 2. ALLE aktiven Conditions (KEIN Scope-Filter mehr im Prompt)
+ * 3. The Law (statisch gerenderte Golden Standards)
+ * 4. Output Format (pro Variante)
  *
- * Smart Context Detection analysiert die Datei-Extensions im PR
- * und schließt irrelevante Conditions automatisch aus.
+ * Der Prefix ist damit byte-identisch über alle Scans eines Repos und
+ * triggert Geminis Implicit Context Caching. Alles Diff-Variable (Evidence,
+ * Diff) gehört in den User-Content ans Ende — NIEMALS hierher.
+ *
+ * Smart Context Detection läuft nicht mehr im Prompt, sondern als
+ * Post-Filter auf den Findings (filterIssuesByScope).
  */
 import { CONDITION_REGISTRY } from '@/lib/pipeline/conditions';
 import type { ConditionScope, ReviewCondition } from '@/lib/pipeline/conditions';
-import type { PromptConfig } from '@/lib/pipeline/types';
+import type { PromptConfig, PipelineIssue } from '@/lib/pipeline/types';
 
 // =============================================================================
 // Public API
@@ -25,28 +29,62 @@ export type { PromptVariant };
 /**
  * Baut einen vollständigen System-Prompt für die angegebene Variante.
  *
+ * WICHTIG (Cache-Contract): Das Ergebnis darf für ein Repo nur von
+ * config.activeConditionIds und lawBlock abhängen — nie vom einzelnen Diff.
+ *
  * @param variant - Die Prompt-Variante (raw, diff, rag, fixer)
- * @param config - Aktive Conditions und Datei-Pfade für Smart Detection
+ * @param config - Aktive Conditions des Repos
+ * @param lawBlock - Statisch gerenderter Golden-Standards-Block (aus @/lib/law)
  * @returns Der zusammengesetzte System-Prompt
  */
-export function buildPrompt(variant: PromptVariant, config: PromptConfig): string {
+export function buildPrompt(variant: PromptVariant, config: PromptConfig, lawBlock: string = ''): string {
     if (variant === 'fixer') {
         return FIXER_PROMPT;
     }
 
-    const applicableScopes = config.overrideSmartDetection
-        ? null
-        : detectApplicableScopes(config.filePaths);
-
-    const filteredIds = applicableScopes
-        ? filterConditionsByScope(config.activeConditionIds, applicableScopes)
-        : [...config.activeConditionIds];
-
     const persona = VARIANT_PERSONAS[variant];
-    const conditionsBlock = buildConditionsBlock(filteredIds, variant);
+    const conditionsBlock = buildConditionsBlock([...config.activeConditionIds], variant);
     const outputFormat = VARIANT_OUTPUT_FORMATS[variant];
 
-    return [persona, conditionsBlock, outputFormat].join('\n\n');
+    return [persona, conditionsBlock, lawBlock, outputFormat]
+        .filter((promptSection) => promptSection.length > 0)
+        .join('\n\n');
+}
+
+// =============================================================================
+// Findings Post-Filter (ehemals Smart Context Detection im Prompt)
+// =============================================================================
+
+const CONDITION_NUMBER_PATTERN = /Condition (\d+)/;
+
+/**
+ * Verwirft Findings, deren Condition-Scope nicht zu den PR-Dateitypen passt
+ * (z.B. React-Regeln in einem PR ohne React-Dateien).
+ *
+ * Repliziert die frühere Prompt-seitige Scope-Filterung PR-weit: Scopes werden
+ * aus ALLEN PR-Dateipfaden abgeleitet, nicht pro Finding-Datei. Findings ohne
+ * "Condition N"-Referenz (z.B. Law-Regeln) passieren ungefiltert.
+ */
+export function filterIssuesByScope(
+    issues: readonly PipelineIssue[],
+    config: PromptConfig,
+): PipelineIssue[] {
+    if (config.overrideSmartDetection) {
+        return [...issues];
+    }
+
+    const applicableScopes = detectApplicableScopes(config.filePaths);
+
+    return issues.filter((issue) => {
+        const conditionNumberMatch = CONDITION_NUMBER_PATTERN.exec(issue.rule);
+        if (!conditionNumberMatch) return true;
+
+        const conditionId = `COND-${conditionNumberMatch[1].padStart(3, '0')}`;
+        const condition = CONDITION_REGISTRY.get(conditionId);
+        if (!condition) return true;
+
+        return condition.scopes.some((scope) => applicableScopes.has(scope));
+    });
 }
 
 // =============================================================================
@@ -83,20 +121,6 @@ export function detectApplicableScopes(filePaths: readonly string[]): Set<Condit
     return scopes;
 }
 
-/**
- * Filtert Condition-IDs auf solche, deren Scopes mit den erkannten Scopes überlappen.
- */
-export function filterConditionsByScope(
-    conditionIds: readonly string[],
-    applicableScopes: Set<ConditionScope>,
-): string[] {
-    return conditionIds.filter((conditionId) => {
-        const condition = CONDITION_REGISTRY.get(conditionId);
-        if (!condition) return false;
-        return condition.scopes.some((scope) => applicableScopes.has(scope));
-    });
-}
-
 // =============================================================================
 // Conditions Block Builder
 // =============================================================================
@@ -121,10 +145,6 @@ function buildConditionsBlock(conditionIds: readonly string[], variant: PromptVa
     const conditions = conditionIds
         .map((conditionId) => CONDITION_REGISTRY.get(conditionId))
         .filter((condition): condition is ReviewCondition => condition !== undefined);
-
-    if (variant === 'reviewer_rag') {
-        return buildRagConditionsBlock(conditions, variant);
-    }
 
     return buildCategorizedConditionsBlock(conditions, variant);
 }
@@ -153,20 +173,6 @@ function buildCategorizedConditionsBlock(
     }
 
     return sections.join('\n\n');
-}
-
-/** Baut den Conditions-Block ohne Sub-Header (für RAG "RULES FROM THE LAW"). */
-function buildRagConditionsBlock(
-    conditions: readonly ReviewCondition[],
-    variant: PromptVariant,
-): string {
-    const conditionTexts = conditions.map((c) => getConditionText(c, variant)).join('\n\n');
-    return (
-        '=== RULES FROM THE LAW ===\n\n' +
-        'Apply ALL of the following conditions. If ANY condition is met in the ADDED lines ' +
-        "(lines starting with '+'), flag it:\n\n" +
-        conditionTexts
-    );
 }
 
 // =============================================================================
@@ -239,16 +245,16 @@ const OUTPUT_FORMAT_RAW =
     '  "issues": [\n' +
     '    {\n' +
     '      "rule": "Condition X (Name)",\n' +
-    '      "severity": "KRITISCH" | "WARNUNG",\n' +
+    '      "severity": "CRITICAL" | "WARNING",\n' +
     '      "start_line": number,\n' +
     '      "end_line": number,\n' +
     '      "exact_quote": "max 2 lines of the trigger code",\n' +
-    '      "german_critique": "Professional German explanation, keep variable names and technical terms in English."\n' +
+    '      "critique": "Professional English explanation of the violation."\n' +
     '    }\n' +
     '  ],\n' +
-    '  "summary": "Short German summary of all findings."\n' +
+    '  "summary": "Short English summary of all findings."\n' +
     '}\n\n' +
-    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "Kein AI-Slop gefunden." }\n\n' +
+    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "No AI slop found." }\n\n' +
     'CRITICAL: The "exact_quote" MUST NOT exceed 2 lines of code. Quote ONLY the specific trigger line.';
 
 const OUTPUT_FORMAT_DIFF =
@@ -261,17 +267,17 @@ const OUTPUT_FORMAT_DIFF =
     '  "issues": [\n' +
     '    {\n' +
     '      "rule": "Condition X (Name)",\n' +
-    '      "severity": "KRITISCH" | "WARNUNG",\n' +
+    '      "severity": "CRITICAL" | "WARNING",\n' +
     '      "path": "src/path/to/file.tsx",\n' +
     '      "line": number,\n' +
     '      "end_line": number,\n' +
     '      "exact_quote": "max 2 lines of the trigger code",\n' +
-    '      "german_critique": "Professional German explanation, keep variable names and technical terms in English."\n' +
+    '      "critique": "Professional English explanation of the violation."\n' +
     '    }\n' +
     '  ],\n' +
-    '  "summary": "Short German summary of all findings."\n' +
+    '  "summary": "Short English summary of all findings."\n' +
     '}\n\n' +
-    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "Kein AI-Slop gefunden." }\n\n' +
+    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "No AI slop found." }\n\n' +
     'CRITICAL: The "exact_quote" MUST NOT exceed 2 lines of code. Quote ONLY the specific trigger line. ' +
     'The "path" and "line" fields are MANDATORY for every issue \u2014 they are used to post inline comments on the PR.';
 
@@ -283,11 +289,11 @@ const OUTPUT_FORMAT_RAG =
     '=== OUTPUT FORMAT ===\n\n' +
     'For each issue, the "path" field MUST be the filename from the diff header.\n' +
     'The "line" field MUST be the line number in the NEW file (right side of the diff).\n\n' +
-    'You MUST format the "german_critique" string EXACTLY according to this strict template:\n' +
-    '"\uD83D\uDEAB [Severity] - [Kurze Erkl\u00E4rung des Anti-Patterns].\n' +
-    '\uD83D\uDCDA Evidence: Laut [evidence_citation] f\u00FChrt dieses Muster systematisch zu Fehlern.\n' +
-    '\uD83D\uDCA1 Fix-Vorschlag: [Dein Vorschlag]"\n\n' +
-    '- [Severity] is either KRITISCH or WARNUNG.\n' +
+    'You MUST format the "critique" string EXACTLY according to this strict template:\n' +
+    '"\uD83D\uDEAB [Severity] - [Short explanation of the anti-pattern].\n' +
+    '\uD83D\uDCDA Evidence: According to [evidence_citation], this pattern systematically leads to defects.\n' +
+    '\uD83D\uDCA1 Suggested fix: [Your suggestion]"\n\n' +
+    '- [Severity] is either CRITICAL or WARNING.\n' +
     '- [evidence_citation] MUST be the precise Rule ID from THE LAW (e.g. SEC-001) or the file path from EVIDENCE if it\'s a DRY violation.\n\n' +
     'Return ONLY a valid JSON object with this schema:\n' +
     '{\n' +
@@ -295,18 +301,18 @@ const OUTPUT_FORMAT_RAG =
     '  "issues": [\n' +
     '    {\n' +
     '      "rule": "Condition X (Name)",\n' +
-    '      "severity": "KRITISCH" | "WARNUNG",\n' +
+    '      "severity": "CRITICAL" | "WARNING",\n' +
     '      "path": "src/path/to/file.tsx",\n' +
     '      "line": number,\n' +
     '      "end_line": number,\n' +
     '      "exact_quote": "max 2 lines of the trigger code",\n' +
-    '      "german_critique": "\uD83D\uDEAB KRITISCH - Leerer Catch-Block.\\\\n\uD83D\uDCDA Evidence: Laut SEC-001 f\u00FChrt systematisch zu Fehlern.\\\\n\uD83D\uDCA1 Fix-Vorschlag: Re-Throw den Error...",\n' +
+    '      "critique": "\uD83D\uDEAB CRITICAL - Empty catch block.\\\\n\uD83D\uDCDA Evidence: According to SEC-001, this pattern systematically leads to defects.\\\\n\uD83D\uDCA1 Suggested fix: Re-throw the error...",\n' +
     '      "fixed_code_snippet": "throw new Error(e.message);"\n' +
     '    }\n' +
     '  ],\n' +
-    '  "summary": "Short German summary of all findings."\n' +
+    '  "summary": "Short English summary of all findings."\n' +
     '}\n\n' +
-    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "Kein AI-Slop gefunden." }\n\n' +
+    'If no issues are found, return: { "has_slop": false, "issues": [], "summary": "No AI slop found." }\n\n' +
     'CRITICAL INSTRUCTIONS FOR "fixed_code_snippet":\n' +
     '- It MUST contain ONLY the corrected code to replace the lines between "line" and "end_line".\n' +
     '- NO markdown wrappers (do not wrap in triple backticks), just the raw code.\n' +
