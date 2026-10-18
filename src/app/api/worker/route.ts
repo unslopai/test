@@ -1,33 +1,31 @@
+/**
+ * POST /api/worker — Manueller Job-Trigger (nur intern).
+ *
+ * Gesichert via x-internal-secret (WORKER_INTERNAL_SECRET). Der frühere
+ * Zustand (unauthentifiziert) war ein offenes Loch: beliebige Dritte konnten
+ * Jobs triggern und LLM-Kosten erzeugen (SPEC.md §3.3, Lockdown).
+ */
 import { NextResponse } from "next/server";
-import { getVertexClient } from "@/lib/vertex";
 import { processJob } from "@/lib/worker";
 import { extractErrorMessage } from "@/lib/errors";
+import { hasValidInternalSecret } from "@/lib/api-keys";
 
 export const maxDuration = 60;
 
-export async function GET() {
-    try {
-        const ai = getVertexClient();
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: 'Antworte nur mit: OK',
-        });
-
-        return NextResponse.json({
-            success: true,
-            message: "Vertex AI Setup erfolgreich!",
-            vertexResponse: response.text,
-        });
-    } catch (error: unknown) {
-        console.error("Fehler im Worker Test:", error);
-        return NextResponse.json(
-            { success: false, error: extractErrorMessage(error) },
-            { status: 500 }
-        );
+export async function GET(request: Request) {
+    if (!hasValidInternalSecret(request)) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
+
+    // Leichtgewichtiger Health-Check ohne LLM-Call (Kosten!). Vertex-Health: /api/test.
+    return NextResponse.json({ success: true, message: 'Worker erreichbar.' });
 }
 
 export async function POST(request: Request) {
+    if (!hasValidInternalSecret(request)) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     try {
         const { jobId } = await request.json();
 

@@ -1,0 +1,74 @@
+{
+  "capturedAt": "2026-07-11T20:30:10.700Z",
+  "model": "gemini-2.5-flash",
+  "fixtures": [
+    {
+      "fixture": "001-empty-catch.diff",
+      "promptTokens": 1796,
+      "cachedTokens": 0,
+      "outputTokens": 211,
+      "effectiveCostUsd": 0.0010663,
+      "foundRules": [
+        "MAINT-001 (Massive Zunahme von Implementation Smells, primär durch leere Catch-Blöcke) @ src/lib/sync-service.ts:12"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "002-type-capitulation.diff",
+      "promptTokens": 1817,
+      "cachedTokens": 0,
+      "outputTokens": 814,
+      "effectiveCostUsd": 0.0025801,
+      "foundRules": [
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:22",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:23",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:24",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:26",
+        "Condition 2 (Type Capitulation) @ src/lib/pricing-engine.ts:29"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "003-lexical-slop.diff",
+      "promptTokens": 1818,
+      "cachedTokens": 0,
+      "outputTokens": 489,
+      "effectiveCostUsd": 0.0017679,
+      "foundRules": [
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:7",
+        "Condition 3 (Lexical Slop) @ src/lib/report-generator.ts:8",
+        "Condition 4 (Context Blindness/DRY) @ src/lib/report-generator.ts:12"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": [
+        "Condition 4 (Context Blindness/DRY) @ src/lib/report-generator.ts:12"
+      ]
+    },
+    {
+      "fixture": "004-derived-state.diff",
+      "promptTokens": 1900,
+      "cachedTokens": 0,
+      "outputTokens": 220,
+      "effectiveCostUsd": 0.00112,
+      "foundRules": [
+        "Condition 7 (Derived State Anti-Pattern) @ src/components/CartSummary.tsx:17"
+      ],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    },
+    {
+      "fixture": "005-clean.diff",
+      "promptTokens": 1851,
+      "cachedTokens": 0,
+      "outputTokens": 31,
+      "effectiveCostUsd": 0.0006328,
+      "foundRules": [],
+      "missingExpected": [],
+      "unexpectedFindings": []
+    }
+  ],
+  "totalEffectiveCostUsd": 0.0071671,
+  "parityPassed": true
+}

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Kompilierte Workspace-Artefakte (CJS-Output, nicht linten):
+    "packages/*/dist/**",
   ]),
 ]);
 

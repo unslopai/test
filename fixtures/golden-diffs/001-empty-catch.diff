@@ -1,0 +1,17 @@
+=== FILE: src/lib/sync-service.ts (modified) ===
+@@ -8,6 +8,16 @@ export async function syncInventory(warehouseId: string): Promise<InventorySnapshot> {
+     const response = await fetch(`/api/warehouse/${warehouseId}/inventory`);
+     const inventorySnapshot = await response.json();
+
++    try {
++        await persistInventorySnapshot(warehouseId, inventorySnapshot);
++    } catch (persistError) {
++        console.log(persistError);
++    }
++
++    if (!inventorySnapshot.items) {
++        return { items: [], syncedAt: new Date().toISOString() };
++    }
++
+     return inventorySnapshot;
+ }

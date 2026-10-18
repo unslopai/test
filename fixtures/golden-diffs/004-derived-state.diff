@@ -1,0 +1,26 @@
+=== FILE: src/components/CartSummary.tsx (modified) ===
+@@ -12,10 +12,22 @@ interface CartSummaryProps {
+     readonly cartItems: readonly CartItem[];
+     readonly taxRate: number;
+ }
+
+ export function CartSummary({ cartItems, taxRate }: CartSummaryProps) {
++    const [subtotal, setSubtotal] = useState(0);
++    const [grandTotal, setGrandTotal] = useState(0);
++
++    useEffect(() => {
++        const nextSubtotal = cartItems.reduce(
++            (sum, cartItem) => sum + cartItem.price * cartItem.quantity,
++            0,
++        );
++        setSubtotal(nextSubtotal);
++        setGrandTotal(nextSubtotal * (1 + taxRate));
++    }, [cartItems, taxRate]);
++
+     return (
+         <section aria-label="Cart summary">
++            <p>Subtotal: {subtotal.toFixed(2)}</p>
++            <p>Total: {grandTotal.toFixed(2)}</p>
+         </section>
+     );
+ }

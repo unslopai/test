@@ -2,6 +2,9 @@
   "name": "anti-slop",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +13,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
+    "@unslop/shared": "0.1.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",
     "csv-parse": "^6.2.1",

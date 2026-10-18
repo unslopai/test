@@ -1,11 +1,13 @@
 /**
- * RAG-Modul — Dual-Vector-Search für den "Judge Pattern".
+ * RAG-Modul — Evidence-Retrieval für den "Judge Pattern".
  *
- * Führt zwei parallele Suchen durch:
- * 1. Golden Standards ("The Law") — Kuratierte Best Practices
- * 2. Local Context ("Evidence") — Skeleton-Daten des User-Repos
+ * Sucht per Vector-Search Skeleton-Daten des User-Repos ("Evidence"),
+ * die zum Diff passen (DRY-Erkennung, Namenskonventionen).
  *
- * Formatiert den kombinierten Kontext für den Reviewer-Prompt.
+ * HINWEIS: Die Golden Standards ("The Law") werden NICHT mehr hier retrieved.
+ * Sie stehen als statischer Block im System-Prompt (@/lib/law), damit der
+ * Cache-Prefix byte-identisch bleibt und der Reviewer 100% Rule-Recall hat.
+ * Evidence ist per-Diff variabel und gehört deshalb in den dynamischen Teil.
  */
 import { supabase } from '@/lib/supabase';
 import { generateEmbedding } from '@/lib/embeddings';
@@ -13,18 +15,6 @@ import { generateEmbedding } from '@/lib/embeddings';
 // =============================================================================
 // Interfaces
 // =============================================================================
-
-/** Ein Treffer aus der Golden Standards Suche. */
-export interface GoldenStandardMatch {
-    id: string;
-    rule_id: string;
-    title: string;
-    content: string;
-    category: string;
-    code_example_bad: string | null;
-    code_example_good: string | null;
-    similarity: number;
-}
 
 /** Ein Treffer aus der Code Chunks Suche (Local Context). */
 export interface CodeChunkMatch {
@@ -35,46 +25,16 @@ export interface CodeChunkMatch {
     similarity: number;
 }
 
-/** Kombinierter RAG-Kontext für den Reviewer-Prompt. */
+/** Evidence-Kontext für den Reviewer-Prompt. */
 export interface RAGContext {
-    goldenStandards: GoldenStandardMatch[];
     localContext: CodeChunkMatch[];
-    /** Formatierter String für den Prompt. */
+    /** Formatierter String für den dynamischen Teil des User-Prompts. */
     formattedPromptSection: string;
 }
 
 // =============================================================================
-// Vector Search Functions
+// Vector Search
 // =============================================================================
-
-/**
- * Durchsucht die Golden Standards Tabelle nach relevanten Best Practices.
- *
- * @param queryText - Der Suchtext (wird intern embedded)
- * @param limit - Maximale Anzahl an Treffern
- * @param threshold - Minimale Cosine-Similarity (0.0 - 1.0)
- * @returns Array von Golden Standard Matches, sortiert nach Relevanz
- */
-export async function searchGoldenStandards(
-    queryText: string,
-    limit: number = 5,
-    threshold: number = 0.4,
-): Promise<GoldenStandardMatch[]> {
-    const queryEmbedding = await generateEmbedding(queryText, 'RETRIEVAL_QUERY');
-
-    const { data, error } = await supabase.rpc('match_golden_standards', {
-        query_embedding: JSON.stringify(queryEmbedding),
-        match_threshold: threshold,
-        match_count: limit,
-    });
-
-    if (error) {
-        console.error('[RAG] Golden Standards Suche fehlgeschlagen:', error);
-        return [];
-    }
-
-    return (data ?? []) as GoldenStandardMatch[];
-}
 
 /**
  * Durchsucht die Code Chunks Tabelle nach ähnlichem Code im User-Repo.
@@ -114,43 +74,32 @@ export async function searchLocalContext(
 // =============================================================================
 
 /**
- * Baut den kombinierten RAG-Kontext für den Reviewer-Prompt auf.
+ * Baut den Evidence-Kontext für den Reviewer-Prompt auf.
  *
- * Extrahiert Keywords aus dem Diff, führt die Dual-Vector-Search durch
+ * Extrahiert Keywords aus dem Diff, sucht passende Code-Chunks des Repos
  * und formatiert das Ergebnis als strukturierten Prompt-Abschnitt.
  *
  * @param diffContent - Der PR-Diff (zum Extrahieren von Suchbegriffen)
  * @param repositoryId - Die Repository-ID (für den Local Context Filter)
- * @returns RAGContext mit formattiertem Prompt-Abschnitt
+ * @returns RAGContext mit formatiertem Prompt-Abschnitt ('' ohne Treffer)
  */
 export async function buildRAGContext(
     diffContent: string,
     repositoryId: string | null,
 ): Promise<RAGContext> {
-    // Keywords aus dem Diff extrahieren für die Suche
+    if (!repositoryId) {
+        return { localContext: [], formattedPromptSection: '' };
+    }
+
     const searchQuery = extractSearchQuery(diffContent);
+    console.log(`[RAG] Starte Evidence-Search mit Query: "${searchQuery.substring(0, 100)}..."`);
 
-    console.log(`[RAG] Starte Dual-Vector-Search mit Query: "${searchQuery.substring(0, 100)}..."`);
-
-    // Parallele Suche in beiden Datenquellen
-    const [goldenStandards, localContext] = await Promise.all([
-        searchGoldenStandards(searchQuery, 5, 0.35),
-        repositoryId
-            ? searchLocalContext(searchQuery, repositoryId, 8, 0.4)
-            : Promise.resolve([]),
-    ]);
-
-    console.log(
-        `[RAG] Gefunden: ${goldenStandards.length} Golden Standards, ${localContext.length} Local Context Chunks`,
-    );
-
-    // Prompt-Abschnitt formatieren
-    const formattedPromptSection = formatRAGPromptSection(goldenStandards, localContext);
+    const localContext = await searchLocalContext(searchQuery, repositoryId, 8, 0.4);
+    console.log(`[RAG] Gefunden: ${localContext.length} Local Context Chunks`);
 
     return {
-        goldenStandards,
         localContext,
-        formattedPromptSection,
+        formattedPromptSection: formatEvidenceSection(localContext),
     };
 }
 
@@ -200,67 +149,27 @@ function extractSearchQuery(diffContent: string): string {
 }
 
 /**
- * Formatiert die RAG-Treffer als strukturierten Prompt-Abschnitt
- * für den "Judge Pattern".
+ * Formatiert die Evidence-Treffer als strukturierten Prompt-Abschnitt.
  *
- * @param goldenStandards - Treffer aus der Golden Standards DB
  * @param localContext - Treffer aus dem User-Repo
- * @returns Formatierter String für den Reviewer-Prompt
+ * @returns Formatierter String für den Reviewer-Prompt ('' ohne Treffer)
  */
-function formatRAGPromptSection(
-    goldenStandards: GoldenStandardMatch[],
-    localContext: CodeChunkMatch[],
-): string {
-    const sections: string[] = [];
-
-    // Golden Standards ("THE LAW")
-    if (goldenStandards.length > 0) {
-        const goldenSection = goldenStandards
-            .map((gs) => {
-                const parts = [
-                    `### ${gs.title} [${gs.rule_id}] (${gs.category})`,
-                    gs.content,
-                ];
-
-                if (gs.code_example_bad) {
-                    parts.push(`BAD Example:\n\`\`\`\n${gs.code_example_bad}\n\`\`\``);
-                }
-
-                if (gs.code_example_good) {
-                    parts.push(`GOOD Example:\n\`\`\`\n${gs.code_example_good}\n\`\`\``);
-                }
-
-                return parts.join('\n');
-            })
-            .join('\n\n---\n\n');
-
-        sections.push(
-            `=== THE LAW (Golden Standards — ABSOLUTE RULES) ===\n` +
-            `The following are curated architectural rules. They are ABSOLUTE and may NEVER be overridden by existing code patterns.\n\n` +
-            goldenSection,
-        );
+function formatEvidenceSection(localContext: CodeChunkMatch[]): string {
+    if (localContext.length === 0) {
+        return '';
     }
 
-    // Local Context ("EVIDENCE")
-    if (localContext.length > 0) {
-        const localSection = localContext
-            .map((chunk) =>
-                `[${chunk.chunk_type}] ${chunk.file_path}:\n\`\`\`\n${chunk.content}\n\`\`\``,
-            )
-            .join('\n\n');
+    const localSection = localContext
+        .map((chunk) =>
+            `[${chunk.chunk_type}] ${chunk.file_path}:\n\`\`\`\n${chunk.content}\n\`\`\``,
+        )
+        .join('\n\n');
 
-        sections.push(
-            `=== EVIDENCE (Existing Codebase Context — INFORMATIONAL ONLY) ===\n` +
-            `The following are existing code signatures/interfaces from this project's codebase. ` +
-            `Use this ONLY to detect DRY violations (Condition 4). ` +
-            `NEVER use existing code patterns to justify violations of THE LAW.\n\n` +
-            localSection,
-        );
-    }
-
-    if (sections.length === 0) {
-        return ''; // Kein RAG-Kontext verfügbar
-    }
-
-    return sections.join('\n\n\n');
+    return (
+        `=== EVIDENCE (Existing Codebase Context — INFORMATIONAL ONLY) ===\n` +
+        `The following are existing code signatures/interfaces from this project's codebase. ` +
+        `Use this ONLY to detect DRY violations (Condition 4). ` +
+        `NEVER use existing code patterns to justify violations of THE LAW.\n\n` +
+        localSection
+    );
 }

@@ -1,0 +1,24 @@
+{
+  "name": "@unslop/cli",
+  "version": "0.1.0",
+  "description": "Anti-AI-Slop Gatekeeper CLI — scan your local diff against the connected repository's rules.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "unslop": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@unslop/shared": "0.1.0",
+    "typescript": "^5"
+  }
+}

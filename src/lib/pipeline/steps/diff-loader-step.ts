@@ -9,6 +9,7 @@ import {
     getPullRequestHeadSha,
 } from '@/lib/github';
 import { isReviewableFile, buildCombinedDiff } from '@/lib/pipeline/helpers';
+import { trimReviewableFiles } from '@/lib/pipeline/diff-utils';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
 export const diffLoaderStep: PipelineStep = {
@@ -30,9 +31,10 @@ export const diffLoaderStep: PipelineStep = {
             context.prNumber,
         );
 
-        const reviewableFiles = prFiles.filter(
+        const candidateFiles = prFiles.filter(
             (file) => file.patch && isReviewableFile(file.filename),
         );
+        const { trimmedFiles: reviewableFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
 
         if (reviewableFiles.length === 0) {
             console.log(`[DiffLoader] Keine reviewbaren Dateien in PR #${context.prNumber}.`);
@@ -42,13 +44,19 @@ export const diffLoaderStep: PipelineStep = {
                 headSha,
                 reviewableFiles: [],
                 combinedDiff: '',
+                omittedFiles: omittedFilePaths,
                 shouldAbort: true,
-                abortReason: 'Keine reviewbaren Code-Dateien in diesem PR.',
+                abortReason: omittedFilePaths.length > 0
+                    ? 'All changed code files exceed the review size cap.'
+                    : 'No reviewable code files in this pull request.',
             };
         }
 
         const combinedDiff = buildCombinedDiff(reviewableFiles);
-        console.log(`[DiffLoader] ${reviewableFiles.length} Dateien geladen (${combinedDiff.length} chars).`);
+        console.log(
+            `[DiffLoader] ${reviewableFiles.length} Dateien geladen (${combinedDiff.length} chars), ` +
+            `${omittedFilePaths.length} wegen Größen-Cap ausgelassen.`,
+        );
 
         return {
             ...context,
@@ -56,6 +64,7 @@ export const diffLoaderStep: PipelineStep = {
             headSha,
             reviewableFiles,
             combinedDiff,
+            omittedFiles: omittedFilePaths,
             promptConfig: {
                 ...context.promptConfig,
                 filePaths: reviewableFiles.map((file) => file.filename),
