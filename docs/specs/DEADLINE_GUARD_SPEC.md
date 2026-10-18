@@ -1,6 +1,6 @@
 # Deadline Guard — review jobs finish honestly inside the function time limit
 
-**Status: APPROVED 2026-09-26** — plan approved by the founder after strategic review by Fable 5.1; spec text reviewed by Fable 5.1 (12 fixes) and by the implementer against `main` (9 corrections, §9); the founder delegated the remaining decisions to the implementer. **Implemented 2026-09-26** (phases 1–3 on branch `feat/deadline-guard`, zero-token receipts in ROADMAP). Open: live receipts §6.3/§6.4, migration 048 + the `skipped_deadline` write (§6.5, D12).
+**Status: APPROVED 2026-09-26** — plan approved by the founder after strategic review by Fable 5.1; spec text reviewed by Fable 5.1 (12 fixes) and by the implementer against `main` (9 corrections, §9); the founder delegated the remaining decisions to the implementer. **Implemented 2026-09-26** (phases 1–3 on branch `feat/deadline-guard`, zero-token receipts in ROADMAP). Receipt §6.4 done 2026-09-26 (first lazy reap after the deploy: 11 stale jobs incl. `e409926e` → `error` `[review_timeout]`, 4 checks closed). Migration 048 applied by the founder 2026-09-26 (stated explicitly in the session); the `skipped_deadline` write followed as its own commit. Open: live receipt §6.3 and the first real `skipped_deadline` row.
 Code references are as of commit `bc58f4a` (`main`); re-check line numbers before editing.
 
 ---

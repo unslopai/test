@@ -140,6 +140,19 @@ describe('githubReporterStep', () => {
         expect(postedBody).not.toContain('Reduced confidence mode');
     });
 
+    it('behauptet keine Eskalation, wenn nur die Second Opinion ein stärkeres Modell gerufen hat', async () => {
+        const secondOpinionContext = {
+            ...buildReportableContext(),
+            cascade: buildCascadeState({ integrityScore: 95, escalated: true, escalationReason: 'second_opinion' }),
+        };
+
+        await githubReporterStep.execute(secondOpinionContext);
+
+        const postedBody = String(createPullRequestReviewMock.mock.calls[0][4]);
+        expect(postedBody).toContain('a stronger model re-reviewed under-reported files as a second opinion');
+        expect(postedBody).not.toContain('low-confidence findings were escalated');
+    });
+
     it('rethrows unrelated GitHub failures instead of masking them as a fallback', async () => {
         const permissionFailure = new GitHubApiError(
             403, '/repos/unslopai/test/pulls/13/reviews', '{"message":"Resource not accessible"}',

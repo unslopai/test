@@ -18,7 +18,13 @@ export type LlmCallPhase =
     | 'escalate_full'
     /** Pro-Zweitmeinung auf einem Datei-Subset (LLM_LANE_QUALITY_SPEC §4.5, Migration 044). */
     | 'escalate_second_opinion';
-export type LlmCallStatus = 'ok' | 'parse_error' | 'api_error' | 'skipped_budget';
+export type LlmCallStatus =
+    | 'ok'
+    | 'parse_error'
+    | 'api_error'
+    | 'skipped_budget'
+    /** Mangels Job-Budget nicht gestartet (DEADLINE_GUARD_SPEC D12, Migration 048). */
+    | 'skipped_deadline';
 
 export interface LlmCallRecord {
     readonly jobId: string;

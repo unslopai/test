@@ -44,6 +44,13 @@ export const secondOpinionReviewerStep: PipelineStep = {
         // dem Pro-Kontingent — ein Zeit-Skip kostet keine bezahlte Eskalation.
         if (!hasBudgetForCall(context, 'escalate_second_opinion')) {
             console.warn(`[SecondOpinion] Zeitbudget reicht nicht für die Zweitmeinung (Job ${context.jobId}).`);
+            await recordLlmCall({
+                jobId: context.jobId,
+                repoId: context.repositoryId,
+                phase: 'escalate_second_opinion',
+                model: MODEL_ESCALATION,
+                status: 'skipped_deadline',
+            });
             return markStageSkippedForTime(context, 'second_opinion');
         }
 

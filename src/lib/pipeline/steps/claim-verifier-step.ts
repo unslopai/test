@@ -19,6 +19,7 @@ import { resolvePromptEnvelope } from '@/lib/pipeline/context-cache';
 import { addTokenUsage } from '@/lib/pipeline/helpers';
 import type { FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import { hasBudgetForCall, markStageSkippedForTime } from '@/lib/pipeline/deadline';
+import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
 import { isCallDeadlineFailure } from '@/lib/pipeline/vertex-retry';
 import {
     VerdictCallError,
@@ -56,6 +57,7 @@ export const claimVerifierStep: PipelineStep = {
         // unverifiziert, der Score wird ehrlich null (D7).
         if (!hasBudgetForCall(context, 'verify')) {
             console.warn(`[ClaimVerifier] Zeitbudget reicht nicht für die Verifikation (Job ${context.jobId}).`);
+            await recordVerifySkippedForTime(context);
             return markStageSkippedForTime(context, 'verifier');
         }
 
@@ -131,7 +133,10 @@ async function runBatchWithinBudget(
     verifierEnvelope: FlashPromptEnvelope,
     claimBatch: readonly BlindClaim[],
 ): Promise<VerdictCallResult | null> {
-    if (!hasBudgetForCall(context, 'verify')) return null;
+    if (!hasBudgetForCall(context, 'verify')) {
+        await recordVerifySkippedForTime(context);
+        return null;
+    }
     try {
         return await runVerdictCallWithRetry(context, verifierEnvelope, claimBatch, {
             model: MODEL_VERIFIER,
@@ -147,6 +152,17 @@ async function runBatchWithinBudget(
         );
         return null;
     }
+}
+
+/** D12: ein mangels Budget nicht gestarteter Verify-Batch bekommt seine eigene Telemetrie-Zeile. */
+function recordVerifySkippedForTime(context: PipelineContext): Promise<void> {
+    return recordLlmCall({
+        jobId: context.jobId,
+        repoId: context.repositoryId,
+        phase: 'verify',
+        model: MODEL_VERIFIER,
+        status: 'skipped_deadline',
+    });
 }
 
 function degradeToUnfilteredDraft(
