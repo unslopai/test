@@ -10,7 +10,7 @@
  */
 import * as vscode from 'vscode';
 import { applicableFixOf, verifyAnchor } from './matching';
-import { FindingsStore, issueKeyOf } from './findingsStore';
+import { FindingsStore } from './findingsStore';
 import { DIAGNOSTIC_SOURCE, issueKeyForDiagnostic, republishFile } from './diagnostics';
 
 export const APPLY_FIX_COMMAND = 'unslop.applyFix';
@@ -30,7 +30,8 @@ export class GatekeeperFixProvider implements vscode.CodeActionProvider {
         for (const diagnostic of context.diagnostics) {
             if (diagnostic.source !== DIAGNOSTIC_SOURCE) continue;
 
-            const issueKey = issueKeyForDiagnostic(diagnostic);
+            const issueKey = issueKeyForDiagnostic(diagnostic, document.uri, this.findingsStore);
+            if (issueKey === undefined) continue;
             const trackedFinding = this.findingsStore.lookup(document.uri, issueKey);
             if (!trackedFinding || trackedFinding.stale || applicableFixOf(trackedFinding.issue) === null) continue;
 
@@ -96,7 +97,7 @@ export async function applyFixCommand(
         return;
     }
 
-    findingsStore.remove(fileUri, issueKeyOf(issue.line, issue.rule));
+    findingsStore.remove(fileUri, issueKey);
     republishFile(fileUri, diagnosticCollection, findingsStore);
     void vscode.window.setStatusBarMessage('Gatekeeper fix applied.', 4000);
 }

@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { getInstallationToken } from '@/lib/github-app';
 import { completeGatekeeperCheckRun } from '@/lib/check-run';
+import { resolveStaleJobThresholdMs } from '@/lib/stale-jobs-selection';
 import type { CheckRunResult } from '@/lib/check-run';
 
 /** Server-gesetzter Präfix in review_jobs.error_message eines abgelösten Jobs. */
@@ -36,6 +37,15 @@ const HEAD_DEDUPE_ACTIONS: ReadonlySet<string> = new Set(['opened', 'reopened'])
 export function isHeadDedupeAction(prAction: string): boolean {
     return HEAD_DEDUPE_ACTIONS.has(prAction);
 }
+
+/**
+ * Job-Ursprünge, deren Check am Head hängt und die Dedupe und Ablösung deshalb
+ * gleich behandeln: der Webhook und der Dashboard-Knopf „Review now“ (§4.10).
+ * Ein Dashboard-Job auf dem alten Head wird vom nächsten Push abgelöst wie ein
+ * Webhook-Job, und ein Reopen nach einem vollständigen Dashboard-Review läuft
+ * nicht doppelt. MCP-PR-Reviews bleiben außen vor (MCP_SPEC §4.7 unverändert).
+ */
+const HEAD_LIFECYCLE_SOURCES: readonly string[] = ['webhook', 'dashboard'];
 
 /** Ein Head-Commit eines PRs in einer Tenant-Zeile von `repositories`. */
 export interface PullRequestHead {
@@ -70,8 +80,8 @@ function isCompleteReviewRow(latestJobRow: unknown): latestJobRow is { id: strin
 
 /**
  * Liefert die ID des Jobs, dessen Check und PR-Review für diesen Head weiter
- * gelten, sonst null. Maßgeblich ist der JÜNGSTE abgeschlossene Webhook-Job des
- * Heads: sein Check ist der, den GitHub am Commit zeigt. Ist er gescheitert,
+ * gelten, sonst null. Maßgeblich ist der JÜNGSTE abgeschlossene Job des Heads
+ * (Webhook oder Dashboard): sein Check ist der, den GitHub am Commit zeigt. Ist er gescheitert,
  * gereapt oder degradiert, läuft der neue Job wie bisher.
  *
  * Ein Lookup-Fehler führt bewusst zum neuen Review: ein doppelter Lauf ist
@@ -83,7 +93,7 @@ export async function findReusableReviewJob(pullRequestHead: PullRequestHead): P
         .select('id, status, degradations:result->degradations, prescan_degraded:result->prescan->degraded')
         .eq('repository_id', pullRequestHead.repositoryId)
         .eq('pr_number', pullRequestHead.prNumber)
-        .eq('source', 'webhook')
+        .in('source', HEAD_LIFECYCLE_SOURCES)
         .eq('payload->>pr_head_sha', pullRequestHead.headSha)
         .in('status', ['done', 'error'])
         .order('created_at', { ascending: false })
@@ -120,7 +130,7 @@ function parseSupersededJobRow(supersededRow: unknown): SupersededJob | null {
 }
 
 /**
- * Stellt jeden noch nicht abgeschlossenen Webhook-Job desselben PRs auf dem
+ * Stellt jeden noch nicht abgeschlossenen Webhook- oder Dashboard-Job desselben PRs auf dem
  * VORGÄNGER-Head der Delivery auf 'error' + `[superseded]`. Fertige Jobs
  * (`done`/`error`) bleiben unangetastet: ihr Check hängt am alten Commit.
  *
@@ -147,7 +157,7 @@ export async function supersedeOutdatedJobs(
         })
         .eq('repository_id', newHead.repositoryId)
         .eq('pr_number', newHead.prNumber)
-        .eq('source', 'webhook')
+        .in('source', HEAD_LIFECYCLE_SOURCES)
         .in('status', ['pending', 'processing'])
         .eq('payload->>pr_head_sha', previousHeadSha)
         .select('id, check_run_id');
@@ -214,6 +224,65 @@ export async function closeSupersededCheckRuns(
             );
         }
     }
+}
+
+// =============================================================================
+// Laufender Review eines PRs (Dashboard „Review now“, §4.10)
+// =============================================================================
+
+const RUNNING_JOB_STATUSES: readonly string[] = ['pending', 'processing'];
+
+/**
+ * Untergrenze für `created_at` eines Jobs, der noch laufen kann: älter als die
+ * Reaper-Schwelle (Job-Budget plus eine Minute) läuft kein Job mehr. Ohne sie
+ * sperrte ein nie geclaimter `pending`-Job (Instanz stirbt nach der 202, Claim
+ * scheitert) den Knopf für immer — der Reaper räumt nur `processing` ab.
+ */
+function oldestLiveJobCreatedAt(nowMs: number): string {
+    return new Date(nowMs - resolveStaleJobThresholdMs()).toISOString();
+}
+
+/** true = der Job läuft noch oder kann noch starten (Status und Alter wie im Lookup unten). */
+export function isLiveReviewJob(status: string, createdAt: string, nowMs: number): boolean {
+    return RUNNING_JOB_STATUSES.includes(status) && Date.parse(createdAt) > nowMs - resolveStaleJobThresholdMs();
+}
+
+/**
+ * Die ID des jüngsten noch laufenden Reviews (`pending`/`processing`, jünger
+ * als die Reaper-Schwelle) dieses PRs, gleich auf welchem Head und aus welcher
+ * Quelle, sonst null. Bewusst
+ * head-unabhängig: der Knopf prüft das VOR Quota und GitHub-Call, der Head ist
+ * dort noch unbekannt, und ein laufender Job auf einem älteren Head wird vom
+ * Push, der den neuen Head gebracht hat, ohnehin abgelöst oder ersetzt.
+ * Scans ohne PR (CLI, MCP mit lokalem Diff) haben keine `pr_number`.
+ *
+ * Ein Lookup-Fehler lässt den Klick durch wie beim Dedupe oben: ein doppelter
+ * Lauf kostet einen Scan, ein verweigerter Review wäre falsch.
+ */
+export async function findRunningPullRequestReview(
+    repositoryId: string,
+    prNumber: number,
+    nowMs: number = Date.now(),
+): Promise<string | null> {
+    const { data: runningJobRow, error: lookupError } = await supabase
+        .from('review_jobs')
+        .select('id')
+        .eq('repository_id', repositoryId)
+        .eq('pr_number', prNumber)
+        .in('status', RUNNING_JOB_STATUSES)
+        .gt('created_at', oldestLiveJobCreatedAt(nowMs))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (lookupError) {
+        console.error(
+            `[PrHeadLifecycle] Laufender Review von PR #${prNumber} nicht lesbar — Klick läuft: ${lookupError.message}`,
+        );
+        return null;
+    }
+    const runningJobId: unknown = runningJobRow?.id;
+    return typeof runningJobId === 'string' ? runningJobId : null;
 }
 
 // =============================================================================

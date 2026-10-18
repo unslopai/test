@@ -22,7 +22,7 @@ const modelFinding: ScanIssue = {
 describe('buildDiagnosticMessage — KI-Label je Finding', () => {
     it('labels a model finding as AI-generated', () => {
         expect(buildDiagnosticMessage(modelFinding, false))
-            .toBe(`Empty catch block.\n${AI_GENERATED_FINDING_NOTICE}`);
+            .toBe(`Silent Error Swallowing: Empty catch block.\n${AI_GENERATED_FINDING_NOTICE}`);
     });
 
     it('labels a finding without a verification status (label when in doubt)', () => {
@@ -35,7 +35,7 @@ describe('buildDiagnosticMessage — KI-Label je Finding', () => {
     it('never labels a pre-scan finding', () => {
         const prescanFinding: ScanIssue = { ...modelFinding, rule: 'SEC-005 (Hardcoded secret)', verification: 'deterministic' };
 
-        expect(buildDiagnosticMessage(prescanFinding, false)).toBe('Empty catch block.');
+        expect(buildDiagnosticMessage(prescanFinding, false)).toBe('Hardcoded secret: Empty catch block.');
     });
 
     it('keeps occurrences, fix advice and the stale marker before the label', () => {
@@ -49,8 +49,29 @@ describe('buildDiagnosticMessage — KI-Label je Finding', () => {
         };
 
         expect(buildDiagnosticMessage(aggregatedFinding, true)).toBe(
-            'Empty catch block. [2 occurrences in this file: lines 12, 18]\nHow to fix: Rethrow the error.'
+            'Silent Error Swallowing: Empty catch block. [2 occurrences in this file: lines 12, 18]\nHow to fix: Rethrow the error.'
             + `${STALE_SUFFIX}\n${AI_GENERATED_FINDING_NOTICE}`,
         );
+    });
+});
+
+describe('buildDiagnosticMessage — Regel-Titel in der Meldung (Code trägt nur die ID)', () => {
+    const deterministicFinding: ScanIssue = { ...modelFinding, verification: 'deterministic' };
+
+    it('stellt den Klammer-Titel der Kritik voran', () => {
+        const lexicalFinding: ScanIssue = { ...deterministicFinding, rule: 'COND-003 (Lexical Slop)' };
+
+        expect(buildDiagnosticMessage(lexicalFinding, false)).toBe('Lexical Slop: Empty catch block.');
+    });
+
+    it('stellt den Doppelpunkt-Titel der Kritik voran', () => {
+        const secretFinding: ScanIssue = { ...deterministicFinding, rule: 'SEC-005: Hardcoded secret' };
+
+        expect(buildDiagnosticMessage(secretFinding, false)).toBe('Hardcoded secret: Empty catch block.');
+    });
+
+    it('lässt die Kritik ohne Präfix, wenn das Label keinen Titel trägt', () => {
+        expect(buildDiagnosticMessage({ ...deterministicFinding, rule: 'SEC-012' }, false)).toBe('Empty catch block.');
+        expect(buildDiagnosticMessage({ ...deterministicFinding, rule: 'Deep review' }, false)).toBe('Empty catch block.');
     });
 });

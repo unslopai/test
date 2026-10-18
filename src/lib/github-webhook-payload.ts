@@ -1,5 +1,7 @@
 /**
- * Validierungsgrenze für GitHub-Webhook-Payloads (GITHUB_APP_SPEC.md §4.4).
+ * Validierungsgrenze für GitHub-Webhook-Payloads (GITHUB_APP_SPEC.md §4.4)
+ * und für die Pull-Request-Objekte der REST-API, die dieselbe Form haben
+ * (Dashboard „Review now“, §4.10).
  *
  * [ARCH-002] Externer Input wird hier EINMAL strukturell geparst und verlässt
  * dieses Modul nur noch als typisiertes Objekt. Ein `null`-Rückgabewert heißt
@@ -264,4 +266,67 @@ function readRepoIdList(rawPayload: unknown, key: string): readonly number[] {
     return repoList
         .map((repoEntry: unknown) => readNumber(repoEntry, 'id'))
         .filter((repoId: number | null): repoId is number => repoId !== null);
+}
+
+// =============================================================================
+// Pull-Request-Objekte der REST-API (Dashboard „Review now“, §4.10)
+// =============================================================================
+
+/** Ein offener PR aus `GET /repos/{r}/pulls?state=open`. */
+export interface OpenPullRequest {
+    readonly prNumber: number;
+    readonly title: string;
+    readonly authorLogin: string | null;
+    readonly headBranch: string | null;
+    readonly headSha: string;
+    readonly updatedAt: string | null;
+    readonly htmlUrl: string;
+    /** Dieselbe Fork-Regel wie das Webhook-Gate: Head-Repo-ID gegen Basis-Repo-ID. */
+    readonly isCrossRepository: boolean;
+    readonly authorAssociation: string | null;
+}
+
+function asObjectOrNull(rawValue: unknown): object | null {
+    return typeof rawValue === 'object' && rawValue !== null ? rawValue : null;
+}
+
+/** null = Eintrag ohne Nummer, Head-SHA, Link oder Basis-Repo; er wird nicht angezeigt. */
+export function parseOpenPullRequest(rawPull: unknown): OpenPullRequest | null {
+    const pullRequestNode = asObjectOrNull(rawPull);
+    const prNumber = readNumber(pullRequestNode, 'number');
+    const headNode = readObject(pullRequestNode, 'head');
+    const headSha = readString(headNode, 'sha');
+    const htmlUrl = readString(pullRequestNode, 'html_url');
+    const baseRepoId = readNumber(readObject(readObject(pullRequestNode, 'base'), 'repo'), 'id');
+
+    if (prNumber === null || !headSha || !htmlUrl || baseRepoId === null) {
+        return null;
+    }
+
+    return {
+        prNumber,
+        title: readString(pullRequestNode, 'title') ?? '',
+        authorLogin: readString(readObject(pullRequestNode, 'user'), 'login'),
+        headBranch: readString(headNode, 'ref'),
+        headSha,
+        updatedAt: readString(pullRequestNode, 'updated_at'),
+        htmlUrl,
+        isCrossRepository: readIsCrossRepository(pullRequestNode, baseRepoId),
+        authorAssociation: readString(pullRequestNode, 'author_association'),
+    };
+}
+
+/** Head und Zustand eines einzelnen PRs aus `GET /repos/{r}/pulls/{n}`. */
+export interface PullRequestHeadState {
+    readonly headSha: string;
+    readonly isOpen: boolean;
+}
+
+export function parsePullRequestHeadState(rawPull: unknown): PullRequestHeadState | null {
+    const headSha = readString(readObject(rawPull, 'head'), 'sha');
+    const pullState = readString(rawPull, 'state');
+    if (!headSha || !pullState) {
+        return null;
+    }
+    return { headSha, isOpen: pullState === 'open' };
 }

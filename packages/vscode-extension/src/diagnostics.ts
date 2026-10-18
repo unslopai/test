@@ -5,7 +5,8 @@
 import type { ScanIssue, ScanResult } from '@unslop/shared';
 import * as vscode from 'vscode';
 import { buildDiagnosticMessage } from './diagnosticMessage';
-import { FindingsStore, issueKeyOf, type TrackedFinding } from './findingsStore';
+import { FindingsStore, type TrackedFinding } from './findingsStore';
+import { diagnosticCodeOf } from './issueKey';
 import { resolveWithinRoot } from './pathSafety';
 import { sanitizeModelText } from './sanitize';
 
@@ -82,7 +83,8 @@ export function buildDiagnostic(issue: ScanIssue, isStale: boolean): vscode.Diag
         isStale ? vscode.DiagnosticSeverity.Hint : severityFor(issue),
     );
     diagnostic.source = DIAGNOSTIC_SOURCE;
-    diagnostic.code = issue.rule;
+    // Nackte Regel-ID: das Problems-Panel zeigt `unslop(COND-003)`, der Titel steht in der Meldung.
+    diagnostic.code = diagnosticCodeOf(issue);
     return diagnostic;
 }
 
@@ -99,8 +101,17 @@ export function republishFile(
     );
 }
 
-export function issueKeyForDiagnostic(diagnostic: vscode.Diagnostic): string {
-    return issueKeyOf(diagnostic.range.start.line + 1, String(diagnostic.code ?? ''));
+/** Store-Schlüssel des Findings hinter einem Diagnostic; undefined ohne eindeutigen Treffer. */
+export function issueKeyForDiagnostic(
+    diagnostic: vscode.Diagnostic,
+    fileUri: vscode.Uri,
+    findingsStore: FindingsStore,
+): string | undefined {
+    return findingsStore.keyForDiagnostic(fileUri, {
+        line: diagnostic.range.start.line + 1,
+        code: String(diagnostic.code ?? ''),
+        message: diagnostic.message,
+    });
 }
 
 function severityFor(issue: ScanIssue): vscode.DiagnosticSeverity {

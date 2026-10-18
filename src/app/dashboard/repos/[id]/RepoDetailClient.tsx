@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Kunden-Detailseite eines Repos (DASHBOARD_UX_SPEC.md §3): Scan-Historie mit
+ * Kunden-Detailseite eines Repos (DASHBOARD_UX_SPEC.md §3): offene Pull
+ * Requests mit „Review now“ (GITHUB_APP_SPEC.md §4.10), Scan-Historie mit
  * aufklappbaren Findings (Progressive Disclosure, volle Lesbarkeit ohne
  * Aktionen — der PR bleibt die einzige Wahrheit), WebhookHealthPanel für
  * Legacy-Repos, den Fork-PR-Schalter (SERVER_AUDIT_2026-09 M3) und die Danger
@@ -18,6 +19,7 @@ import PageShell from '../../PageShell';
 import ConfirmDialog from '../../ConfirmDialog';
 import WebhookHealthPanel from '../../WebhookHealthPanel';
 import ForkPrSwitch from './ForkPrSwitch';
+import OpenPullRequestsCard from './OpenPullRequestsCard';
 import { useToast } from '../../Toast';
 import { useScanHistory, type ScanIssueView, type ScanView } from './useScanHistory';
 
@@ -34,6 +36,8 @@ interface RepoDetailClientProps {
     readonly isLegacyRepo: boolean;
     /** Startwert von repositories.review_fork_prs. */
     readonly reviewForkPrs: boolean;
+    /** Installations-Link der GitHub App; null = kein GITHUB_APP_SLUG gesetzt. */
+    readonly appInstallUrl: string | null;
 }
 
 export default function RepoDetailClient({
@@ -44,6 +48,7 @@ export default function RepoDetailClient({
     prReviewsEnabled,
     isLegacyRepo,
     reviewForkPrs,
+    appInstallUrl,
 }: RepoDetailClientProps) {
     const t = useTranslations('repoDetail');
     const tDashboard = useTranslations('dashboard');
@@ -85,6 +90,15 @@ export default function RepoDetailClient({
                 </a>
             )}
         >
+            {status === 'active' && (
+                <OpenPullRequestsCard
+                    repoId={repoId}
+                    isLegacyRepo={isLegacyRepo}
+                    appInstallUrl={appInstallUrl}
+                    onReviewStarted={scanHistory.refresh}
+                />
+            )}
+
             <ScanHistorySection scanHistory={scanHistory} />
 
             {isLegacyRepo && (

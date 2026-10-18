@@ -10,6 +10,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { supabase as supabaseAdmin } from '@/lib/supabase';
 import { scheduleLazyReap } from '@/lib/lazy-reaper';
+import { getAppInstallUrl } from '@/lib/github-app';
 import RepoDetailClient from './RepoDetailClient';
 
 interface PageParams {
@@ -52,6 +53,7 @@ export default async function RepoDetailPage({ params }: PageParams) {
             // einen Repo-Webhook zum Prüfen/Reparieren (D8).
             isLegacyRepo={repoRow.status === 'active' && repoRow.installation_id === null}
             reviewForkPrs={repoRow.review_fork_prs === true}
+            appInstallUrl={getAppInstallUrl()}
         />
     );
 }

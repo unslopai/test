@@ -217,7 +217,7 @@ describe('POST /api/webhook — Head-Lebenszyklus (GITHUB_APP_SPEC §4.9)', () =
             expect(recordedJobFilters).toEqual([
                 ['eq', 'repository_id', 'repo-row-under-test'],
                 ['eq', 'pr_number', 7],
-                ['eq', 'source', 'webhook'],
+                ['in', 'source', ['webhook', 'dashboard']],
                 ['eq', 'payload->>pr_head_sha', HEAD_SHA_UNDER_TEST],
                 ['in', 'status', ['done', 'error']],
             ]);
@@ -271,12 +271,12 @@ describe('POST /api/webhook — Head-Lebenszyklus (GITHUB_APP_SPEC §4.9)', () =
             status: 'error',
             error_message: '[superseded] Superseded by b7e23ec',
         });
-        // Nur unfertige Webhook-Jobs desselben PRs auf dem VORGÄNGER-Head: fertige Jobs bleiben
+        // Nur unfertige Webhook- und Dashboard-Jobs desselben PRs auf dem VORGÄNGER-Head: fertige Jobs bleiben
         // unangetastet, und eine verspätete Delivery eines älteren Commits trifft nie den Job des neueren.
         expect(recordedJobFilters.slice(0, 5)).toEqual([
             ['eq', 'repository_id', 'repo-row-under-test'],
             ['eq', 'pr_number', 7],
-            ['eq', 'source', 'webhook'],
+            ['in', 'source', ['webhook', 'dashboard']],
             ['in', 'status', ['pending', 'processing']],
             ['eq', 'payload->>pr_head_sha', PREVIOUS_HEAD_SHA_UNDER_TEST],
         ]);

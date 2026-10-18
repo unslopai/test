@@ -363,7 +363,8 @@ Commit, den es im PR nicht mehr gibt (#36, Job `aa0078bb`). Code:
 `src/lib/pr-head-lifecycle.ts`, eingehängt in `startReviewForDelivery` der Webhook-Route.
 
 **Dedupe (`reopened`, `opened`).** Vor dem Billing-Gate sucht die Route den jüngsten
-abgeschlossenen Webhook-Job (`done` oder `error`) für `(repository_id, pr_number,
+abgeschlossenen Webhook- oder Dashboard-Job (`done` oder `error`, Quelle `webhook` oder
+`dashboard` seit §4.10) für `(repository_id, pr_number,
 payload.pr_head_sha)`. Ist er `done`, ohne Eintrag in `result.degradations` und ohne
 `result.prescan.degraded`, startet kein neuer Job: 200 mit der ID des vorhandenen Jobs,
 kein `consume_scan_quota`, kein neuer Check Run. Check und PR-Review dieses Jobs gelten
@@ -380,7 +381,7 @@ weiter.
   ausgelassener Review wäre falsch.
 
 **Ablösung (`synchronize`).** Nach der Installationsprüfung und vor Status- und Billing-Gate
-stellt die Route jeden Webhook-Job desselben PRs, der noch `pending` oder `processing` ist
+stellt die Route jeden Webhook- oder Dashboard-Job (§4.10) desselben PRs, der noch `pending` oder `processing` ist
 und auf dem **Vorgänger-Head** der Delivery läuft (`before` im Payload), auf
 `status = 'error'` mit `error_message = '[superseded] Superseded by <7 Zeichen SHA>'`. Kein
 neuer Status: der CHECK-Constraint bleibt `pending | processing | done | error`, der Marker
@@ -427,7 +428,110 @@ schon gepostet); ein noch laufender Job auf **demselben** Head wird bei Reopen n
 Dedupe-Grund gewertet; die Dedupe kennt nur `review_jobs` und sieht deshalb weder einen
 später am selben Head gesetzten Gate-Check (`action_required`) noch einen Check, dessen
 Abschluss an GitHub gescheitert ist, dort bleibt der Re-Run-Button; das Dashboard zeigt
-einen abgelösten Job als Fehler.
+einen abgelösten Job als Fehler; MCP-PR-Reviews (`source = 'mcp'`) werden weder
+dedupliziert noch abgelöst (MCP_SPEC §4.7 bleibt unverändert).
+
+### 4.10 „Review now“ im Dashboard: erster Review ohne Warten auf den nächsten Push — ergänzt 2026-10-13
+
+Anlass: Nach der Installation sah ein Kunde nichts, bis er einen PR öffnete oder pushte
+(ROADMAP §2, Idee 2026-10-11). Die Repo-Detailseite listet jetzt die offenen PRs eines
+App-Repos und startet per Klick denselben Review wie das MCP-Tool `unslop_review_pr`.
+Bewusst **Opt-in per Klick**, nicht automatisch nach dem `installation`-Event: kein
+ungefragter Check Run auf fremden PRs, keine Quota ohne Klick.
+
+**Code.** Gemeinsamer Einreiche-Pfad `src/lib/pr-review/submit-pr-review.ts`
+(`submitPullRequestReview`: Quota → Installation-Token → Head → `review_jobs`-Insert
+webhook-förmig ohne `diff` → Check Run → `after(processReviewJob)`), genutzt von
+`POST /api/cli/pr/review` (`source 'mcp'`, unverändertes Verhalten) und
+`POST /api/repos/[id]/review` (`source 'dashboard'`). Liste: `GET /api/repos/[id]/pulls`
+über `listOpenPullRequests` (`src/lib/github.ts`, eine Seite à 50, zuletzt aktualisierte
+zuerst), Parser `parseOpenPullRequest` in `src/lib/github-webhook-payload.ts`, DTO in
+`src/lib/pr-review/open-pull-request-view.ts`. Oberfläche: Karte `OpenPullRequestsCard`
+über der Scan-Historie (`src/app/dashboard/repos/[id]/`). Migration
+`064_review_jobs_source_dashboard.sql` erweitert den CHECK auf `review_jobs.source` um
+`dashboard`.
+
+**Auth und Besitz** (`src/app/api/repos/[id]/owned-app-repository.ts`): Supabase-Session,
+Service-Role-Read mit `.eq('id').eq('user_id')`; fremdes und nicht existentes Repo bekommen
+dieselbe 404. Ein Repo ohne `installation_id` (Legacy-OAuth) bekommt **409
+`github_app_required`**, nie einen Fallback auf das User-OAuth-Token (der OAuth-Reporter
+kann keine Check Runs, MCP_SPEC §5.4).
+
+**Reihenfolge der Prüfungen in `POST …/review`** (Body `{ prNumber }`); alles vor der
+Quota kostet keinen Scan:
+
+| Schritt | Antwort |
+| --- | --- |
+| Keine Session | 401 `unauthorized` |
+| Repo fremd / nicht existent | 404 `repository_not_found` |
+| Repo ohne App-Installation | 409 `github_app_required` |
+| Body ohne positive Ganzzahl `prNumber` | 422 `invalid_pr_number` |
+| Repo-Status nicht `active` | 409 `repository_not_active` |
+| Kein Entitlement | 402 `no_subscription` / `subscription_inactive` / `unknown_plan` |
+| Laufender Job (`pending`/`processing`, jünger als die Reaper-Schwelle) für diesen PR | 409 `review_in_progress` mit `jobId` |
+| Quota: Trial erschöpft / Fenster voll | 402 `trial_quota_exhausted` / 429 `rate_limit_exceeded` mit `Retry-After` |
+| Kein Installation-Token | 502 `github_app_unavailable` |
+| PR nicht lesbar / inzwischen geschlossen | 404 `pr_not_found` / 409 `pr_not_open` |
+| Insert gescheitert | 500 `job_creation_failed` |
+| Erfolg | 202 `{ jobId, checkRunUrl }` (`checkRunUrl` null, wenn der Check nicht aufging) |
+
+`GET …/pulls`: 401 / 404 / 409 `github_app_required` wie oben, 502 `github_app_unavailable`
+bzw. `github_unavailable`, 500 `review_status_unavailable`, wenn die Job-Zeilen nicht lesbar
+sind (lieber ein Fehler als ein laufender Review, der als „nie geprüft“ erscheint). Je PR:
+Nummer, Titel, Autor, Head-Branch, Head-SHA, `updated_at`, Link, `isFork`
+(Head-Repo-ID ≠ Basis-Repo-ID, dieselbe Regel wie das Fork-Gate), `isUntrustedFork`,
+`skippedByForkGate` und der jüngste Job des PRs (`latestReview` mit `onCurrentHead` und
+`isRunning`, nach derselben Regel wie die 409 oben).
+
+**Migration vor dem Deploy.** 064 erweitert nur und verträgt den alten Code. Sie muss laufen,
+**bevor** der Code live ist: sonst bucht jeder Klick die Quota und scheitert danach am CHECK
+mit 500 `job_creation_failed`.
+
+**Entscheidungen.**
+- **Quota-Spur `dashboard` = volle Fenster wie `webhook`** (`FULL_WINDOW_SOURCES` in
+  `src/lib/billing/entitlements.ts`), nicht die 80 %-Spur von `cli`/`mcp`. Die Reserve (D10,
+  MCP_SPEC §4.6) existiert, damit der Agent eines Entwicklers im Hintergrund nicht die
+  PR-Quota des Teams leerzieht. Der Klick ist ein PR-Review mit Check Run, ausgelöst vom
+  Besitzer, der die Quota zahlt, einzeln und menschlich getaktet. Datenlage am 2026-10-13
+  (nur lesend, `review_jobs` je `source`): 234 Webhook-Jobs, 18 MCP-Jobs (davon 2
+  PR-Reviews), 62 CLI-Jobs; ein zahlender Nutzer, Spitze 42 Webhook-/CLI-/MCP-Jobs pro
+  Stunde und 145 pro Monat gegen Pro 60/500. Die reduzierte Spur hätte den Knopf ab 48/h
+  gesperrt, während der nächste Push desselben PRs noch durchginge — für denselben Review
+  am selben PR. Das Trial-Kontingent bleibt wie überall unreduziert.
+- **Laufender Job ⇒ 409 `review_in_progress`, fertiger Job ⇒ erlaubt.** Der Lookup
+  (`findRunningPullRequestReview` in `src/lib/pr-head-lifecycle.ts`) ist head-unabhängig und
+  quellenübergreifend, weil er vor Quota und GitHub-Call läuft: dort ist der Head noch
+  unbekannt, und ein laufender Job auf einem älteren Head wird vom Push, der den neuen Head
+  brachte, ohnehin abgelöst oder ersetzt. Gezählt werden nur Jobs, die jünger sind als die
+  Reaper-Schwelle (`resolveStaleJobThresholdMs`: Job-Budget plus eine Minute): ein
+  `pending`-Job, den nie ein Worker geclaimt hat (Instanz stirbt nach der 202), sperrte den
+  Knopf sonst für immer, denn der Reaper räumt nur `processing` ab. Ein Lookup-Fehler lässt
+  den Klick durch (wie die Dedupe in §4.9). Ein fertiger Job (`done`/`error`) sperrt nicht: wer klickt, will den
+  Review ausdrücklich; die Liste zeigt vorher „Reviewed <Zeit>“ bzw. „on an earlier
+  commit“, der Knopf heißt dann „Review again“.
+- **Fork-PRs behalten den Knopf**, auch bei `review_fork_prs = false`. Das Fork-Gate (M3)
+  schützt davor, dass Fremde per Push-Spam die Quota des Besitzers verbrauchen; der Klick
+  ist die ausdrückliche Zustimmung des Besitzers für genau einen Review. Die Zeile trägt
+  „Fork“ und, wenn das Gate den PR beim Push überspringt, einen Hinweis, dass der Review
+  gegen die Quota zählt.
+- **Geschlossener PR:** Der Dashboard-Weg liest Head **und** Zustand
+  (`getPullRequestHead`); ein zwischen Liste und Klick geschlossener PR bekommt 409
+  `pr_not_open` ohne Job und ohne Check. Die Quota ist zu diesem Zeitpunkt schon gezählt
+  (Reihenfolge wie MCP: Quota vor GitHub-Calls, damit ein erschöpftes Kontingent keine
+  Token-Abrufe auslöst); bei einem Rennen zwischen Laden und Klick ist das hingenommen. Der
+  MCP-Weg bleibt beim reinen Head-Lookup.
+- **Lebenszyklus:** Ein Dashboard-Job ist ein PR-Job mit Check am Head. Der Worker routet
+  ihn nach Payload-Form in die PR-Pipeline inkl. github-reporter (`isLocalDiffJob` ist für
+  `dashboard` false). Dedupe und Ablösung aus §4.9 behandeln ihn wie einen Webhook-Job
+  (`HEAD_LIFECYCLE_SOURCES`); der Reaper und der Prüfpunkt vor jedem Step gelten ohnehin
+  für jeden Job. Die Scan-Historie zeigt ihn als „PR #n“ wie jeden PR-Job; der Payload
+  trägt `action: 'dashboard_review'`.
+
+**Bekannte Grenzen.** Die Laufend-Prüfung ist ein Lesen vor Quota und Insert, ohne Sperre:
+zwei gleichzeitige POSTs (zwei Tabs, Skript) ergeben zwei Jobs, zwei Scans und zwei Check
+Runs. Im selben Tab verhindert der gesperrte Knopf das. Schließen ließe es sich mit einem
+partiellen Unique-Index auf `(repository_id, pr_number)` für laufende Dashboard-Jobs
+(ROADMAP To-Do §6). Die Liste zeigt höchstens 50 offene PRs.
 
 ## 5. Datenbank — `027_create_github_app_installations.sql`
 
@@ -476,8 +580,10 @@ Migration 013 hat einen **Testwert** ausgerollt: ein `pg_cron`-Job löschte jede
 („KEIN DELETE, sonst CASCADE löscht die Chunks"). 028 stellt den in 013 selbst dokumentierten
 Produktionswert scharf: einmal täglich, TTL 30 Tage.
 
-`review_jobs.source` bleibt unverändert (`manual|webhook|cli`) — der Auth-Modus ist eine
-Eigenschaft des **Repos**, nicht des Jobs (D2).
+`review_jobs.source` bleibt durch die App unverändert — der Auth-Modus ist eine
+Eigenschaft des **Repos**, nicht des Jobs (D2). Später hinzugekommen sind andere
+Job-**Ursprünge**, keine Auth-Modi: `mcp` (Migration 034, MCP_SPEC §4.6) und `dashboard`
+(Migration 064, §4.10). Stand mit 064: `manual|webhook|cli|mcp|dashboard`.
 
 ## 6. Environment
 
