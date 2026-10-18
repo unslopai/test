@@ -3,7 +3,9 @@
  * Formulierung auf Check, GitHub-Review und CLI.
  */
 import { describe, expect, it } from 'vitest';
-import { formatDraftPartialNotice, formatTimeBudgetNotice } from './degradation-notice.js';
+import {
+    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
+} from './degradation-notice.js';
 
 describe('formatTimeBudgetNotice', () => {
     it('nennt die übersprungenen Stufen in Lauf-Reihenfolge', () => {
@@ -38,5 +40,19 @@ describe('formatDraftPartialNotice (LARGE_DIFF_RECALL_SPEC Option A)', () => {
     it('schweigt bei vollständigem Draft oder fehlendem Feld (Ergebnis vor 2026-09-29)', () => {
         expect(formatDraftPartialNotice([])).toBeNull();
         expect(formatDraftPartialNotice(undefined)).toBeNull();
+    });
+});
+
+describe('formatPrescanUnavailableNotice (ausgefallener Pre-Scan neben einer Modell-Review)', () => {
+    it('sagt, dass nur das Modell gelesen hat, ohne einen Re-Run zu versprechen', () => {
+        expect(formatPrescanUnavailableNotice(true)).toBe(
+            'Reduced coverage: the deterministic pre-scanner failed on this change — only the model review ran, '
+            + 'and files it does not read were not checked.',
+        );
+    });
+
+    it('schweigt, wenn der Pre-Scan lief oder für das Repo abgeschaltet ist', () => {
+        expect(formatPrescanUnavailableNotice(false)).toBeNull();
+        expect(formatPrescanUnavailableNotice(undefined)).toBeNull();
     });
 });

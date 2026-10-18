@@ -27,7 +27,9 @@ import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
 import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
-import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
+import {
+    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
+} from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
 import { preScannerStep } from '@/lib/pipeline/steps/pre-scanner-step';
@@ -43,7 +45,7 @@ import { JobAlreadyFinalizedError, resultPersisterStep } from '@/lib/pipeline/st
 import type { CheckRunResult } from '@/lib/check-run';
 import type { JobFailureCode } from '@/lib/job-failure';
 import type { JobClock } from '@/lib/pipeline/deadline';
-import type { CascadeConfig, CascadeState, PipelineContext, PipelineStep, PipelineConfig, RepoAuthMode } from '@/lib/pipeline/types';
+import type { CascadeConfig, PipelineContext, PipelineStep, PipelineConfig, RepoAuthMode } from '@/lib/pipeline/types';
 
 // =============================================================================
 // Interfaces
@@ -515,7 +517,7 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
             integrityScore: finalContext.cascade.integrityScore,
             minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
         }),
-        finalContext.cascade,
+        finalContext,
     );
     // Short-Circuit des Pre-Scanners: Outcome 'reviewed', aber kein Modell lief (LEGAL_PAGES_SPEC §4a.3).
     return isAiGeneratedRun(reviewOutcome, finalContext.llmSkipped)
@@ -527,11 +529,16 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
  * Ein Zeit-Skip (DEADLINE_GUARD_SPEC §3.4) und ein halber Draft
  * (LARGE_DIFF_RECALL_SPEC Option A, `draft_partial`) stehen auch in der
  * Check-Summary — die Conclusion-Regeln (check-run.ts) bleiben unverändert (D8).
+ * Dasselbe gilt für einen ausgefallenen Pre-Scan neben einer Modell-Review.
  */
-function appendDegradationNotices(checkRunResult: CheckRunResult, cascade: CascadeState): CheckRunResult {
+function appendDegradationNotices(
+    checkRunResult: CheckRunResult,
+    finalContext: Pick<PipelineContext, 'cascade' | 'prescanStats'>,
+): CheckRunResult {
     const degradationNotices = [
-        formatTimeBudgetNotice(cascade.skippedStages),
-        formatDraftPartialNotice(cascade.draftUnreviewedFiles),
+        formatTimeBudgetNotice(finalContext.cascade.skippedStages),
+        formatDraftPartialNotice(finalContext.cascade.draftUnreviewedFiles),
+        formatPrescanUnavailableNotice(finalContext.prescanStats?.degraded),
     ].filter((notice): notice is string => notice !== null);
     if (degradationNotices.length === 0) return checkRunResult;
     return { ...checkRunResult, summary: `${checkRunResult.summary}
