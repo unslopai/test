@@ -51,8 +51,33 @@ describe('detectRepoEcosystems', () => {
             stubManifestLoader({ 'pom.xml': '<artifactId>quarkus-core</artifactId>' }),
         );
 
-        expect(withSpring).toEqual(['java-spring']);
-        expect(withoutSpring).toEqual([]);
+        expect(withSpring).toEqual(['java-spring', 'java']);
+        expect(withoutSpring).toEqual(['java']);
+    });
+
+    it('erkennt Sprachen ohne Manifest über die Dateiendung (LANGUAGE_COVERAGE_SPEC §6.6)', async () => {
+        const loadManifest = stubManifestLoader({});
+
+        const detectedEcosystems = await detectRepoEcosystems(
+            [
+                'cmd/server/main.go', 'tools/report.py', 'native/codec/frame.c', 'native/codec/frame.hpp',
+                'infra/network/subnets.tf', 'scripts/deploy/prepare-host.ps1', 'contracts/Escrow.sol',
+            ],
+            loadManifest,
+        );
+
+        expect(detectedEcosystems).toEqual(['python', 'go', 'c', 'cpp', 'terraform', 'powershell', 'solidity']);
+        expect(loadManifest).not.toHaveBeenCalled();
+    });
+
+    it('erkennt Kubernetes an Chart, Kustomization und YAML in den üblichen Verzeichnissen', async () => {
+        const detectKubernetes = (treePath: string) => detectRepoEcosystems([treePath], stubManifestLoader({}));
+
+        expect(await detectKubernetes('k8s/api-deployment.yaml')).toEqual(['kubernetes']);
+        expect(await detectKubernetes('deploy/helm/api/templates/service.yml')).toEqual(['kubernetes']);
+        expect(await detectKubernetes('ops/Chart.yaml')).toEqual(['kubernetes']);
+        expect(await detectKubernetes('overlays/prod/kustomization.yaml')).toEqual(['kubernetes']);
+        expect(await detectKubernetes('.github/workflows/ci.yml'), 'a workflow is not a manifest').toEqual([]);
     });
 
     it('erkennt Python über die Manifest-Basenames', async () => {
@@ -115,7 +140,14 @@ describe('detectDiffEcosystems', () => {
     it('mappt Python-, Go- und Java-Dateien auf ihre Ökosysteme', () => {
         expect(detectDiffEcosystems(['svc/main.py'])).toEqual(['python']);
         expect(detectDiffEcosystems(['pkg/handler.go'])).toEqual(['go']);
-        expect(detectDiffEcosystems(['src/main/java/App.java'])).toEqual(['java-spring']);
+        expect(detectDiffEcosystems(['src/main/java/App.java'])).toEqual(['java-spring', 'java']);
+    });
+
+    it('mappt C, Terraform, PowerShell und Kubernetes-Manifeste wie die Repo-Erkennung', () => {
+        expect(detectDiffEcosystems(['native/codec/frame.c', 'native/codec/frame.cpp'])).toEqual(['c', 'cpp']);
+        expect(detectDiffEcosystems(['infra/network/subnets.tf'])).toEqual(['terraform']);
+        expect(detectDiffEcosystems(['scripts/deploy/prepare-host.psm1'])).toEqual(['powershell']);
+        expect(detectDiffEcosystems(['k8s/api-deployment.yaml'])).toEqual(['kubernetes']);
     });
 
     it('liefert leer für unbekannte Dateitypen', () => {

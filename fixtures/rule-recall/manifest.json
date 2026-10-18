@@ -1,10 +1,11 @@
 {
   "r01-c-memory.diff": {
-    "description": "C memory-safety rules (allocation, bounds, secure erase, unsafe libc, embedded hallucination) under the unfiltered Law block (c is not a detectable ecosystem)",
+    "description": "C memory-safety rules (allocation, bounds, secure erase, unsafe libc, embedded hallucination) under the unfiltered Law block (detection never ran); polyglotEcosystems = TypeScript host that also contains these files",
     "detectedEcosystems": null,
     "polyglotEcosystems": [
       "typescript",
-      "nodejs"
+      "nodejs",
+      "c"
     ],
     "negativeControl": false,
     "expected": [
@@ -43,11 +44,12 @@
     ]
   },
   "r02-c-concurrency.diff": {
-    "description": "C/embedded concurrency rules plus magic-number maintainability under the unfiltered Law block (c is not a detectable ecosystem)",
+    "description": "C/embedded concurrency rules plus magic-number maintainability under the unfiltered Law block (detection never ran)",
     "detectedEcosystems": null,
     "polyglotEcosystems": [
       "typescript",
-      "nodejs"
+      "nodejs",
+      "c"
     ],
     "negativeControl": false,
     "expected": [
@@ -403,7 +405,8 @@
     "detectedEcosystems": null,
     "polyglotEcosystems": [
       "typescript",
-      "nodejs"
+      "nodejs",
+      "kubernetes"
     ],
     "negativeControl": false,
     "expected": [
@@ -458,7 +461,8 @@
     "detectedEcosystems": null,
     "polyglotEcosystems": [
       "typescript",
-      "nodejs"
+      "nodejs",
+      "terraform"
     ],
     "negativeControl": false,
     "expected": [
@@ -485,7 +489,8 @@
     "detectedEcosystems": null,
     "polyglotEcosystems": [
       "typescript",
-      "nodejs"
+      "nodejs",
+      "powershell"
     ],
     "negativeControl": false,
     "expected": [
@@ -514,6 +519,11 @@
   "r15-clean-c.diff": {
     "description": "Negative control: idiomatic, well-engineered C (checked allocation, bounded snprintf, named constants, handled errors) that must produce zero findings",
     "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs",
+      "c"
+    ],
     "negativeControl": true,
     "expected": []
   },
@@ -952,6 +962,28 @@
     "description": "Negative control: idiomatic, well-engineered Java/Spring that must produce zero findings",
     "detectedEcosystems": [
       "java-spring"
+    ],
+    "negativeControl": true,
+    "expected": []
+  },
+  "r28-clean-terraform.diff": {
+    "description": "Negative control: idiomatic Terraform (scoped IAM policy, per-function roles, encrypted bucket, non-overlapping subnets) that must produce zero findings",
+    "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs",
+      "terraform"
+    ],
+    "negativeControl": true,
+    "expected": []
+  },
+  "r29-clean-powershell.diff": {
+    "description": "Negative control: idiomatic PowerShell (validated parameters, named constants, handled errors) that must produce zero findings",
+    "detectedEcosystems": null,
+    "polyglotEcosystems": [
+      "typescript",
+      "nodejs",
+      "powershell"
     ],
     "negativeControl": true,
     "expected": []

@@ -1,0 +1,80 @@
+=== FILE: platform/thumbnails/network.tf (modified) ===
+@@ -1,0 +1,15 @@
++resource "aws_vpc" "app" {
++  cidr_block = "10.60.0.0/16"
++}
++
++resource "aws_subnet" "app_a" {
++  vpc_id            = aws_vpc.app.id
++  availability_zone = "eu-central-1a"
++  cidr_block        = "10.60.1.0/24"
++}
++
++resource "aws_subnet" "app_b" {
++  vpc_id            = aws_vpc.app.id
++  availability_zone = "eu-central-1b"
++  cidr_block        = "10.60.2.0/24"
++}
+
+=== FILE: platform/thumbnails/storage.tf (modified) ===
+@@ -1,0 +1,21 @@
++resource "aws_s3_bucket" "thumbnails" {
++  bucket = "acme-thumbnails"
++}
++
++resource "aws_s3_bucket_public_access_block" "thumbnails" {
++  bucket                  = aws_s3_bucket.thumbnails.id
++  block_public_acls       = true
++  block_public_policy     = true
++  ignore_public_acls      = true
++  restrict_public_buckets = true
++}
++
++resource "aws_s3_bucket_server_side_encryption_configuration" "thumbnails" {
++  bucket = aws_s3_bucket.thumbnails.id
++
++  rule {
++    apply_server_side_encryption_by_default {
++      sse_algorithm = "aws:kms"
++    }
++  }
++}
+
+=== FILE: platform/thumbnails/lambda.tf (modified) ===
+@@ -1,0 +1,36 @@
++data "aws_iam_policy_document" "thumbnail_assume" {
++  statement {
++    actions = ["sts:AssumeRole"]
++
++    principals {
++      type        = "Service"
++      identifiers = ["lambda.amazonaws.com"]
++    }
++  }
++}
++
++resource "aws_iam_role" "thumbnail_exec" {
++  name               = "thumbnail-render-exec"
++  assume_role_policy = data.aws_iam_policy_document.thumbnail_assume.json
++}
++
++resource "aws_iam_role_policy" "thumbnail_access" {
++  name = "thumbnail-render-access"
++  role = aws_iam_role.thumbnail_exec.id
++  policy = jsonencode({
++    Version = "2012-10-17"
++    Statement = [{
++      Effect   = "Allow"
++      Action   = ["s3:GetObject", "s3:PutObject"]
++      Resource = "${aws_s3_bucket.thumbnails.arn}/*"
++    }]
++  })
++}
++
++resource "aws_lambda_function" "thumbnail_render" {
++  function_name = "thumbnail-render"
++  role          = aws_iam_role.thumbnail_exec.arn
++  handler       = "render.handler"
++  runtime       = "nodejs20.x"
++  filename      = "build/thumbnail-render.zip"
++}

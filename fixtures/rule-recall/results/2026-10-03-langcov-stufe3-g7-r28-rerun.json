@@ -1,0 +1,66 @@
+{
+  "capturedAt": "2026-10-03T09:50:26.448Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 3,
+  "pathMode": "production",
+  "ecosystems": "polyglot",
+  "llmExtensions": [
+    ".tf"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "fixture": "r28-clean-terraform.diff",
+      "jobId": "543f1106-02e2-4915-9a84-15f17e6f392c",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 15,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 1
+    },
+    {
+      "fixture": "r28-clean-terraform.diff",
+      "jobId": "741f0b4c-47ca-41c5-adad-f7608edd7c47",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 2
+    },
+    {
+      "fixture": "r28-clean-terraform.diff",
+      "jobId": "7797ac3b-4358-4e1f-8d72-3ed402f3439d",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 1,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": [],
+      "runIndex": 3
+    }
+  ]
+}

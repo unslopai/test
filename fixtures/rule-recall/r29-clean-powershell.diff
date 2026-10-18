@@ -1,0 +1,76 @@
+=== FILE: platform/scripts/maintenance/archive-logs.ps1 (modified) ===
+@@ -1,0 +1,23 @@
++[CmdletBinding()]
++param(
++    [Parameter(Mandatory)]
++    [ValidateScript({ Test-Path -Path $_ -PathType Container })]
++    [string]$LogDirectory,
++
++    [ValidateRange(1, 365)]
++    [int]$RetentionDays = 30
++)
++
++$ErrorActionPreference = 'Stop'
++$cutoffDate = (Get-Date).AddDays(-$RetentionDays)
++$expiredLogs = @(Get-ChildItem -Path $LogDirectory -Filter '*.log' -File |
++    Where-Object { $_.LastWriteTime -lt $cutoffDate })
++
++foreach ($expiredLog in $expiredLogs) {
++    $archivePath = "$($expiredLog.FullName).zip"
++    Compress-Archive -Path $expiredLog.FullName -DestinationPath $archivePath
++    Remove-Item -Path $expiredLog.FullName
++    Write-Verbose "Archived $($expiredLog.Name) to $archivePath"
++}
++
++Write-Output "Archived $($expiredLogs.Count) log files older than $RetentionDays days"
+
+=== FILE: platform/scripts/health/check-disk-space.ps1 (modified) ===
+@@ -1,0 +1,24 @@
++[CmdletBinding()]
++param(
++    [ValidateRange(1, 99)]
++    [int]$MinimumFreePercent = 15
++)
++
++$ErrorActionPreference = 'Stop'
++$FixedDiskDriveType = 3
++$PercentScale = 100
++
++$fixedDrives = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType = $FixedDiskDriveType"
++$lowDrives = @($fixedDrives | Where-Object {
++    $_.Size -gt 0 -and (($_.FreeSpace / $_.Size) * $PercentScale) -lt $MinimumFreePercent
++})
++
++foreach ($lowDrive in $lowDrives) {
++    $freePercent = [math]::Round(($lowDrive.FreeSpace / $lowDrive.Size) * $PercentScale, 1)
++    Write-Warning "Drive $($lowDrive.DeviceID) has $freePercent percent free, below the threshold of $MinimumFreePercent"
++}
++
++if ($lowDrives.Count -gt 0) {
++    exit 1
++}
++Write-Output 'All fixed drives are above the free-space threshold'
+
+=== FILE: platform/scripts/services/restart-worker.ps1 (modified) ===
+@@ -1,0 +1,21 @@
++[CmdletBinding()]
++param(
++    [Parameter(Mandatory)]
++    [ValidatePattern('^[A-Za-z0-9_.-]+$')]
++    [string]$ServiceName,
++
++    [ValidateRange(5, 300)]
++    [int]$TimeoutSeconds = 60
++)
++
++$ErrorActionPreference = 'Stop'
++try {
++    Restart-Service -Name $ServiceName
++    $workerService = Get-Service -Name $ServiceName
++    $workerService.WaitForStatus('Running', [TimeSpan]::FromSeconds($TimeoutSeconds))
++    Write-Output "Service $ServiceName is running"
++}
++catch {
++    Write-Warning "Restart of service $ServiceName failed: $($_.Exception.Message)"
++    throw
++}

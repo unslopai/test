@@ -1,5 +1,20 @@
 # Rule-Recall Benchmark
 
+## Sprachabdeckung Stufe 3 (2026-10-03): Law-Filter-Fix 4/30 → 30/30, G7 96/96 über 3 Läufe, 0 Findings auf 15 Kontroll-Läufen
+
+Branch `feat/langcov-stufe3` auf `main` `94a7b37`. Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, alle Läufe mit `--no-escalation --keep`, ohne RAG und Reference Practices. Methode, Schattenlauf und Entscheidung je Sprache: `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.6.
+
+| Lauf | Aufruf | Ergebnis | Kosten | Report |
+|---|---|---|---|---|
+| Law-Filter-Referenz vorher (`main`) | `--bypass-filter --ecosystems polyglot --only r01,r02,r11,r12,r13` | Draft **4/30** (r01 1/8, r02 3/4, r11 0/11, r12 0/4, r13 0/3), Combined 21/30 | $0,23 | `results/2026-10-03-langcov-stufe3-lawfilter-before.json` |
+| Law-Filter-Referenz nachher | derselbe | Draft **30/30**, Combined 30/30, nach Verifier 30/30 | $0,16 | `results/2026-10-03-langcov-stufe3-lawfilter-after.json` |
+| G7, Produktionspfad | `--only r01,r02,r09,r10,r12,r13,r15,r21,r27,r28,r29 --llm-extensions .java,.go,.c,.h,.cpp,.cc,.cxx,.hpp,.tf,.ps1,.psm1 --ecosystems polyglot --runs 3` | Draft 93/96, **Combined 96/96**, nach Verifier 96/96; 15 Kontroll-Läufe **0 CRITICAL, 0 WARNING**; einziger Draft-Miss ARCH-005 auf r10 (3/3 Läufe, vom Pre-Scan gedeckt); 0 False Refutations | $0,71 | `results/2026-10-03-langcov-stufe3-g7-production.json` |
+| G7-Nachlauf r28 | `--only r28 --llm-extensions .tf --ecosystems polyglot --runs 3` | 0 Findings ×3 (r28 nach dem Review in einem Terraform-Modul) | $0,02 | `results/2026-10-03-langcov-stufe3-g7-r28-rerun.json` |
+
+Latenz Draft plus Verify in G7, Mittel / Max je Fixture (SQL auf `review_job_llm_calls`, sequenziell ohne parallele Last): r01 53,4 / 62,7 s, r02 38,5 / 58,9 s, r09 46,7 / 61,7 s, r10 62,5 / 77,8 s, r12 41,9 / 47,0 s, r13 22,3 / 26,7 s, r15 7,0 / 8,0 s, r21 5,3 / 7,1 s, r27 5,3 / 7,0 s, r28 14,4 / 19,0 s, r29 4,8 / 5,3 s.
+
+Neue Fixtures: `r28-clean-terraform.diff` und `r29-clean-powershell.diff` (Negativ-Kontrollen). Das Manifest-Feld `polyglotEcosystems` nennt jetzt, was die Erkennung für einen TypeScript-Host mit den Fixture-Dateien liefert (`law.test.ts` prüft das); r15, r28 und r29 haben es neu. Auf r13 kam in beiden Referenzläufen zuerst eine leere Draft-Antwort, der Sofort-Retry heilte sie.
+
 ## Pre-Scanner SEC-009 über Importe aufgelöst (2026-10-01): 13 Fehlalarme weg, 0 neue Findings auf 9 Korpora, Prescan-only 70 → 72/177
 
 Branch `fix/prescan-sec009-precision` auf `main` `a7f1072`, 0 Token (`--prescan-only`, Supabase-Variablen nur als Platzhalter gesetzt, damit die Module laden; der Aufräum-Schritt am Ende scheitert daran erwartungsgemäß mit `fetch failed`). Neues Modul `packages/prescan/src/rules/ast/process-bindings.ts`: JS/TS-`exec`/`execSync` zählen nur noch, wenn der Aufruf über die Importe der Datei auf `child_process` zurückgeht. Python-Aufrufe laufen über die Importe von `subprocess`/`os`/`shlex`/`asyncio`.

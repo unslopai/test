@@ -13,6 +13,7 @@ import { extractTokenUsage, parseModelJson } from '@/lib/pipeline/helpers';
 import { aggregateIssuesByRuleAndFile } from '@/lib/pipeline/finding-aggregation';
 import { validateIssuesAgainstManifest } from '@/lib/pipeline/issue-validation';
 import { normalizeGatekeeperIssue } from '@/lib/pipeline/gatekeeper-rules';
+import { downgradeImportExistenceClaim, isImportExistenceClaim } from '@/lib/pipeline/import-existence-claims';
 import { clampConfidence } from '@/lib/pipeline/claim-verification';
 import { CallBudgetExhaustedError, DEFAULT_RETRY_POLICY, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
 import { hasBudgetForCall } from '@/lib/pipeline/deadline';
@@ -89,12 +90,18 @@ export async function runReviewerPass(
         context.promptConfig.activeConditionIds,
     );
     // GATE-001 (SPEC.md §12.4 A12c): immer CRITICAL, fester Kundentext.
-    const normalizedIssues = acceptedIssues.map(normalizeGatekeeperIssue);
+    // HAL-002 auf einer Import-Zeile endet als WARNING (LANGUAGE_COVERAGE_SPEC §6.5).
+    const normalizedIssues = acceptedIssues.map(normalizeGatekeeperIssue).map(downgradeImportExistenceClaim);
     const scopedIssues = filterIssuesByScope(normalizedIssues, context.promptConfig);
     // Aggregation VOR der Claim-Verifikation (ROADMAP §7): N Vorkommen
     // derselben Regel in derselben Datei werden EIN Finding mit
     // occurrences-Liste — also ein Claim, ein Verdict, ein Kommentar.
-    const aggregatedIssues = aggregateIssuesByRuleAndFile(scopedIssues);
+    // Import-Claims bündeln getrennt: sonst zöge ein HAL-002 auf einem Aufruf
+    // derselben Datei den abgestuften Import-Claim wieder auf CRITICAL.
+    const aggregatedIssues = [
+        ...aggregateIssuesByRuleAndFile(scopedIssues.filter((scopedIssue) => !isImportExistenceClaim(scopedIssue))),
+        ...aggregateIssuesByRuleAndFile(scopedIssues.filter(isImportExistenceClaim)),
+    ];
 
     return {
         aggregatedIssues,
