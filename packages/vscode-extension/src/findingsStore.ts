@@ -1,20 +1,18 @@
 /**
  * Holds the findings of the last scan, linked to their diagnostics.
  *
- * Key: file URI + issueKey (start line + rule), because VS Code
+ * Key: file URI + issueKey (start line + full rule label), because VS Code
  * clones Diagnostic objects when passing them through — object identity is
- * unusable as a link.
+ * unusable as a link. A diagnostic carries only the bare rule ID as its code,
+ * so it is resolved back to its key via keyForDiagnostic (issueKey.ts).
  */
 import type { ScanIssue } from '@unslop/shared';
 import * as vscode from 'vscode';
+import { issueKeyOf, resolveIssueKey, type DiagnosticAnchor } from './issueKey';
 
 export interface TrackedFinding {
     readonly issue: ScanIssue;
     stale: boolean;
-}
-
-export function issueKeyOf(issueLine: number, issueRule: string): string {
-    return `${issueLine}::${issueRule}`;
 }
 
 export class FindingsStore {
@@ -33,6 +31,11 @@ export class FindingsStore {
 
     lookup(fileUri: vscode.Uri, issueKey: string): TrackedFinding | undefined {
         return this.findingsByFile.get(fileUri.toString())?.get(issueKey);
+    }
+
+    keyForDiagnostic(fileUri: vscode.Uri, anchor: DiagnosticAnchor): string | undefined {
+        const trackedFindings = this.findingsByFile.get(fileUri.toString());
+        return trackedFindings ? resolveIssueKey(anchor, trackedFindings) : undefined;
     }
 
     findingsFor(fileUri: vscode.Uri): readonly TrackedFinding[] {

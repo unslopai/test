@@ -78,7 +78,7 @@ export async function resolveEntitlement(userId: string): Promise<EntitlementRes
 export type ScanQuotaOutcome = 'allowed' | 'quota_exceeded' | 'trial_exhausted';
 
 /** Welche Oberfläche einen Scan verbraucht (MCP_SPEC.md §4.6). */
-export type ScanSource = 'cli' | 'mcp' | 'webhook';
+export type ScanSource = 'cli' | 'mcp' | 'webhook' | 'dashboard';
 
 /**
  * Webhook-Reservierung (D10): CLI-/MCP-Scans sehen nur 80% der Fenster-Limits,
@@ -88,13 +88,21 @@ export type ScanSource = 'cli' | 'mcp' | 'webhook';
  */
 const WEBHOOK_RESERVE_FRACTION = 0.2;
 
+/**
+ * Spuren mit den vollen Fenster-Limits: die PR-Reviews, für die die Reserve
+ * existiert. 'dashboard' ist der Klick des Repo-Besitzers auf „Review now“
+ * (GITHUB_APP_SPEC §4.10): ein PR-Review mit Check Run auf seinem eigenen PR,
+ * menschlich getaktet, kein Agent im Hintergrund.
+ */
+const FULL_WINDOW_SOURCES: ReadonlySet<ScanSource> = new Set(['webhook', 'dashboard']);
+
 interface EffectiveScanLimits {
     readonly hourlyMax: number;
     readonly monthlyMax: number;
 }
 
 function resolveEffectiveLimits(plan: PlanEntitlements, source: ScanSource): EffectiveScanLimits {
-    if (source === 'webhook') {
+    if (FULL_WINDOW_SOURCES.has(source)) {
         return { hourlyMax: plan.scansPerHour, monthlyMax: plan.scansPerMonth };
     }
     return {

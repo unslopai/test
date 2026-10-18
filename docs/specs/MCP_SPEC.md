@@ -429,13 +429,15 @@ Configuration: `rerollLimit` in `~/.config/unslop/config.json`, default 3, `0` d
 
 ### 4.6 Quota reservation (D10)
 
-**No RPC change.** `consume_scan_quota` keeps its signature; the TS wrapper passes reduced limits for non-webhook sources.
+**No RPC change.** `consume_scan_quota` keeps its signature; the TS wrapper passes reduced limits for agent and CLI sources.
 
 ```ts
 const WEBHOOK_RESERVE_FRACTION = 0.2;
+// PR reviews: the webhook and the owner's "Review now" click (GITHUB_APP_SPEC §4.10).
+const FULL_WINDOW_SOURCES: ReadonlySet<ScanSource> = new Set(['webhook', 'dashboard']);
 
 function resolveEffectiveLimits(plan: PlanEntitlements, source: ScanSource): EffectiveScanLimits {
-    if (source === 'webhook') {
+    if (FULL_WINDOW_SOURCES.has(source)) {
         return { hourlyMax: plan.scansPerHour, monthlyMax: plan.scansPerMonth };
     }
     return {
@@ -457,6 +459,8 @@ The trial lifetime cap is **not** reduced — it is a lifetime allowance, and sh
 
 *(Amendment 2026-08-09, migration 035: the live verification exposed that both quota RPCs incremented their counters **before** checking the limits — a client hammering through `quota_exceeded` denials could push the hourly counter past the webhook cap and break the very reservation this section defines. Since migration 035 (`quota_rpcs_deny_without_consume`), denied attempts consume nothing: the increment is guarded inside the UPDATE's own WHERE clause, atomically. D10 now holds against misbehaving clients, not just polite ones.)*
 
+*(Amendment 2026-10-13, migration 064: `ScanSource` gains `'dashboard'`, the job origin of the "Review now" button on the repository detail page (GITHUB_APP_SPEC §4.10, `POST /api/repos/[id]/review`). It gets the **full** window limits like `'webhook'`, not the reduced lane: the reservation exists so that a developer's agent running in the background cannot drain the quota that gates the team's PR reviews, and a click by the repository owner on their own pull request, with a Check Run, is such a PR review — one at a time, human-paced, paid for by the person clicking. With the reduced lane the button would lock at 48/hour on Pro while the next push to the same PR still passes. The trial lifetime cap stays unreduced for every source. `review_jobs.source` admits `'dashboard'` since migration 064. The MCP route `POST /api/cli/pr/review` now shares its submit core with the dashboard route (`src/lib/pr-review/submit-pr-review.ts`); its behaviour, lane (`'mcp'`, reduced) and error contract are unchanged, pinned by the untouched `src/app/api/cli/pr/review/billing-gate.test.ts`.)*
+
 ### 4.7 New endpoints
 
 All under `/api/cli/*`, the existing machine-auth namespace, all using `resolveApiKey`. The namespace is machine-auth generally rather than CLI-specific; renaming it is out of scope for this spec.
@@ -466,7 +470,7 @@ All under `/api/cli/*`, the existing machine-auth namespace, all using `resolveA
 | `/api/cli/pr/review` | POST | Body `{ repoFullName, prNumber }`. Entitlement + quota gate (`source: 'mcp'`), verifies the repo belongs to the key owner and is `active`, creates a `webhook`-shaped `review_jobs` row so `github-reporter-step` runs, opens the Check Run, dispatches via `after()`. Returns `202 { jobId, checkRunUrl }`. **App-installed repos only**: legacy OAuth-connected repos are refused with `github_app_required` (§6) — in oauth mode `github-reporter-step` posts `REQUEST_CHANGES` (`github-reporter-step.ts:130-138`) and cannot open Check Runs, which would break the §5.4 blast-radius guarantee. |
 | `/api/cli/findings/resolve` | POST | Body `{ repoFullName, findingId, rationale, prNumber? }`. Writes `finding_suppressions`; if `prNumber` is present and a `finding_comments` row with a non-null `github_comment_id` exists, resolves the GitHub review thread. Returns `{ ledgerId, githubResolved: boolean }`. *(Phase-3 notes, 2026-08-09: body additionally accepts an optional `commitSha` (the MCP client sends its local HEAD; fallback is the matched job's head sha). `rule`/`severity` are resolved **server-side** from the most recent `done` job whose result contains the finding id (jsonb containment) — only real findings are ledgerable; unknown ids get 404 `finding_not_found`. The ledger write happens strictly **before** any GitHub interaction; GitHub failures degrade to `githubResolved: false` with an additive `githubSkippedReason` (`no_inline_comment` \| `thread_not_found` \| `github_error`). Thread resolution is GraphQL-only (`resolveReviewThread`); REST has no equivalent. New wire codes: 404 `finding_not_found`, 422 `rationale_too_short`/`invalid_finding_id`/`invalid_commit_sha`, 500 `ledger_write_failed`. No entitlement/quota gate — a dismissal costs no LLM call.)* |
 
-`review_jobs.source` gains `'mcp'` (migration §8). MCP scans are metered and reported separately from CLI scans — the unit-economics telemetry in `review_job_llm_calls` becomes uninterpretable if agent-driven and human-driven scans are indistinguishable.
+`review_jobs.source` gains `'mcp'` (migration §8; `'dashboard'` follows in migration 064, see the §4.6 amendment). MCP scans are metered and reported separately from CLI scans — the unit-economics telemetry in `review_job_llm_calls` becomes uninterpretable if agent-driven and human-driven scans are indistinguishable.
 
 *(Phase-2 implementation note, 2026-08-09: because `'mcp'` now carries both job shapes — Phase-1 scans with a local diff and PR reviews without one — the worker routes by **payload shape**, not by source: a `diff` field selects the local-diff pipeline, its absence the PR pipeline including `github-reporter`. The prior `source === 'cli'` check would have mis-routed Phase-1 MCP scans; fixed and pinned by `src/lib/worker-routing.test.ts`.)*
 

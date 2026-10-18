@@ -4,6 +4,7 @@
  */
 import type { ScanIssue } from '@unslop/shared';
 import { formatOccurrenceLineRefs } from './lineRefs';
+import { splitRuleLabel } from './ruleLabel';
 
 export const STALE_SUFFIX = ' [stale — code changed since scan]';
 
@@ -27,9 +28,20 @@ export function occurrenceSuffixOf(issue: ScanIssue): string {
         + `lines ${formatOccurrenceLineRefs(issue.occurrences)}]`;
 }
 
+/**
+ * Der Diagnostic-Code trägt nur die nackte Regel-ID (`unslop(COND-003)`), der
+ * Titel steht deshalb vorn in der Meldung: „Lexical Slop: <critique>“ liest
+ * sich als Überschrift plus Befund. Ohne Titel bleibt die Kritik allein.
+ */
+function rulePrefixOf(issue: ScanIssue): string {
+    const { ruleTitle } = splitRuleLabel(issue.rule);
+    return ruleTitle === null ? '' : `${ruleTitle}: `;
+}
+
 export function buildDiagnosticMessage(issue: ScanIssue, isStale: boolean): string {
     // fixAdvice ist Prosa: sie steht in der Meldung, nie im Apply-Payload (applicableFixOf).
-    return issue.critique
+    return rulePrefixOf(issue)
+        + issue.critique
         + occurrenceSuffixOf(issue)
         + (issue.fixAdvice ? `\nHow to fix: ${issue.fixAdvice}` : '')
         + (isStale ? STALE_SUFFIX : '')

@@ -5,6 +5,8 @@
  * Jede Funktion ist typisiert und wirft bei Fehlern aussagekräftige Exceptions.
  */
 import * as crypto from 'crypto';
+import { parseOpenPullRequest, parsePullRequestHeadState } from '@/lib/github-webhook-payload';
+import type { OpenPullRequest, PullRequestHeadState } from '@/lib/github-webhook-payload';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
@@ -843,11 +845,56 @@ export async function getPullRequestHeadSha(
     repoFullName: string,
     prNumber: number,
 ): Promise<string> {
-    const pr = await githubFetch<{ head: { sha: string } }>(
-        `/repos/${repoFullName}/pulls/${prNumber}`,
-        token,
+    const pullRequestHead = await getPullRequestHead(token, repoFullName, prNumber);
+    return pullRequestHead.headSha;
+}
+
+/**
+ * Head-Commit und Zustand eines PRs, strukturell geparst [ARCH-002]. Der
+ * Dashboard-Weg (GITHUB_APP_SPEC §4.10) braucht den Zustand: ein PR, der
+ * zwischen Liste und Klick geschlossen wurde, bekommt keinen Review mehr.
+ *
+ * @throws GitHubApiError bei HTTP-Fehlern oder einer Antwort ohne Head/State
+ */
+export async function getPullRequestHead(
+    token: string,
+    repoFullName: string,
+    prNumber: number,
+): Promise<PullRequestHeadState> {
+    const pullRequestEndpoint = `/repos/${repoFullName}/pulls/${prNumber}`;
+    const rawPullRequest = await githubFetch<unknown>(pullRequestEndpoint, token);
+    const pullRequestHead = parsePullRequestHeadState(rawPullRequest);
+    if (!pullRequestHead) {
+        throw new GitHubApiError(502, pullRequestEndpoint, 'Antwort ohne head.sha oder state');
+    }
+    return pullRequestHead;
+}
+
+/** Obergrenze der Dashboard-Liste: eine Seite, die zuletzt aktualisierten zuerst. */
+export const OPEN_PULL_REQUESTS_PAGE_SIZE = 50;
+
+/**
+ * Die offenen PRs eines Repos, zuletzt aktualisierte zuerst — Liste der
+ * Repo-Detailseite (GITHUB_APP_SPEC §4.10). Bewusst nur eine Seite: wer mehr
+ * als 50 offene PRs hat, findet die älteren auf GitHub, und jeder davon wird
+ * beim nächsten Push ohnehin geprüft. Unparsebare Einträge fallen heraus.
+ *
+ * @param installationToken - Installation-Token der GitHub App (pull_requests:read)
+ */
+export async function listOpenPullRequests(
+    installationToken: string,
+    repoFullName: string,
+): Promise<OpenPullRequest[]> {
+    const rawPullRequests = await githubFetch<unknown>(
+        `/repos/${repoFullName}/pulls?state=open&sort=updated&direction=desc&per_page=${OPEN_PULL_REQUESTS_PAGE_SIZE}`,
+        installationToken,
     );
-    return pr.head.sha;
+    if (!Array.isArray(rawPullRequests)) {
+        throw new GitHubApiError(502, `/repos/${repoFullName}/pulls`, 'Antwort ist keine Liste');
+    }
+    return rawPullRequests
+        .map(parseOpenPullRequest)
+        .filter((openPullRequest): openPullRequest is OpenPullRequest => openPullRequest !== null);
 }
 
 // =============================================================================

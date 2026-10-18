@@ -55,19 +55,24 @@ describe('consumeScanQuota', () => {
         rpcMock.mockReset();
     });
 
-    it('grants webhook scans the FULL window limits (the reserved lane, D10)', async () => {
-        rpcMock.mockResolvedValue({ data: 'allowed', error: null });
+    // 'dashboard' = Klick des Besitzers auf „Review now“: ein PR-Review mit
+    // Check Run, deshalb dieselbe Spur wie der Webhook (GITHUB_APP_SPEC §4.10).
+    it.each(['webhook', 'dashboard'] as const)(
+        'grants %s scans the FULL window limits (the reserved lane, D10)',
+        async (pullRequestSource) => {
+            rpcMock.mockResolvedValue({ data: 'allowed', error: null });
 
-        const quotaOutcome = await consumeScanQuota('user-under-test', PRO_PLAN, 'webhook');
+            const quotaOutcome = await consumeScanQuota('user-under-test', PRO_PLAN, pullRequestSource);
 
-        expect(quotaOutcome).toBe('allowed');
-        expect(rpcMock).toHaveBeenCalledWith('consume_scan_quota', {
-            target_user_id: 'user-under-test',
-            hourly_max: 60,
-            monthly_max: 500,
-            trial_max: 100,
-        });
-    });
+            expect(quotaOutcome).toBe('allowed');
+            expect(rpcMock).toHaveBeenCalledWith('consume_scan_quota', {
+                target_user_id: 'user-under-test',
+                hourly_max: 60,
+                monthly_max: 500,
+                trial_max: 100,
+            });
+        },
+    );
 
     // MCP_SPEC.md §10: DER Kern-Test der Reservierung. Bei Stunden-Stand 48
     // ist die CLI/MCP-Lane (Limit 48) erschöpft, während ein Webhook-Review

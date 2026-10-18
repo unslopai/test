@@ -4,20 +4,18 @@
  * Auth: x-api-key (Machine-Auth). Legt einen webhook-FÖRMIGEN review_jobs-
  * Eintrag mit source 'mcp' an (github-reporter läuft, Findings landen als
  * COMMENT-Review auf GitHub), eröffnet den Check Run und dispatcht via after().
+ * Der Kern ab der Quota liegt in `@/lib/pr-review/submit-pr-review` und wird
+ * mit dem Dashboard-Knopf „Review now“ geteilt (GITHUB_APP_SPEC §4.10).
  *
  * App-only (§5.4): Legacy-OAuth-Repos werden mit 409 github_app_required
  * abgelehnt — der OAuth-Reporter-Pfad postet REQUEST_CHANGES und kann keine
  * Check Runs öffnen, was die Blast-Radius-Garantie bräche.
  */
 import { NextResponse } from 'next/server';
-import { after } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveApiKey } from '@/lib/api-keys';
-import { resolveEntitlement, consumeScanQuota, quotaRetryAfterSeconds } from '@/lib/billing/entitlements';
-import { getInstallationToken, GitHubAppAuthError } from '@/lib/github-app';
-import { getPullRequestHeadSha } from '@/lib/github';
-import { startGatekeeperCheckRun } from '@/lib/check-run';
-import { processReviewJob } from '@/lib/worker';
+import { resolveEntitlement } from '@/lib/billing/entitlements';
+import { prReviewRejectionResponse, submitPullRequestReview } from '@/lib/pr-review/submit-pr-review';
 
 // 300s: after() führt die volle Cascade in derselben Invocation aus.
 export const maxDuration = 300;
@@ -64,69 +62,24 @@ export async function POST(request: Request) {
     }
 
     // Quota NACH Validierung und Repo-Lookup (ein 422/404/409 kostet keinen
-    // Scan, SERVER_AUDIT_2026-09 L1), aber VOR den GitHub-Calls, damit ein
-    // erschöpftes Kontingent keine Token-Abrufe mehr auslöst. Lane 'mcp' (§4.6).
-    const quotaOutcome = await consumeScanQuota(apiKey.userId, entitlement.plan, 'mcp');
-    if (quotaOutcome === 'trial_exhausted') {
-        return NextResponse.json({ error: 'trial_quota_exhausted' }, { status: 402 });
+    // Scan, SERVER_AUDIT_2026-09 L1); Lane 'mcp' (§4.6).
+    const submitOutcome = await submitPullRequestReview({
+        target: {
+            repositoryId: repoRow.id,
+            ownerUserId: repoRow.user_id,
+            repoFullName,
+            installationId: repoRow.installation_id,
+        },
+        prNumber,
+        source: 'mcp',
+        plan: entitlement.plan,
+        invocationStartedAtMs,
+    });
+
+    if (submitOutcome.kind === 'rejected') {
+        return prReviewRejectionResponse(submitOutcome.rejection);
     }
-    if (quotaOutcome !== 'allowed') {
-        return NextResponse.json(
-            { error: 'rate_limit_exceeded' },
-            { status: 429, headers: { 'Retry-After': String(quotaRetryAfterSeconds()) } },
-        );
-    }
-
-    let installationToken: string;
-    try {
-        installationToken = await getInstallationToken(repoRow.installation_id);
-    } catch (tokenError: unknown) {
-        const failureReason = tokenError instanceof GitHubAppAuthError ? tokenError.reason : 'unknown';
-        console.error(`[PrReview] Kein Installation-Token (${failureReason}) für ${repoFullName}.`);
-        return NextResponse.json({ error: 'github_app_unavailable' }, { status: 502 });
-    }
-
-    let prHeadSha: string;
-    try {
-        prHeadSha = await getPullRequestHeadSha(installationToken, repoFullName, prNumber);
-    } catch {
-        return NextResponse.json({ error: 'pr_not_found' }, { status: 404 });
-    }
-
-    const prUrl = `https://github.com/${repoFullName}/pull/${prNumber}`;
-    const { data: insertedJob, error: insertError } = await supabase
-        .from('review_jobs')
-        .insert({
-            repository_id: repoRow.id,
-            source: 'mcp',
-            status: 'pending',
-            pr_number: prNumber,
-            pr_url: prUrl,
-            // Webhook-förmiger Payload OHNE diff — der Worker routet danach in
-            // die PR-Pipeline inkl. github-reporter (§4.7).
-            payload: {
-                repo_full_name: repoFullName,
-                pr_number: prNumber,
-                pr_url: prUrl,
-                pr_head_sha: prHeadSha,
-                action: 'mcp_review',
-            },
-        })
-        .select('id')
-        .single();
-
-    if (insertError || !insertedJob) {
-        console.error('[PrReview] Job-Insert fehlgeschlagen:', insertError);
-        return NextResponse.json({ error: 'job_creation_failed' }, { status: 500 });
-    }
-
-    const checkRunUrl = await openCheckRun(
-        installationToken, insertedJob.id, repoRow.id, repoFullName, prNumber, prHeadSha,
-    );
-
-    after(() => processReviewJob(insertedJob.id, repoRow.user_id, invocationStartedAtMs));
-
-    return NextResponse.json({ jobId: insertedJob.id, checkRunUrl }, { status: 202 });
+    return NextResponse.json({ jobId: submitOutcome.jobId, checkRunUrl: submitOutcome.checkRunUrl }, { status: 202 });
 }
 
 // =============================================================================
@@ -142,35 +95,4 @@ function validatePrReviewRequest(requestBody: PrReviewRequestBody | null): strin
         return 'invalid_pr_number';
     }
     return null;
-}
-
-/**
- * Eröffnet den Check Run und heftet ihn an den Job — identisch zum Webhook-
- * Pfad best effort: ohne Check läuft das Review trotzdem, der Fehler ist
- * bereits in startGatekeeperCheckRun laut geloggt.
- */
-async function openCheckRun(
-    installationToken: string,
-    jobId: string,
-    repositoryId: string,
-    repoFullName: string,
-    prNumber: number,
-    prHeadSha: string,
-): Promise<string | null> {
-    const checkRunId = await startGatekeeperCheckRun(installationToken, repoFullName, prHeadSha);
-    if (checkRunId === null) {
-        return null;
-    }
-
-    const { error: attachError } = await supabase
-        .from('review_jobs')
-        .update({ check_run_id: checkRunId })
-        .eq('id', jobId)
-        .eq('repository_id', repositoryId);
-
-    if (attachError) {
-        console.error(`[PrReview] check_run_id ${checkRunId} nicht an Job ${jobId} anheftbar:`, attachError);
-    }
-
-    return `https://github.com/${repoFullName}/pull/${prNumber}/checks?check_run_id=${checkRunId}`;
 }
