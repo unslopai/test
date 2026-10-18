@@ -49,7 +49,7 @@ import {
 } from '@/lib/pipeline/review-scope';
 import {
     formatDeepLaneNotice, formatDraftPartialNotice, formatDraftRound2Notice, formatPrescanUnavailableNotice, formatRepoContextNotice,
-    formatTimeBudgetNotice,
+    formatReportIncompleteNotice, formatTimeBudgetNotice,
 } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
@@ -577,9 +577,12 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
 
     const reportableIssues = collectReportableIssues(finalContext);
     if (reviewOutcome === 'deterministic_only') {
+        // Auch Pre-Scan-Befunde gehen als Review mit Kommentaren raus: ein Fehler danach steht hier.
+        const reportIncompleteNotice = formatReportIncompleteNotice(finalContext.cascade.degradations);
+        const deterministicSummary = buildDeterministicOnlySummary(finalContext, reportableIssues);
         return deriveDeterministicOnlyConclusion(
             reportableIssues,
-            buildDeterministicOnlySummary(finalContext, reportableIssues),
+            reportIncompleteNotice === null ? deterministicSummary : `${deterministicSummary}\n\n${reportIncompleteNotice}`,
         );
     }
     const findingsResult = deriveReviewConclusion(reportableIssues, {
@@ -603,6 +606,8 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
  * Modell-Review. Ohne Findings macht `markIncompleteCoverage` aus `success`
  * ein `neutral`; CRITICAL bleibt `failure` (D8). Reihenfolge wie
  * `listDegradationNotices` und der PR-Review-Text (`github-reporter-step.ts`).
+ * Ein unvollständiger Bericht (`report_incomplete`) steht nur hier und im
+ * Ergebnis: der Check schließt nach dem Reporter, der Review-Text davor.
  */
 function appendDegradationNotices(checkRunResult: CheckRunResult, finalContext: PipelineContext): CheckRunResult {
     const degradationNotices = [
@@ -612,6 +617,7 @@ function appendDegradationNotices(checkRunResult: CheckRunResult, finalContext: 
         formatRepoContextNotice(finalContext.repoContext.status, listOmittedContextPaths(finalContext.repoContext)),
         formatDraftRound2Notice(finalContext.cascade.degradations),
         formatDeepLaneNotice(finalContext.deepLane.degradations, finalContext.deepLane.unreviewedFiles),
+        formatReportIncompleteNotice(finalContext.cascade.degradations),
         describeFilesWithoutModelReview(finalContext),
     ].filter((notice): notice is string => notice !== null);
     if (degradationNotices.length === 0) return checkRunResult;

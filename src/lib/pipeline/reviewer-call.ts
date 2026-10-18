@@ -26,7 +26,7 @@ import { CallBudgetExhaustedError, DEFAULT_RETRY_POLICY, runWithTransientRetry }
 import { canRetryAfterRoleDeadline, hasBudgetForCall } from '@/lib/pipeline/deadline';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
 import type { LlmCallPhase, LlmCallStatus } from '@/lib/telemetry/llm-call-log';
-import type { CacheStatus, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
+import type { CacheStatus, EnvelopeCallResult, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import type { ModelResponseDiagnostics } from '@/lib/pipeline/helpers';
 import type { DraftFailureReason } from '@unslop/shared';
 import type { RepoContextPackage } from '@unslop/shared/repo-context';
@@ -241,45 +241,57 @@ async function runReviewerCall(
     }
 }
 
+/** Schreibt die Telemetrie-Zeile EINES Versuchs; die Latenz zählt ab dessen Start. */
+type AttemptTelemetryWriter = (
+    callStatus: LlmCallStatus,
+    cacheStatus: CacheStatus,
+    callUsage?: TokenUsage,
+    responseDiagnostics?: ModelResponseDiagnostics,
+    issuesReturned?: number,
+) => Promise<void>;
+
+function buildAttemptTelemetryWriter(context: PipelineContext, options: ReviewerPassOptions): AttemptTelemetryWriter {
+    const callStartedAt = Date.now();
+    return (callStatus, cacheStatus, callUsage, responseDiagnostics, issuesReturned) => recordLlmCall({
+        jobId: context.jobId,
+        repoId: context.repositoryId,
+        phase: options.telemetryPhase,
+        model: options.reviewerModel,
+        status: callStatus,
+        tokenUsage: callUsage,
+        latencyMs: Date.now() - callStartedAt,
+        cacheStatus,
+        responseDiagnostics,
+        repoContextTokens: options.repoContextTokens,
+        issuesReturned,
+    });
+}
+
 async function runReviewerAttempt(
     context: PipelineContext,
     options: ReviewerPassOptions,
 ): Promise<ReviewerCallOutput> {
-    const callStartedAt = Date.now();
+    const writeTelemetry = buildAttemptTelemetryWriter(context, options);
 
-    const writeTelemetry = (
-        callStatus: LlmCallStatus,
-        cacheStatus: CacheStatus,
-        callUsage?: TokenUsage,
-        responseDiagnostics?: ModelResponseDiagnostics,
-        issuesReturned?: number,
-    ) =>
-        recordLlmCall({
-            jobId: context.jobId,
-            repoId: context.repositoryId,
-            phase: options.telemetryPhase,
-            model: options.reviewerModel,
-            status: callStatus,
-            tokenUsage: callUsage,
-            latencyMs: Date.now() - callStartedAt,
-            cacheStatus,
-            responseDiagnostics,
-            repoContextTokens: options.repoContextTokens,
-            issuesReturned,
-        });
-
-    let reviewerResponse;
-    let effectiveCacheStatus: CacheStatus;
+    let envelopeResult: EnvelopeCallResult;
     try {
-        const envelopeResult = await runEnvelopeGenerateContent(options.promptEnvelope, options.userPrompt);
-        reviewerResponse = envelopeResult.generateResponse;
-        effectiveCacheStatus = envelopeResult.effectiveCacheStatus;
+        envelopeResult = await runEnvelopeGenerateContent(options.promptEnvelope, options.userPrompt);
     } catch (reviewerCallError: unknown) {
         await writeTelemetry('api_error', options.promptEnvelope.plan.cacheStatus);
         throw reviewerCallError;
     }
 
-    const callUsage = extractTokenUsage(reviewerResponse.usageMetadata, options.reviewerModel);
+    return parseReviewerAnswer(envelopeResult, options.reviewerModel, writeTelemetry);
+}
+
+/** Parst die Antwort eines Versuchs; jeder Ausgang schreibt genau eine Telemetrie-Zeile. */
+async function parseReviewerAnswer(
+    envelopeResult: EnvelopeCallResult,
+    reviewerModel: string,
+    writeTelemetry: AttemptTelemetryWriter,
+): Promise<ReviewerCallOutput> {
+    const { generateResponse: reviewerResponse, effectiveCacheStatus } = envelopeResult;
+    const callUsage = extractTokenUsage(reviewerResponse.usageMetadata, reviewerModel);
     const responseDiagnostics = extractResponseDiagnostics(reviewerResponse);
     const answerText = reviewerResponse.text ?? '';
 

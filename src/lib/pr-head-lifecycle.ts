@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { getInstallationToken } from '@/lib/github-app';
 import { completeGatekeeperCheckRun } from '@/lib/check-run';
-import { resolveStaleJobThresholdMs } from '@/lib/stale-jobs-selection';
+import { STALE_JOB_ERROR_MESSAGE, resolveStaleJobThresholdMs } from '@/lib/stale-jobs-selection';
 import type { CheckRunResult } from '@/lib/check-run';
 
 /** Server-gesetzter Präfix in review_jobs.error_message eines abgelösten Jobs. */
@@ -40,12 +40,16 @@ export function isHeadDedupeAction(prAction: string): boolean {
 
 /**
  * Job-Ursprünge, deren Check am Head hängt und die Dedupe und Ablösung deshalb
- * gleich behandeln: der Webhook und der Dashboard-Knopf „Review now“ (§4.10).
- * Ein Dashboard-Job auf dem alten Head wird vom nächsten Push abgelöst wie ein
- * Webhook-Job, und ein Reopen nach einem vollständigen Dashboard-Review läuft
- * nicht doppelt. MCP-PR-Reviews bleiben außen vor (MCP_SPEC §4.7 unverändert).
+ * gleich behandeln: der Webhook, der Dashboard-Knopf „Review now“ (§4.10) und
+ * das MCP-Tool `unslop_review_pr` (MCP_SPEC §4.7). Ein Job auf dem alten Head
+ * wird vom nächsten Push abgelöst, und ein Reopen nach einem vollständigen
+ * Review aus einer dieser Quellen läuft nicht doppelt.
+ *
+ * `mcp` trägt auch Scans mit lokalem Diff. Sie fallen trotzdem nie hinein:
+ * jede Abfrage filtert auf `pr_number` und `payload->>pr_head_sha`, und ein
+ * Scan hat weder das eine noch das andere (`cli/scan/route.ts`).
  */
-const HEAD_LIFECYCLE_SOURCES: readonly string[] = ['webhook', 'dashboard'];
+const HEAD_LIFECYCLE_SOURCES: readonly string[] = ['webhook', 'dashboard', 'mcp'];
 
 /** Ein Head-Commit eines PRs in einer Tenant-Zeile von `repositories`. */
 export interface PullRequestHead {
@@ -81,7 +85,7 @@ function isCompleteReviewRow(latestJobRow: unknown): latestJobRow is { id: strin
 /**
  * Liefert die ID des Jobs, dessen Check und PR-Review für diesen Head weiter
  * gelten, sonst null. Maßgeblich ist der JÜNGSTE abgeschlossene Job des Heads
- * (Webhook oder Dashboard): sein Check ist der, den GitHub am Commit zeigt. Ist er gescheitert,
+ * (Webhook, Dashboard oder MCP): sein Check ist der, den GitHub am Commit zeigt. Ist er gescheitert,
  * gereapt oder degradiert, läuft der neue Job wie bisher.
  *
  * Ein Lookup-Fehler führt bewusst zum neuen Review: ein doppelter Lauf ist
@@ -130,7 +134,7 @@ function parseSupersededJobRow(supersededRow: unknown): SupersededJob | null {
 }
 
 /**
- * Stellt jeden noch nicht abgeschlossenen Webhook- oder Dashboard-Job desselben PRs auf dem
+ * Stellt jeden noch nicht abgeschlossenen PR-Review-Job desselben PRs auf dem
  * VORGÄNGER-Head der Delivery auf 'error' + `[superseded]`. Fertige Jobs
  * (`done`/`error`) bleiben unangetastet: ihr Check hängt am alten Commit.
  *
@@ -236,7 +240,7 @@ const RUNNING_JOB_STATUSES: readonly string[] = ['pending', 'processing'];
  * Untergrenze für `created_at` eines Jobs, der noch laufen kann: älter als die
  * Reaper-Schwelle (Job-Budget plus eine Minute) läuft kein Job mehr. Ohne sie
  * sperrte ein nie geclaimter `pending`-Job (Instanz stirbt nach der 202, Claim
- * scheitert) den Knopf für immer — der Reaper räumt nur `processing` ab.
+ * scheitert) den Knopf, bis der gedrosselte Lazy Reaper ihn abräumt.
  */
 function oldestLiveJobCreatedAt(nowMs: number): string {
     return new Date(nowMs - resolveStaleJobThresholdMs()).toISOString();
@@ -283,6 +287,41 @@ export async function findRunningPullRequestReview(
     }
     const runningJobId: unknown = runningJobRow?.id;
     return typeof runningJobId === 'string' ? runningJobId : null;
+}
+
+/**
+ * Stellt die toten Dashboard-Jobs dieses PRs (`pending`/`processing`, älter als
+ * die Reaper-Schwelle) sofort auf 'error' mit dem Reaper-Text. Anlass: der
+ * Unique-Index aus Migration 066 zählt auch einen toten Job als laufend, die
+ * Laufend-Prüfung oben nicht — bis der gedrosselte Lazy Reaper kommt, bekäme
+ * ein Klick sonst eine 409 nach gebuchter Quota, ohne dass ein Review läuft.
+ * Zurück kommen nur die Zeilen, die dieses UPDATE umgestellt hat; ihre Checks
+ * schließt der Aufrufer. Ein DB-Fehler liefert [] und lässt die 409 stehen.
+ */
+export async function releaseDeadDashboardReviews(
+    repositoryId: string,
+    prNumber: number,
+    nowMs: number = Date.now(),
+): Promise<readonly SupersededJob[]> {
+    const { data: releasedRows, error: releaseError } = await supabase
+        .from('review_jobs')
+        .update({ status: 'error', error_message: STALE_JOB_ERROR_MESSAGE, updated_at: new Date(nowMs).toISOString() })
+        .eq('repository_id', repositoryId)
+        .eq('pr_number', prNumber)
+        .eq('source', 'dashboard')
+        .in('status', RUNNING_JOB_STATUSES)
+        .lte('created_at', oldestLiveJobCreatedAt(nowMs))
+        .select('id, check_run_id');
+
+    if (releaseError) {
+        console.error(
+            `[PrHeadLifecycle] Tote Dashboard-Jobs von PR #${prNumber} nicht abräumbar — 409 bleibt: ${releaseError.message}`,
+        );
+        return [];
+    }
+    return (releasedRows ?? [])
+        .map(parseSupersededJobRow)
+        .filter((releasedJob): releasedJob is SupersededJob => releasedJob !== null);
 }
 
 // =============================================================================

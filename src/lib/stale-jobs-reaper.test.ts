@@ -6,13 +6,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
-    processingJobsEqMock,
+    reapableJobsInMock,
     reapSelectMock,
     reapStatusEqMock,
     completeCheckRunMock,
     pruneDeliveryClaimsMock,
 } = vi.hoisted(() => ({
-    processingJobsEqMock: vi.fn(),
+    reapableJobsInMock: vi.fn(),
     reapSelectMock: vi.fn(),
     reapStatusEqMock: vi.fn(),
     completeCheckRunMock: vi.fn(() => Promise.resolve()),
@@ -22,7 +22,7 @@ const {
 vi.mock('@/lib/supabase', () => ({
     supabase: {
         from: () => ({
-            select: () => ({ eq: processingJobsEqMock }),
+            select: () => ({ in: reapableJobsInMock }),
             update: () => ({ eq: () => ({ eq: reapStatusEqMock }) }),
         }),
     },
@@ -37,6 +37,7 @@ const NOW_MS = Date.parse('2026-09-26T12:00:00.000Z');
 
 const DEAD_JOB_ROW = {
     id: 'job-e409926e',
+    status: 'processing',
     updated_at: new Date(NOW_MS - 30 * 60_000).toISOString(),
     check_run_id: 4711,
     payload: { repo_full_name: 'unslopai/unslop' },
@@ -46,9 +47,26 @@ const DEAD_JOB_ROW = {
 describe('reapStaleJobs — parallele Lazy-Reaper (D10)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        processingJobsEqMock.mockResolvedValue({ data: [DEAD_JOB_ROW], error: null });
+        reapableJobsInMock.mockResolvedValue({ data: [DEAD_JOB_ROW], error: null });
         reapStatusEqMock.mockImplementation(() => ({ select: reapSelectMock }));
         pruneDeliveryClaimsMock.mockResolvedValue(0);
+    });
+
+    it('räumt auch einen nie geclaimten pending-Job ab, sonst sperrt er den Index aus Migration 066', async () => {
+        const unclaimedDashboardJob = { ...DEAD_JOB_ROW, id: 'job-never-claimed', status: 'pending' };
+        reapableJobsInMock.mockResolvedValue({ data: [unclaimedDashboardJob], error: null });
+        reapSelectMock.mockResolvedValue({ data: [{ id: unclaimedDashboardJob.id }], error: null });
+
+        const reapOutcome = await reapStaleJobs(NOW_MS);
+
+        expect(reapableJobsInMock).toHaveBeenCalledWith('status', ['pending', 'processing']);
+        // Nur aus dem gelesenen Status: ein inzwischen fertiger Job bleibt unberührt.
+        expect(reapStatusEqMock).toHaveBeenCalledWith('status', 'pending');
+        expect(reapOutcome.reaped).toBe(1);
+        expect(completeCheckRunMock).toHaveBeenCalledWith(
+            'installation-token', 'unslopai/unslop', 4711,
+            expect.objectContaining({ title: 'Review timed out' }),
+        );
     });
 
     it('schließt den Check nur in dem Lauf, der die Zeile umgestellt hat', async () => {
@@ -81,7 +99,7 @@ describe('reapStaleJobs — parallele Lazy-Reaper (D10)', () => {
 describe('reapStaleJobs — Aufbewahrung der Delivery-Ansprüche (SERVER_AUDIT_2026-09 §8)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        processingJobsEqMock.mockResolvedValue({ data: [], error: null });
+        reapableJobsInMock.mockResolvedValue({ data: [], error: null });
     });
 
     it('löscht bei jedem Lauf abgelaufene Ansprüche zur Uhrzeit des Laufs und meldet ihre Zahl', async () => {
@@ -94,7 +112,7 @@ describe('reapStaleJobs — Aufbewahrung der Delivery-Ansprüche (SERVER_AUDIT_2
     });
 
     it('führt einen Fehler beim Löschen als Fehler, ohne das Abräumen der Jobs zu stoppen', async () => {
-        processingJobsEqMock.mockResolvedValue({ data: [DEAD_JOB_ROW], error: null });
+        reapableJobsInMock.mockResolvedValue({ data: [DEAD_JOB_ROW], error: null });
         reapStatusEqMock.mockImplementation(() => ({ select: reapSelectMock }));
         reapSelectMock.mockResolvedValue({ data: [{ id: DEAD_JOB_ROW.id }], error: null });
         pruneDeliveryClaimsMock.mockRejectedValue(new Error('Delivery-Aufbewahrung fehlgeschlagen: timeout'));

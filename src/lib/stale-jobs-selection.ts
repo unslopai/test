@@ -25,8 +25,18 @@ export const STALE_JOB_ERROR_MESSAGE =
     REVIEW_TIMEOUT_MARKER + 'Der Review wurde abgebrochen: die Ausführungsumgebung wurde beendet '
     + '(Speicher- oder Zeitlimit). Der Job wurde automatisch als fehlgeschlagen markiert.';
 
+/**
+ * Status, aus denen ein Job ohne Lebenszeichen abgeräumt wird. 'pending' seit
+ * Migration 066: ein nie geclaimter Dashboard-Job (Instanz stirbt nach der 202)
+ * belegte sonst den Unique-Index seines PRs für immer. Nur after() claimt
+ * einen Job, und das sofort — ein pending-Job über der Schwelle startet nie mehr.
+ */
+export const REAPABLE_JOB_STATUSES: readonly string[] = ['pending', 'processing'];
+
 export interface StaleJobCandidate {
     readonly id: string;
+    /** Der Status beim Lesen; das UPDATE stellt nur aus genau diesem um. */
+    readonly status: string;
     readonly updatedAt: string;
     readonly checkRunId: number | null;
     readonly repoFullName: string | null;

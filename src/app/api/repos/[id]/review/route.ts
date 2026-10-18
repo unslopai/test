@@ -60,6 +60,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Vor der Quota: ein zweiter Klick auf einen laufenden Review kostet nichts.
+    // Die Prüfung liest ohne Sperre; zwei GLEICHZEITIGE Klicks fängt erst der
+    // Unique-Index aus Migration 066 beim Job-Insert, nach der Quota — dann
+    // kostet der zweite einen Scan und bekommt dieselbe 409.
     const runningJobId = await findRunningPullRequestReview(repository.id, prNumber);
     if (runningJobId !== null) {
         return NextResponse.json({ error: 'review_in_progress', jobId: runningJobId }, { status: 409 });

@@ -155,6 +155,14 @@ type CascadeDegradation =
      */
     | 'draft_round2_failed'
     /**
+     * SPEC.md §8: der Review steht auf GitHub, aber ein Schritt danach im
+     * Reporter scheiterte (Nachladen der Kommentar-IDs oder Schreiben der
+     * Finding-Map, MCP_SPEC §4.3). Ergebnis und Check laufen weiter; ein
+     * aufgelöster Befund schließt seinen Review-Thread dann nicht. Kein
+     * Einfluss auf den Score.
+     */
+    | 'report_incomplete'
+    /**
      * REPO_CONTEXT_SPEC §14.9: der tiefe Pass lief nicht (ganz). Kein Einfluss
      * auf den Score; Gründe und Dateien zusätzlich in `deepLane`.
      */

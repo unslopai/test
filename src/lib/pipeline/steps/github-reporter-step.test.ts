@@ -10,6 +10,7 @@ import {
     formatDeterministicOnlyNotice,
     formatPrescanUnavailableNotice,
     formatRepoContextNotice,
+    formatReportIncompleteNotice,
     listDegradationNotices,
 } from '@unslop/shared/degradation-notice';
 import { GitHubApiError } from '@/lib/github';
@@ -214,7 +215,11 @@ describe('githubReporterStep', () => {
             ...reportableContext,
             cascade: buildCascadeState({
                 integrityScore: null,
-                degradations: ['draft_partial', 'time_budget_exhausted', 'repo_context_unavailable', 'draft_round2_failed', 'deep_lane_failed'],
+                // report_incomplete entsteht erst NACH dem Post dieses Textes und steht deshalb nur auf Check und Ergebnis.
+                degradations: [
+                    'draft_partial', 'time_budget_exhausted', 'repo_context_unavailable', 'draft_round2_failed', 'deep_lane_failed',
+                    'report_incomplete',
+                ],
                 skippedStages: ['verifier'],
                 draftUnreviewedFiles: ['src/lib/alpha.ts'],
             }),
@@ -237,6 +242,7 @@ describe('githubReporterStep', () => {
         expect(sharedNotices).toHaveLength(6);
         expect(noticePositions).not.toContain(-1);
         expect(noticePositions).toEqual([...noticePositions].sort((left, right) => left - right));
+        expect(postedBody).not.toContain(formatReportIncompleteNotice(['report_incomplete']));
     });
 
     it('stellt den generischen Satz zwischen Pre-Scan und Repo-Kontext (SPEC.md §8, Notice order)', async () => {
@@ -526,10 +532,38 @@ describe('githubReporterStep — finding_comments persistence', () => {
         expect(capturedCommentRows()[0].github_comment_id).toBeNull();
     });
 
-    it('does not fail the job when the comment-map persistence errors (fail-soft)', async () => {
+    it('marks the report incomplete instead of failing the job when the comment-map persistence errors', async () => {
         commentMapUpsertMock.mockResolvedValue({ error: { message: 'permission denied' } });
 
-        await expect(githubReporterStep.execute(buildReportableContext())).resolves.toBeDefined();
+        const reportedContext = await githubReporterStep.execute(buildReportableContext());
+
+        expect(reportedContext.cascade.degradations).toEqual(['report_incomplete']);
+    });
+
+    it('marks the report incomplete when re-reading the posted comments dies on the socket (Job 0d913d83)', async () => {
+        fetchReviewCommentsMock.mockRejectedValue(
+            new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET', message: 'other side closed' } }),
+        );
+
+        const reportedContext = await githubReporterStep.execute(buildReportableContext());
+
+        // Der Review steht: Ergebnis und Check laufen weiter, die Lücke steht in den Degradationen.
+        expect(createPullRequestReviewMock).toHaveBeenCalledTimes(1);
+        expect(commentMapUpsertMock).not.toHaveBeenCalled();
+        expect(reportedContext.cascade.degradations).toEqual(['report_incomplete']);
+        expect(reportedContext.issues).toHaveLength(1);
+    });
+
+    it('keeps a fully reported run free of the degradation', async () => {
+        const reportedContext = await githubReporterStep.execute(buildReportableContext());
+
+        expect(reportedContext.cascade.degradations).toEqual([]);
+    });
+
+    it('still fails the step when posting the review itself fails: no done job without a visible review', async () => {
+        createPullRequestReviewMock.mockRejectedValue(new GitHubApiError(404, '/repos/unslopai/test/pulls/13/reviews', 'Not Found'));
+
+        await expect(githubReporterStep.execute(buildReportableContext())).rejects.toBeInstanceOf(GitHubApiError);
     });
 
     it('still persists rows (all null) when the review id is unreadable', async () => {

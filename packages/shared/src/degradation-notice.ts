@@ -231,6 +231,18 @@ export function formatDeepLaneNotice(
 }
 
 /**
+ * Der Review steht auf GitHub, aber die Zuordnung seiner Inline-Kommentare zu
+ * den Befunden fehlt (Degradation `report_incomplete`, SPEC.md §8): ein
+ * Schritt nach dem Post ist gescheitert. Der Review selbst ist vollständig.
+ * null = Bericht vollständig, keine Zeile.
+ */
+export function formatReportIncompleteNotice(degradations: readonly string[] | undefined): string | null {
+    if (!degradations?.includes('report_incomplete')) return null;
+    return 'Incomplete report: the review was posted, but its comments could not be linked to the findings, '
+        + 'so dismissing a finding will not resolve its review thread on GitHub.';
+}
+
+/**
  * Teilabdeckung: ein Teil des Laufs hat Dateien nicht geprüft (Pre-Scan ganz
  * oder je Batch ausgefallen, Draft-Batch gescheitert). Dieselbe Bedingung wie
  * `hasIncompleteCoverage` im Server (`review-scope.ts`), nach der der Check
@@ -254,7 +266,9 @@ export type DegradationFields = Pick<
 
 /**
  * Alle Hinweiszeilen eines Modell-Laufs: Zeit-Skip, halber Draft, Pre-Scan,
- * Repo-Kontext, zweite Draft-Runde (aus `degradations`), tiefer Pass. Dieselbe
+ * Repo-Kontext, zweite Draft-Runde (aus `degradations`), tiefer Pass,
+ * unvollständiger Bericht (aus `degradations`, zuletzt: er entsteht erst nach
+ * dem Review-Post). Dieselbe
  * Reihenfolge wie Check-Summary (`worker.ts`) und PR-Review-Text
  * (`github-reporter-step.ts`); deren Tests vergleichen mit dieser Liste. Der
  * Pre-Scan steht neben dem halben Draft, weil beide die Abdeckung
@@ -272,6 +286,7 @@ export function listDegradationNotices(
         formatRepoContextNotice(scanResult.repoContext?.status, (scanResult.repoContext?.omittedPaths ?? []).map(cleanPath)),
         formatDraftRound2Notice(scanResult.degradations),
         formatDeepLaneNotice(scanResult.deepLane?.degradations, (scanResult.deepLane?.unreviewedFiles ?? []).map(cleanPath)),
+        formatReportIncompleteNotice(scanResult.degradations),
     ].filter((degradationNotice): degradationNotice is string => degradationNotice !== null);
 }
 

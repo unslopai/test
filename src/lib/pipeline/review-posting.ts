@@ -11,7 +11,7 @@
  * Review schon existiert (gleicher Commit, gleiche Kopfzeile, nach Jobstart
  * eingereicht) — nur wenn nicht, EIN Retry.
  */
-import { GitHubApiError, createPullRequestReview, listPullRequestReviews } from '@/lib/github';
+import { GitHubApiError, createPullRequestReview, isGitHubConnectionFailure, listPullRequestReviews } from '@/lib/github';
 import type { PullRequestReviewComment } from '@/lib/github';
 import type { PipelineContext } from '@/lib/pipeline/types';
 
@@ -28,10 +28,15 @@ const DEFAULT_POSTING_DEPENDENCIES: ReviewPostingDependencies = {
     waitMs: (delayMs) => new Promise((resolveWait) => setTimeout(resolveWait, delayMs)),
 };
 
-/** 5xx oder abgebrochene Verbindung: der Ausgang des POST ist unbekannt. */
+/**
+ * 5xx oder abgebrochene Verbindung: der Ausgang des POST ist unbekannt. Dazu
+ * zählt `terminated` mitten in der Antwort (Job 0d913d83, unslopai/test#16,
+ * 2026-10-13): GitHub hatte den Review angelegt, die Antwort brach ab, und bis
+ * dahin galt nur `fetch failed` als unklar — der fertige Job endete als `error`.
+ */
 export function isAmbiguousPostFailure(postFailure: unknown): boolean {
     if (postFailure instanceof GitHubApiError) return postFailure.status >= 500;
-    return postFailure instanceof TypeError && postFailure.message === 'fetch failed';
+    return isGitHubConnectionFailure(postFailure);
 }
 
 export async function postReviewIdempotently(

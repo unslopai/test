@@ -428,8 +428,10 @@ schon gepostet); ein noch laufender Job auf **demselben** Head wird bei Reopen n
 Dedupe-Grund gewertet; die Dedupe kennt nur `review_jobs` und sieht deshalb weder einen
 später am selben Head gesetzten Gate-Check (`action_required`) noch einen Check, dessen
 Abschluss an GitHub gescheitert ist, dort bleibt der Re-Run-Button; das Dashboard zeigt
-einen abgelösten Job als Fehler; MCP-PR-Reviews (`source = 'mcp'`) werden weder
-dedupliziert noch abgelöst (MCP_SPEC §4.7 bleibt unverändert).
+einen abgelösten Job als Fehler. Seit 2026-10-13 gehören MCP-PR-Reviews
+(`source = 'mcp'`, Payload ohne `diff`) zum Lebenszyklus wie Webhook- und Dashboard-Jobs
+(`HEAD_LIFECYCLE_SOURCES`, MCP_SPEC §4.7); vorher liefen sie auf einem überholten Head zu
+Ende und hinterließen dort einen Check.
 
 ### 4.10 „Review now“ im Dashboard: erster Review ohne Warten auf den nächsten Push — ergänzt 2026-10-13
 
@@ -524,14 +526,32 @@ mit 500 `job_creation_failed`.
   ihn nach Payload-Form in die PR-Pipeline inkl. github-reporter (`isLocalDiffJob` ist für
   `dashboard` false). Dedupe und Ablösung aus §4.9 behandeln ihn wie einen Webhook-Job
   (`HEAD_LIFECYCLE_SOURCES`); der Reaper und der Prüfpunkt vor jedem Step gelten ohnehin
-  für jeden Job. Die Scan-Historie zeigt ihn als „PR #n“ wie jeden PR-Job; der Payload
+  für jeden Job. Seit Migration 066 räumt der Reaper auch einen nie geclaimten
+  `pending`-Job über der Schwelle ab (`REAPABLE_JOB_STATUSES`), sonst belegte er den
+  Unique-Index seines PRs für immer. Die Scan-Historie zeigt ihn als „PR #n“ wie jeden PR-Job; der Payload
   trägt `action: 'dashboard_review'`.
 
-**Bekannte Grenzen.** Die Laufend-Prüfung ist ein Lesen vor Quota und Insert, ohne Sperre:
-zwei gleichzeitige POSTs (zwei Tabs, Skript) ergeben zwei Jobs, zwei Scans und zwei Check
-Runs. Im selben Tab verhindert der gesperrte Knopf das. Schließen ließe es sich mit einem
-partiellen Unique-Index auf `(repository_id, pr_number)` für laufende Dashboard-Jobs
-(ROADMAP To-Do §6). Die Liste zeigt höchstens 50 offene PRs.
+**Doppelklick (seit 2026-10-13, Migration 066).** Die Laufend-Prüfung ist ein Lesen vor
+Quota und Insert, ohne Sperre; sie fängt jeden zweiten Klick, der nach dem Insert des
+ersten kommt, und kostet dann nichts. Zwei GLEICHZEITIGE POSTs (zwei Tabs, Skript)
+passieren sie beide; die zweite Linie ist der partielle Unique-Index
+`review_jobs_one_running_dashboard_review` auf `(repository_id, pr_number) WHERE status IN
+('pending','processing') AND source = 'dashboard'`. Der verlierende Insert scheitert mit
+`23505`, `submitPullRequestReview` antwortet `review_in_progress` (409), ohne Check Run und
+ohne Worker. Ausnahme toter Job: die Laufend-Prüfung überspringt Jobs über der
+Reaper-Schwelle, der Index zählt sie, bis der gedrosselte Lazy Reaper sie abräumt. Bei einem
+`23505` räumt der Einreiche-Pfad deshalb die toten Dashboard-Jobs dieses PRs selbst ab
+(`releaseDeadDashboardReviews`, statusgesichertes UPDATE mit dem Reaper-Text), schließt ihre
+Checks mit „Review timed out“ und wiederholt den Insert genau einmal; nur ein lebender Job
+bleibt die 409. Nur `dashboard`: Webhook-Jobs desselben PRs dürfen in den Rennen aus §4.9
+überlappen, ein MCP-Agent darf bewusst parallel einreichen.
+
+**Bekannte Grenzen.** Im gleichzeitigen Fall ist die Quota des zweiten Klicks schon gebucht
+und bleibt es: die Route bucht vor dem Insert (Reihenfolge wie MCP, damit ein erschöpftes
+Kontingent keine Token-Abrufe auslöst), und es gibt keine Rückbuchungs-RPC. Hingenommen,
+weil der Fall zwei Requests im Abstand weniger hundert Millisekunden braucht und der Knopf
+im selben Tab gesperrt ist; ein Vorziehen des Inserts vor die Quota änderte den
+gemeinsamen Pfad mit MCP. Die Liste zeigt höchstens 50 offene PRs.
 
 ## 5. Datenbank — `027_create_github_app_installations.sql`
 

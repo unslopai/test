@@ -5,6 +5,7 @@
  * Jede Funktion ist typisiert und wirft bei Fehlern aussagekräftige Exceptions.
  */
 import * as crypto from 'crypto';
+import { extractErrorMessage } from '@/lib/errors';
 import { parseOpenPullRequest, parsePullRequestHeadState } from '@/lib/github-webhook-payload';
 import type { OpenPullRequest, PullRequestHeadState } from '@/lib/github-webhook-payload';
 
@@ -96,11 +97,51 @@ export interface GitHubTreeEntry {
 // Core API Helper
 // =============================================================================
 
+/** undici-Codes eines Verbindungsabbruchs, bevor (ganz) eine Antwort kam. */
+const CONNECTION_FAILURE_CODES: ReadonlySet<string> = new Set(['UND_ERR_SOCKET', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN']);
+
+/**
+ * undici meldet einen Abbruch vor dem Header als `fetch failed`, einen Abbruch
+ * mitten im Body als `terminated` — beide ohne HTTP-Status.
+ */
+const CONNECTION_FAILURE_MESSAGES: ReadonlySet<string> = new Set(['terminated', 'fetch failed']);
+
+/**
+ * Methoden, deren Wiederholung nichts doppelt anlegt: GET/HEAD lesen nur, und
+ * der einzige PATCH-Nutzer (`updateCheckRun`) schreibt einen vollständigen
+ * Zielzustand. POST bleibt draußen: ein zweiter Check Run, Review oder
+ * Kommentar wäre ein Duplikat; der Review-POST gleicht stattdessen mit der
+ * Review-Liste ab (review-posting.ts). DELETE bleibt draußen, weil ein
+ * Wiederholungsversuch nach einem doch ausgeführten Löschen als 404 endet.
+ */
+const CONNECTION_RETRY_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'PATCH']);
+
+const CONNECTION_RETRY_DELAY_MS = 1_000;
+
+/**
+ * Der Request starb an der Verbindung statt an einer HTTP-Antwort (Socket vom
+ * Server geschlossen, Reset, Timeout, DNS). Anlass: Job 0d913d83 (unslopai/test#16,
+ * 2026-10-13) — GitHub schloss eine Keep-Alive-Verbindung mitten in der
+ * Antwort auf den Review-POST, `TypeError: terminated` mit cause `UND_ERR_SOCKET`.
+ */
+export function isGitHubConnectionFailure(requestFailure: unknown): boolean {
+    if (!(requestFailure instanceof TypeError)) return false;
+    if (CONNECTION_FAILURE_MESSAGES.has(requestFailure.message)) return true;
+    const failureCause: unknown = requestFailure.cause;
+    const causeCode: unknown = typeof failureCause === 'object' && failureCause !== null
+        ? Reflect.get(failureCause, 'code')
+        : undefined;
+    return typeof causeCode === 'string' && CONNECTION_FAILURE_CODES.has(causeCode);
+}
+
 /**
  * Führt einen authentifizierten GitHub API Request aus.
  *
  * Der `token` ist entweder ein User-OAuth-Token, ein Installation-Token oder
  * (für die /app-Endpoints) ein App-JWT — GitHub akzeptiert alle drei als Bearer.
+ *
+ * Ein Verbindungsabbruch bekommt bei GET, HEAD und PATCH genau einen
+ * Wiederholungsversuch nach kurzer Pause; ein HTTP-Fehler nie.
  *
  * @param endpoint - Relativer API-Pfad (z.B. "/user/repos")
  * @param token - GitHub Access Token
@@ -109,6 +150,24 @@ export interface GitHubTreeEntry {
  * @throws GitHubApiError mit Status-Code und Body bei nicht-erfolgreichen Responses
  */
 export async function githubFetch<T>(endpoint: string, token: string, options: RequestInit = {}): Promise<T> {
+    const requestMethod = (options.method ?? 'GET').toUpperCase();
+    try {
+        return await requestGitHub<T>(endpoint, token, options);
+    } catch (requestFailure: unknown) {
+        if (!CONNECTION_RETRY_METHODS.has(requestMethod) || !isGitHubConnectionFailure(requestFailure)) {
+            throw requestFailure;
+        }
+        console.warn(
+            `[GitHub] ${requestMethod} ${endpoint}: Verbindung abgebrochen (${extractErrorMessage(requestFailure)}) — `
+            + `ein Wiederholungsversuch in ${CONNECTION_RETRY_DELAY_MS} ms.`,
+        );
+        await new Promise((resolveWait) => setTimeout(resolveWait, CONNECTION_RETRY_DELAY_MS));
+        return requestGitHub<T>(endpoint, token, options);
+    }
+}
+
+/** Ein Versuch: Request plus Body-Lesen — ein Abbruch mitten im Body zählt wie einer davor. */
+async function requestGitHub<T>(endpoint: string, token: string, options: RequestInit): Promise<T> {
     const url = endpoint.startsWith('http') ? endpoint : `${GITHUB_API_BASE}${endpoint}`;
 
     const response = await fetch(url, {

@@ -18,6 +18,8 @@ const {
     getPullRequestHeadMock,
     getPullRequestHeadShaMock,
     startGatekeeperCheckRunMock,
+    completeGatekeeperCheckRunMock,
+    releaseDeadDashboardReviewsMock,
     processReviewJobMock,
     afterMock,
 } = vi.hoisted(() => ({
@@ -29,6 +31,8 @@ const {
     getPullRequestHeadMock: vi.fn(),
     getPullRequestHeadShaMock: vi.fn(),
     startGatekeeperCheckRunMock: vi.fn(),
+    completeGatekeeperCheckRunMock: vi.fn(),
+    releaseDeadDashboardReviewsMock: vi.fn(),
     processReviewJobMock: vi.fn(),
     afterMock: vi.fn(),
 }));
@@ -38,7 +42,11 @@ vi.mock('@/lib/github', () => ({
     getPullRequestHead: getPullRequestHeadMock,
     getPullRequestHeadSha: getPullRequestHeadShaMock,
 }));
-vi.mock('@/lib/check-run', () => ({ startGatekeeperCheckRun: startGatekeeperCheckRunMock }));
+vi.mock('@/lib/check-run', () => ({
+    startGatekeeperCheckRun: startGatekeeperCheckRunMock,
+    completeGatekeeperCheckRun: completeGatekeeperCheckRunMock,
+}));
+vi.mock('@/lib/pr-head-lifecycle', () => ({ releaseDeadDashboardReviews: releaseDeadDashboardReviewsMock }));
 vi.mock('@/lib/github-app', async (importOriginal) => {
     const actualGithubApp = await importOriginal<typeof import('@/lib/github-app')>();
     return { ...actualGithubApp, getInstallationToken: getInstallationTokenMock };
@@ -98,6 +106,8 @@ describe('submitPullRequestReview (source dashboard)', () => {
         checkRunAttachEqMock.mockResolvedValue({ error: null });
         jobInsertMock.mockImplementation(() => ({ select: () => ({ single: jobInsertSingleMock }) }));
         jobInsertSingleMock.mockResolvedValue({ data: { id: 'job-under-test' }, error: null });
+        releaseDeadDashboardReviewsMock.mockResolvedValue([]);
+        completeGatekeeperCheckRunMock.mockResolvedValue(undefined);
     });
 
     it('consumes quota in the full-window lane like a webhook review (60/500)', async () => {
@@ -153,6 +163,47 @@ describe('submitPullRequestReview (source dashboard)', () => {
         expect(startGatekeeperCheckRunMock).not.toHaveBeenCalled();
     });
 
+    it('turns a unique conflict (23505, Migration 066) into review_in_progress and opens no check run', async () => {
+        jobInsertSingleMock.mockResolvedValue({
+            data: null,
+            error: { code: '23505', message: 'duplicate key value violates unique constraint "review_jobs_one_running_dashboard_review"' },
+        });
+
+        const submitOutcome = await submitPullRequestReview(buildDashboardSubmission());
+
+        expect(submitOutcome).toEqual({ kind: 'rejected', rejection: 'review_in_progress' });
+        // Die Quota ist zu diesem Zeitpunkt gebucht (keine Rückbuchungs-RPC, §4.10 Bekannte Grenzen).
+        expect(rpcMock).toHaveBeenCalledWith('consume_scan_quota', expect.any(Object));
+        expect(startGatekeeperCheckRunMock).not.toHaveBeenCalled();
+        expect(afterMock).not.toHaveBeenCalled();
+    });
+
+    it('releases a dead dashboard job that still holds the index, closes its check and inserts once more', async () => {
+        jobInsertSingleMock
+            .mockResolvedValueOnce({ data: null, error: { code: '23505', message: 'duplicate key value' } })
+            .mockResolvedValueOnce({ data: { id: 'job-after-release' }, error: null });
+        releaseDeadDashboardReviewsMock.mockResolvedValue([{ jobId: 'dead-job-under-test', checkRunId: 4712 }]);
+
+        const submitOutcome = await submitPullRequestReview(buildDashboardSubmission());
+
+        expect(submitOutcome).toMatchObject({ kind: 'submitted', jobId: 'job-after-release' });
+        expect(releaseDeadDashboardReviewsMock).toHaveBeenCalledWith('repo-under-test', 16);
+        expect(completeGatekeeperCheckRunMock).toHaveBeenCalledWith(
+            'installation-token-under-test', 'acme/widgets', 4712, expect.objectContaining({ title: 'Review timed out' }),
+        );
+        expect(jobInsertMock).toHaveBeenCalledTimes(2);
+        // Ein Scan, nicht zwei: die Quota läuft vor dem Insert genau einmal.
+        expect(rpcMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps any other insert failure as job_creation_failed', async () => {
+        jobInsertSingleMock.mockResolvedValue({ data: null, error: { code: '23514', message: 'check constraint' } });
+
+        const submitOutcome = await submitPullRequestReview(buildDashboardSubmission());
+
+        expect(submitOutcome).toEqual({ kind: 'rejected', rejection: 'job_creation_failed' });
+    });
+
     it('rejects an unreadable pull request as pr_not_found', async () => {
         getPullRequestHeadMock.mockRejectedValue(new Error('GitHub 404'));
 
@@ -181,6 +232,7 @@ describe('prReviewRejectionResponse', () => {
         ['github_app_unavailable', 502],
         ['pr_not_found', 404],
         ['pr_not_open', 409],
+        ['review_in_progress', 409],
         ['job_creation_failed', 500],
     ] as const)('answers %s with HTTP %i and no Retry-After', async (rejection, expectedStatus) => {
         const rejectionResponse = prReviewRejectionResponse(rejection);

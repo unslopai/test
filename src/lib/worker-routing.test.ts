@@ -13,8 +13,14 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelUnavailableError } from '@/lib/pipeline/vertex-retry';
-import { buildPrescanStats, buildPullRequestFile } from '@/lib/pipeline/testing/context-fixture';
-import { formatUnreadFileTypesNotice, listDegradationNotices } from '@unslop/shared/degradation-notice';
+import { buildPrescanStats, buildPullRequestFile, buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
+import { githubReporterStep } from '@/lib/pipeline/steps/github-reporter-step';
+import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
+import {
+    formatReportIncompleteNotice,
+    formatUnreadFileTypesNotice,
+    listDegradationNotices,
+} from '@unslop/shared/degradation-notice';
 import type { PipelineRunHooks } from '@/lib/pipeline/runner';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
@@ -27,6 +33,9 @@ const {
     completeCheckRunMock,
     errorPathEqMock,
     erroredRowsMock,
+    createPullRequestReviewMock,
+    listPullRequestReviewsMock,
+    fetchReviewCommentsMock,
 } = vi.hoisted(() => ({
     reviewJobsUpdateMock: vi.fn(),
     jobClaimSingleMock: vi.fn(),
@@ -36,6 +45,9 @@ const {
     completeCheckRunMock: vi.fn(() => Promise.resolve()),
     errorPathEqMock: vi.fn<(columnName: string, columnValue: unknown) => void>(),
     erroredRowsMock: vi.fn<() => { id: string }[] | undefined>(),
+    createPullRequestReviewMock: vi.fn(),
+    listPullRequestReviewsMock: vi.fn(),
+    fetchReviewCommentsMock: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -61,6 +73,12 @@ vi.mock('@/lib/github-app', () => ({ getInstallationToken: vi.fn() }));
 vi.mock('@/lib/pipeline/runner', async (importOriginal) => ({
     ...await importOriginal<typeof import('@/lib/pipeline/runner')>(),
     runPipeline: runPipelineMock,
+}));
+vi.mock('@/lib/github', async (importOriginal) => ({
+    ...await importOriginal<typeof import('@/lib/github')>(),
+    createPullRequestReview: createPullRequestReviewMock,
+    listPullRequestReviews: listPullRequestReviewsMock,
+    fetchReviewComments: fetchReviewCommentsMock,
 }));
 vi.mock('@/lib/check-run', async (importOriginal) => ({
     ...await importOriginal<typeof import('@/lib/check-run')>(),
@@ -421,14 +439,17 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
             cascade: {
                 ...initialContext.cascade,
                 integrityScore: null,
-                degradations: ['draft_partial', 'time_budget_exhausted', 'repo_context_unavailable', 'draft_round2_failed', 'deep_lane_failed'],
+                degradations: [
+                    'draft_partial', 'time_budget_exhausted', 'repo_context_unavailable', 'draft_round2_failed', 'deep_lane_failed',
+                    'report_incomplete',
+                ],
                 skippedStages: ['verifier'],
                 draftUnreviewedFiles: ['src/lib/alpha.ts'],
             },
             prescanStats: buildPrescanStats({ degraded: true, unscannedFiles: ['infra/main.tf'] }),
             repoContext: { ...initialContext.repoContext, status: 'unavailable' },
             deepLane: { ...initialContext.deepLane, status: 'degraded', degradations: ['deep_lane_failed'], unreviewedFiles: ['src/lib/gamma.ts'] },
-            // Eine geänderte Go-Datei ohne Modell-Review: ihr Satz steht nach allen sechs am Ende.
+            // Eine geänderte Go-Datei ohne Modell-Review: ihr Satz steht nach allen sieben am Ende.
             prFiles: [reviewedFile, unreadGoFile],
             reviewableFiles: [reviewedFile],
         }));
@@ -440,7 +461,7 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
             draftUnreviewedFiles: ['src/lib/alpha.ts'],
             prescan: { degraded: true, unscannedFiles: ['infra/main.tf'] },
             repoContext: { status: 'unavailable', paths: [], estimatedTokens: 0, omittedPaths: [] },
-            degradations: ['draft_round2_failed'],
+            degradations: ['draft_round2_failed', 'report_incomplete'],
             deepLane: { status: 'degraded', degradations: ['deep_lane_failed'], unreviewedFiles: ['src/lib/gamma.ts'] },
         });
         const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
@@ -448,7 +469,7 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
         const noticePositions = [...sharedNotices, formatUnreadFileTypesNotice(1, ['.go'])]
             .map((expectedNotice) => checkSummary.indexOf(expectedNotice));
 
-        expect(sharedNotices).toHaveLength(6);
+        expect(sharedNotices).toHaveLength(7);
         expect(noticePositions).not.toContain(-1);
         expect(noticePositions).toEqual([...noticePositions].sort((left, right) => left - right));
     });
@@ -515,6 +536,24 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
         expect(checkRunResult).toMatchObject({
             conclusion: 'success',
             summary: expect.stringMatching(/_AI-generated\. Check it before you rely on it\._\n<!-- unslop:ai-generated -->$/),
+        });
+    });
+
+    it('nennt einen unvollständigen Bericht auch in der Check-Summary eines Laufs ohne Modell-Review', async () => {
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => ({
+            ...initialContext,
+            llmSkipped: true,
+            deterministicOnlyReason: 'Deterministic checks only: no model reviewed it.',
+            prescanStats: buildPrescanStats({ llmSkipped: true }),
+            cascade: { ...initialContext.cascade, degradations: ['report_incomplete'] },
+        }));
+
+        await processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+
+        const [, , , checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunResult).toMatchObject({
+            title: 'Deterministic checks only',
+            summary: expect.stringContaining(String(formatReportIncompleteNotice(['report_incomplete']))),
         });
     });
 
@@ -595,5 +634,59 @@ describe('processReviewJob — Deadline Guard (DEADLINE_GUARD_SPEC D1/D9)', () =
         await vi.advanceTimersByTimeAsync(watchdogFireDelayMs);
 
         expect(errorStatusUpdates()).toHaveLength(0);
+    });
+});
+
+describe('processReviewJob — Verbindungsabbruch nach dem Review-Post (Job 0d913d83, SPEC.md §8)', () => {
+    const invocationStartedAtMs = Date.UTC(2026, 9, 13, 20, 20, 0);
+    const reviewedFile = buildPullRequestFile({ patch: '@@ -40,3 +40,5 @@\n+const data = fetchData();' });
+    const socketClosed = () => new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET', message: 'other side closed' } });
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.useFakeTimers({ now: invocationStartedAtMs });
+        reviewJobsUpdateMock.mockImplementation(() => buildReviewJobsUpdateChain());
+        repoMaybeSingleMock.mockResolvedValue({
+            data: { id: 'repo-under-test', pipeline_config: null, installation_id: 4711, detected_ecosystems: null },
+            error: null,
+        });
+        resolveRepoAccessTokenMock.mockResolvedValue({ token: 'installation-token', mode: 'app' });
+        mockClaimedJob('webhook', { repo_full_name: 'unslopai/test', pr_number: 16, pr_head_sha: 'af28c0b' }, 99);
+        // Der echte Reporter-Step als ganze Pipeline: GitHub legt den Review an, die Antwort bricht ab.
+        runPipelineMock.mockImplementation(async (initialContext: PipelineContext) => githubReporterStep.execute({
+            ...initialContext,
+            headSha: 'af28c0b',
+            issues: [buildReviewIssue({ line: 42, endLine: 42 })],
+            prFiles: [reviewedFile],
+            reviewableFiles: [reviewedFile],
+            cascade: { ...initialContext.cascade, integrityScore: 95 },
+        }));
+        createPullRequestReviewMock.mockImplementation(async (...reviewArguments: unknown[]) => {
+            listPullRequestReviewsMock.mockResolvedValue([{
+                id: 5400000001,
+                body: String(reviewArguments[4]),
+                commitId: 'af28c0b',
+                submittedAtMs: invocationStartedAtMs + 1_000,
+            }]);
+            throw socketClosed();
+        });
+        fetchReviewCommentsMock.mockRejectedValue(socketClosed());
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('lässt den fertigen Job nicht auf error kippen und schließt den Check mit dem Ergebnis samt Hinweis', async () => {
+        const jobRun = processReviewJob('job-under-test', 'user-under-test', invocationStartedAtMs);
+        await vi.advanceTimersByTimeAsync(3_000);
+        await jobRun;
+
+        expect(createPullRequestReviewMock).toHaveBeenCalledTimes(1);
+        expect(errorStatusUpdates()).toHaveLength(0);
+        const [, , checkRunId, checkRunResult] = completeCheckRunMock.mock.calls[0] as unknown[];
+        expect(checkRunId).toBe(99);
+        expect(checkRunResult).not.toEqual(FAILED_CHECK_RUN_COPY.server_error);
+        expect((checkRunResult as { summary: string }).summary).toContain(formatReportIncompleteNotice(['report_incomplete']));
     });
 });

@@ -26,7 +26,7 @@ import { extractErrorMessage } from '@/lib/errors';
 import { getInstallationToken } from '@/lib/github-app';
 import { completeGatekeeperCheckRun } from '@/lib/check-run';
 import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
-import { STALE_JOB_ERROR_MESSAGE, selectStaleJobs } from '@/lib/stale-jobs-selection';
+import { REAPABLE_JOB_STATUSES, STALE_JOB_ERROR_MESSAGE, selectStaleJobs } from '@/lib/stale-jobs-selection';
 import type { StaleJobCandidate } from '@/lib/stale-jobs-selection';
 
 export interface ReapOutcome {
@@ -39,28 +39,7 @@ export interface ReapOutcome {
 }
 
 export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOutcome> {
-    const { data: jobRows, error: fetchError } = await supabase
-        .from('review_jobs')
-        .select('id, updated_at, check_run_id, payload, repositories(full_name, installation_id)')
-        .eq('status', 'processing');
-
-    if (fetchError) {
-        throw new Error(`Stale-Job-Lookup fehlgeschlagen: ${fetchError.message}`);
-    }
-
-    const candidates: StaleJobCandidate[] = (jobRows ?? []).map((jobRow) => {
-        const repository = normalizeRepositoryRelation(jobRow.repositories);
-        const payload = (jobRow.payload ?? {}) as { repo_full_name?: unknown };
-        return {
-            id: jobRow.id as string,
-            updatedAt: jobRow.updated_at as string,
-            checkRunId: (jobRow.check_run_id as number | null) ?? null,
-            repoFullName: repository?.full_name
-                ?? (typeof payload.repo_full_name === 'string' ? payload.repo_full_name : null),
-            installationId: repository?.installation_id ?? null,
-        };
-    });
-
+    const candidates = await loadReapCandidates();
     const staleJobs = selectStaleJobs(candidates, nowMs);
     const failures: string[] = [];
     let reapedCount = 0;
@@ -77,7 +56,7 @@ export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOut
             .eq('id', staleJob.id)
             // Statusfilter gegen die Race mit einem Job, der genau jetzt doch
             // noch fertig wird: dann greift das UPDATE schlicht nicht.
-            .eq('status', 'processing')
+            .eq('status', staleJob.status)
             // Nur wer die Zeile wirklich umgestellt hat, schließt den Check —
             // zwei parallele Lazy-Reaper dürfen ihn nie doppelt schließen.
             .select('id');
@@ -105,6 +84,32 @@ export async function reapStaleJobs(nowMs: number = Date.now()): Promise<ReapOut
         deliveryClaimsPruned: pruneOutcome.prunedCount,
         failures: pruneOutcome.failure === null ? failures : [...failures, pruneOutcome.failure],
     };
+}
+
+/** Alle Jobs, die tot sein könnten, mit Repo-Name und Installation für den Check-Abschluss. */
+async function loadReapCandidates(): Promise<StaleJobCandidate[]> {
+    const { data: jobRows, error: fetchError } = await supabase
+        .from('review_jobs')
+        .select('id, status, updated_at, check_run_id, payload, repositories(full_name, installation_id)')
+        .in('status', REAPABLE_JOB_STATUSES);
+
+    if (fetchError) {
+        throw new Error(`Stale-Job-Lookup fehlgeschlagen: ${fetchError.message}`);
+    }
+
+    return (jobRows ?? []).map((jobRow) => {
+        const repository = normalizeRepositoryRelation(jobRow.repositories);
+        const payload = (jobRow.payload ?? {}) as { repo_full_name?: unknown };
+        return {
+            id: jobRow.id as string,
+            status: jobRow.status as string,
+            updatedAt: jobRow.updated_at as string,
+            checkRunId: (jobRow.check_run_id as number | null) ?? null,
+            repoFullName: repository?.full_name
+                ?? (typeof payload.repo_full_name === 'string' ? payload.repo_full_name : null),
+            installationId: repository?.installation_id ?? null,
+        };
+    });
 }
 
 /**

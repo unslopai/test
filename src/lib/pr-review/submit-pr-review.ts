@@ -18,7 +18,11 @@ import { consumeScanQuota, quotaRetryAfterSeconds } from '@/lib/billing/entitlem
 import type { PlanEntitlements } from '@/lib/billing/plan-config';
 import { getInstallationToken, GitHubAppAuthError } from '@/lib/github-app';
 import { getPullRequestHead, getPullRequestHeadSha } from '@/lib/github';
-import { startGatekeeperCheckRun } from '@/lib/check-run';
+import { completeGatekeeperCheckRun, startGatekeeperCheckRun } from '@/lib/check-run';
+import { extractErrorMessage } from '@/lib/errors';
+import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
+import { releaseDeadDashboardReviews } from '@/lib/pr-head-lifecycle';
+import type { SupersededJob } from '@/lib/pr-head-lifecycle';
 import { processReviewJob } from '@/lib/worker';
 
 /** Die Oberflächen, die diesen Pfad nutzen; zugleich `review_jobs.source`. */
@@ -47,6 +51,7 @@ export type PrReviewRejection =
     | 'github_app_unavailable'
     | 'pr_not_found'
     | 'pr_not_open'
+    | 'review_in_progress'
     | 'job_creation_failed';
 
 export type PrReviewSubmitOutcome =
@@ -63,6 +68,7 @@ const REJECTION_STATUS: Readonly<Record<PrReviewRejection, number>> = {
     github_app_unavailable: 502,
     pr_not_found: 404,
     pr_not_open: 409,
+    review_in_progress: 409,
     job_creation_failed: 500,
 };
 
@@ -101,10 +107,11 @@ export async function submitPullRequestReview(submission: PrReviewSubmission): P
         return headResolution;
     }
 
-    const jobId = await insertPullRequestJob(target, prNumber, source, headResolution.headSha);
-    if (jobId === null) {
-        return { kind: 'rejected', rejection: 'job_creation_failed' };
+    const jobInsertion = await insertJobReleasingDeadReviews(installationToken, target, prNumber, source, headResolution.headSha);
+    if (jobInsertion.kind === 'rejected') {
+        return jobInsertion;
     }
+    const { jobId } = jobInsertion;
 
     const checkRunUrl = await openCheckRun(installationToken, jobId, target, prNumber, headResolution.headSha);
 
@@ -142,13 +149,27 @@ async function resolvePullRequestHead(
     }
 }
 
-/** Webhook-förmiger Job OHNE diff — der Worker routet in die PR-Pipeline inkl. github-reporter. */
+type JobInsertion =
+    | { readonly kind: 'inserted'; readonly jobId: string }
+    | { readonly kind: 'rejected'; readonly rejection: PrReviewRejection };
+
+/** PostgREST-Code einer verletzten Unique-Bedingung. */
+const UNIQUE_VIOLATION_CODE = '23505';
+
+/**
+ * Webhook-förmiger Job OHNE diff — der Worker routet in die PR-Pipeline inkl. github-reporter.
+ *
+ * Ein Unique-Konflikt kommt vom Index `review_jobs_one_running_dashboard_review`
+ * (Migration 066): zwei gleichzeitige Klicks auf „Review now“ haben beide die
+ * Laufend-Prüfung der Route passiert, der zweite Insert verliert. Die Quota
+ * ist dann schon gebucht und bleibt es (GITHUB_APP_SPEC §4.10 Bekannte Grenzen).
+ */
 async function insertPullRequestJob(
     target: PrReviewTarget,
     prNumber: number,
     source: PrReviewSource,
     prHeadSha: string,
-): Promise<string | null> {
+): Promise<JobInsertion> {
     const prUrl = `https://github.com/${target.repoFullName}/pull/${prNumber}`;
     const { data: insertedJob, error: insertError } = await supabase
         .from('review_jobs')
@@ -169,11 +190,57 @@ async function insertPullRequestJob(
         .select('id')
         .single();
 
+    if (insertError?.code === UNIQUE_VIOLATION_CODE) {
+        console.warn(`[PrReview] ${target.repoFullName}#${prNumber}: paralleler Review läuft schon (${source}) — 409.`);
+        return { kind: 'rejected', rejection: 'review_in_progress' };
+    }
     if (insertError || !insertedJob) {
         console.error('[PrReview] Job-Insert fehlgeschlagen:', insertError);
-        return null;
+        return { kind: 'rejected', rejection: 'job_creation_failed' };
     }
-    return insertedJob.id;
+    return { kind: 'inserted', jobId: insertedJob.id };
+}
+
+/**
+ * Ein Unique-Konflikt kann auch von einem TOTEN Dashboard-Job stammen, den die
+ * Laufend-Prüfung der Route schon übersprungen hat, der Lazy Reaper aber noch
+ * nicht abgeräumt: dann wird er hier abgeräumt, sein Check geschlossen und der
+ * Insert genau einmal wiederholt. Ein lebender Job bleibt die 409.
+ */
+async function insertJobReleasingDeadReviews(
+    installationToken: string,
+    target: PrReviewTarget,
+    prNumber: number,
+    source: PrReviewSource,
+    prHeadSha: string,
+): Promise<JobInsertion> {
+    const firstInsertion = await insertPullRequestJob(target, prNumber, source, prHeadSha);
+    if (firstInsertion.kind === 'inserted' || firstInsertion.rejection !== 'review_in_progress') {
+        return firstInsertion;
+    }
+    const releasedJobs = await releaseDeadDashboardReviews(target.repositoryId, prNumber);
+    if (releasedJobs.length === 0) {
+        return firstInsertion;
+    }
+    console.warn(`[PrReview] ${target.repoFullName}#${prNumber}: ${releasedJobs.length} toter Dashboard-Job abgeräumt — Insert wird wiederholt.`);
+    await closeReleasedCheckRuns(installationToken, target.repoFullName, releasedJobs);
+    return insertPullRequestJob(target, prNumber, source, prHeadSha);
+}
+
+/** Wie der Reaper: dieselbe öffentliche Timeout-Copy, best effort je Check. */
+async function closeReleasedCheckRuns(
+    installationToken: string,
+    repoFullName: string,
+    releasedJobs: readonly SupersededJob[],
+): Promise<void> {
+    for (const { checkRunId } of releasedJobs) {
+        if (checkRunId === null) continue;
+        try {
+            await completeGatekeeperCheckRun(installationToken, repoFullName, checkRunId, FAILED_CHECK_RUN_COPY.review_timeout);
+        } catch (checkRunError: unknown) {
+            console.error(`[PrReview] Check Run ${checkRunId} eines toten Jobs nicht schließbar: ${extractErrorMessage(checkRunError)}`);
+        }
+    }
 }
 
 /**
