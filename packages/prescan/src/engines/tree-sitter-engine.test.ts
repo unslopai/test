@@ -431,6 +431,44 @@ describe('SEC-009 — Python program position without shell=True', () => {
     });
 });
 
+describe('SEC-009 — Python calls resolved through their imports', () => {
+    it.each([
+        ['run imported from subprocess with shell=True', 'from subprocess import run\nrun(f"convert {path}", shell=True)', ['CRITICAL']],
+        ['subprocess imported as sp with shell=True', 'import subprocess as sp\ndef convert(command):\n    sp.call(command, shell=True)', ['CRITICAL']],
+        ['system imported from os', 'from os import system\nsystem("ping " + host_name)', ['CRITICAL']],
+        ['split imported from shlex', 'import subprocess\nfrom shlex import split\ndef run_hook(hook_line):\n    subprocess.run(split(hook_line))', ['WARNING']],
+        ['renamed Popen and split with a request value', 'from subprocess import Popen as P\nfrom shlex import split as sx\nP(sx(request.args["command"]))', ['CRITICAL']],
+        ['os.execvp with a request value as program', 'def launch():\n    tool = request.args["tool"]\n    os.execvp(tool, [tool, "--version"])', ['CRITICAL']],
+        ['os.spawnv with a request value as program (after the mode)', 'os.spawnv(os.P_WAIT, request.form["bin"], ["bin"])', ['CRITICAL']],
+        ['asyncio.create_subprocess_shell with an f-string', 'async def convert(path):\n    await asyncio.create_subprocess_shell(f"ffmpeg -i {path} out.mp4")', ['CRITICAL']],
+        ['asyncio.create_subprocess_exec of shlex.split of a variable', 'async def run_hook(hook_line):\n    await asyncio.create_subprocess_exec(*shlex.split(hook_line))', ['WARNING']],
+        ['asyncio.create_subprocess_exec with a request value as program', 'async def probe():\n    await asyncio.create_subprocess_exec(request.args["bin"], "--help")', ['CRITICAL']],
+        ['create_subprocess_shell imported from asyncio.subprocess', 'from asyncio.subprocess import create_subprocess_shell\nasync def run(cmd):\n    await create_subprocess_shell(cmd)', ['CRITICAL']],
+        ['create_subprocess_shell with cmd= as keyword', 'async def listing(directory):\n    await asyncio.create_subprocess_shell(cmd=f"ls {directory}")', ['CRITICAL']],
+        ['module subprocess next to a function-local asyncio subprocess import', 'import subprocess\nasync def stream():\n    from asyncio import subprocess\ndef convert(command):\n    subprocess.run(command, shell=True)', ['CRITICAL']],
+    ])('reports %s', async (_caseName, pythonSource, expectedSeverities) => {
+        expect(await severitiesOf('SEC-009', 'python', pythonSource)).toEqual(expectedSeverities);
+    });
+
+    it.each([
+        ['run imported from another module', 'from tasks import run\nrun(command, shell=True)'],
+        ['split without a shlex import', 'def run_hook(hook_line):\n    subprocess.run(split(hook_line))'],
+        ['os.execv restarting the interpreter', 'os.execv(sys.executable, [sys.executable] + sys.argv)'],
+        ['os.execvp with an editor path without visible request source', 'def edit(editor, path):\n    os.execvp(editor, [editor, path])'],
+        ['os.spawnl with a literal program', 'os.spawnl(os.P_NOWAIT, "/usr/bin/true", "true")'],
+        ['asyncio.create_subprocess_shell with a literal', 'async def listing():\n    await asyncio.create_subprocess_shell("ls -la")'],
+        ['asyncio.create_subprocess_shell with a literal cmd= keyword', 'async def listing():\n    await asyncio.create_subprocess_shell(cmd="ls -la")'],
+        ['asyncio.create_subprocess_exec with a literal program', 'async def log(ref):\n    await asyncio.create_subprocess_exec("git", "log", ref)'],
+        ['asyncio.create_subprocess_exec of a prepared argv list', 'async def run(argv):\n    await asyncio.create_subprocess_exec(*argv)'],
+    ])('stays silent on %s', async (_caseName, pythonSource) => {
+        expect(await severitiesOf('SEC-009', 'python', pythonSource)).toEqual([]);
+    });
+
+    it('keeps exactly one CRITICAL for the aliased shell=True form', async () => {
+        expect(await severitiesOf('SEC-009', 'python', 'import subprocess as sp\nsp.run(shlex.split(request.args["c"]), shell=True)')).toEqual(['CRITICAL']);
+    });
+});
+
 describe('SEC-009 — JS/TS spawn/execFile from child_process', () => {
     it.each([
         ['spawn with a request value as program', "import { spawn } from 'child_process';\napp.get('/run', (req, res) => { spawn(req.query.cmd, ['--help']); });", ['CRITICAL']],
@@ -441,6 +479,9 @@ describe('SEC-009 — JS/TS spawn/execFile from child_process', () => {
         ['shell: true with a parameter in the arguments', "import { spawn } from 'child_process';\nexport function install(pkg: string) { spawn('npm', ['install', pkg], { shell: true }); }", ['WARNING']],
         ['shell: true with a command built from a template', "import { spawn } from 'child_process';\nexport function convert(file: string) { spawn(`convert ${file} out.png`, { shell: true }); }", ['WARNING']],
         ['shell on Windows only with a parameter in the arguments', "import { execFile } from 'child_process';\nexport function install(cli: string, extensionId: string) { execFile(cli, ['--install-extension', extensionId], { shell: process.platform === 'win32' }); }", ['WARNING']],
+        ['promisify(execFile) under an alias with a request value as program', "import { execFile } from 'node:child_process';\nimport { promisify } from 'node:util';\nconst execFileAsync = promisify(execFile);\nexport async function probe(req: Request) { await execFileAsync(req.body.tool, ['--version']); }", ['CRITICAL']],
+        ['a program from req?.body (optional chaining)', "import { spawn } from 'child_process';\nfunction handle(req) { spawn(req?.body.tool, []); }", ['CRITICAL']],
+        ['a program from the Koa request body', "import { spawn } from 'child_process';\nrouter.post('/run', async (ctx) => { const { tool } = ctx.request.body; spawn(tool, []); });", ['CRITICAL']],
     ])('reports %s', async (_caseName, typescriptSource, expectedSeverities) => {
         expect(await severitiesOf('SEC-009', 'typescript', typescriptSource)).toEqual(expectedSeverities);
     });
@@ -459,6 +500,41 @@ describe('SEC-009 — JS/TS spawn/execFile from child_process', () => {
         ['a destructuring default that names the program', "import { spawn } from 'child_process';\nfunction handle(req) { const { cmd = fallbackTool } = req.body; spawn(fallbackTool, []); }"],
         ['shell: undefined', "import { spawn } from 'child_process';\nexport function install(pkg: string) { spawn('npm', ['install', pkg], { shell: undefined }); }"],
         ['shell with numeric arguments only', "import { spawn } from 'child_process';\nspawn('npx', ['serve', '-p', 3000], { shell: true });"],
+    ])('stays silent on %s', async (_caseName, typescriptSource) => {
+        expect(await severitiesOf('SEC-009', 'typescript', typescriptSource)).toEqual([]);
+    });
+});
+
+describe('SEC-009 — JS/TS exec/execSync resolved through child_process bindings', () => {
+    it.each([
+        ['promisify(exec) under an alias (r20/r24 backup-runner.ts)', "import { exec } from 'node:child_process';\nimport { promisify } from 'node:util';\nconst execAsync = promisify(exec);\nexport async function backup(slug: string) { const dumpCommand = 'pg_dump ' + slug; await execAsync(dumpCommand, { shell: '/bin/bash' }); }"],
+        ['util.promisify of a namespace member', "import * as cp from 'child_process';\nimport util from 'util';\nconst run = util.promisify(cp.exec);\nrun(`tar -czf ${archive}`);"],
+        ['util.promisify of require(...).exec', "const util = require('util');\nconst exec = util.promisify(require('child_process').exec);\nexec(command);"],
+        ['execSync destructured from await import()', "export async function build(target: string) { const { execSync } = await import('node:child_process'); execSync(`make ${target}`); }"],
+        ['a namespace from await import()', "export async function build(target: string) { const cp = await import('child_process'); cp.execSync('make ' + target); }"],
+        ['require(...).exec called inline', "require('child_process').exec(userCommand);"],
+        ['a default import used as namespace', "import childProcess from 'node:child_process';\nchildProcess.execSync(buildCommand);"],
+        ['exec renamed in a require destructuring', "const { exec: sh } = require('child_process');\nsh(command);"],
+        ['exec destructured from a namespace', "import * as cp from 'child_process';\nconst { execSync } = cp;\nexecSync(command);"],
+        ['a plain alias of cp.exec', "const cp = require('child_process');\nconst shell = cp.exec;\nshell(command);"],
+        ['a TypeScript import-equals require', "import cp = require('child_process');\ncp.exec(userCommand);"],
+        ['the default export imported by name', "import { default as cp } from 'node:child_process';\ncp.execSync(userCommand);"],
+        ['the default export destructured from await import()', "export async function run(command: string) { const { default: cp } = await import('child_process'); cp.exec(command); }"],
+        ['a template whose placeholder is not module text', "import { exec } from 'child_process';\nconst BRANCH = 'main';\nexec(`git log ${BRANCH} ${ref}`);"],
+    ])('reports %s as CRITICAL', async (_caseName, typescriptSource) => {
+        expect(await severitiesOf('SEC-009', 'typescript', typescriptSource)).toEqual(['CRITICAL']);
+    });
+
+    it.each([
+        ['RegExp.prototype.exec next to a child_process import', "import { spawn } from 'child_process';\nconst LINE_PATTERN = /^(\\w+)=(.*)$/;\nexport function parse(line: string) { return LINE_PATTERN.exec(line); }"],
+        ['regex.exec in a loop next to execFileSync', "import { execFileSync } from 'node:child_process';\nconst pattern = /diff --git a\\/(.+) b\\//g;\nlet match;\nwhile ((match = pattern.exec(output)) !== null) { files.push(match[1]); }"],
+        ['db.exec next to a child_process require', "const { spawnSync } = require('child_process');\ndb.exec(schemaSql);\ndatabase.execSync(migration);"],
+        ['exec when child_process is only mentioned in a comment', "// Unlike child_process, this runner never starts a shell.\nimport { exec } from './sql-runner';\nexec(statement);\nconst found = matcher.exec(text);"],
+        ['promisify of another function next to a child_process import', "import { exec } from 'child_process';\nimport { promisify } from 'util';\nconst readFileAsync = promisify(fs.readFile);\nreadFileAsync(configPath);"],
+        ['exec with a literal command through promisify', "import { exec } from 'child_process';\nconst execAsync = require('util').promisify(exec);\nexecAsync('git status --porcelain');"],
+        ['a dynamic import of another module', "export async function load(sql: string) { const { exec } = await import('./database'); exec(sql); }"],
+        ['a module constant through promisify', "import { exec } from 'child_process';\nimport { promisify } from 'util';\nconst execAsync = promisify(exec);\nconst STATUS_COMMAND = 'git status --porcelain';\nexport async function status() { return execAsync(STATUS_COMMAND); }"],
+        ['a template built only from module constants', "import { execSync } from 'child_process';\nconst BRANCH = 'main';\nexecSync(`git log ${BRANCH}`);"],
     ])('stays silent on %s', async (_caseName, typescriptSource) => {
         expect(await severitiesOf('SEC-009', 'typescript', typescriptSource)).toEqual([]);
     });

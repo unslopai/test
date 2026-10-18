@@ -2,11 +2,14 @@
  * AST-Security-Regeln: SEC-004 (SQLi), SEC-006 (Deserialisierung),
  * SEC-009 (Command Injection), SEC-016 (RSA-Modulus), SEC-022 (Cookie-Flags),
  * SEC-026 (XSS-Sinks). Node-Spezifikationen aus pre_scanner_design.md §2.
- * SEC-009 ohne Shell und SEC-011 für Python: code-execution-rules.ts.
+ * SEC-009 für JS/TS, SEC-009 für Python ohne Shell und SEC-011 für Python:
+ * code-execution-rules.ts. Die Importe löst process-bindings.ts auf.
  */
 import { addAstFinding, hasDescendantOfType, nodesOfType } from './ast-shared';
+import { collectPythonImportAliases, pythonCalleeNames } from './process-bindings';
 import type { Node as TsNode } from 'web-tree-sitter';
 import type { AstRuleContext } from './ast-shared';
+import type { PythonImportAliases } from './process-bindings';
 
 export function collectSecurityFindings(context: AstRuleContext): void {
     switch (context.language) {
@@ -20,7 +23,6 @@ export function collectSecurityFindings(context: AstRuleContext): void {
         case 'tsx':
         case 'javascript':
             collectJsSqlInjection(context);
-            collectJsCommandInjection(context);
             collectJsWeakRsa(context);
             collectCookieFlagFindings(context);
             collectXssFindings(context);
@@ -274,25 +276,52 @@ function collectJavaDeserialization(context: AstRuleContext): void {
 // SEC-009 — Command Injection
 // =============================================================================
 
-/** Die Argument-Form ohne `shell=True` prüft code-execution-rules.ts. */
+/**
+ * Auf den kanonischen Namen (process-bindings.ts) angewandt, also auch
+ * `from subprocess import run` und `import subprocess as sp`. Die Argument-Form
+ * ohne `shell=True` prüft code-execution-rules.ts.
+ */
 export const PYTHON_SUBPROCESS_PATTERN = /^subprocess\.(run|call|Popen|check_output|check_call)$/;
 
-function collectPythonCommandInjection(context: AstRuleContext): void {
-    for (const call of nodesOfType(context, 'call')) {
-        const calleeText = call.childForFieldName('function')?.text ?? '';
-        const argumentList = call.childForFieldName('arguments');
-        const firstArgument = argumentList?.namedChildren[0] ?? null;
+/** Aufrufe, die ihr erstes Argument immer einer Shell übergeben. */
+const PYTHON_SHELL_COMMAND_CALLEES: ReadonlySet<string> = new Set([
+    'os.system',
+    'os.popen',
+    'asyncio.create_subprocess_shell',
+    'asyncio.subprocess.create_subprocess_shell',
+]);
 
-        if (PYTHON_SUBPROCESS_PATTERN.test(calleeText)) {
+function collectPythonCommandInjection(context: AstRuleContext): void {
+    let importAliases: PythonImportAliases | null = null;
+    for (const call of nodesOfType(context, 'call')) {
+        importAliases ??= collectPythonImportAliases(call.tree.rootNode);
+        const calleeNames = pythonCalleeNames(call.childForFieldName('function'), importAliases);
+        const argumentList = call.childForFieldName('arguments');
+
+        if (calleeNames.some((calleeName) => PYTHON_SUBPROCESS_PATTERN.test(calleeName))) {
+            const firstArgument = argumentList?.namedChildren[0] ?? null;
             const hasShellTrue = /shell\s*=\s*True/.test(argumentList?.text ?? '');
             if (hasShellTrue && firstArgument !== null && !isPythonStaticString(firstArgument)) {
                 addAstFinding(context, 'SEC-009', call);
             }
-        } else if ((calleeText === 'os.system' || calleeText === 'os.popen')
-            && firstArgument !== null && !isPythonStaticString(firstArgument)) {
-            addAstFinding(context, 'SEC-009', call);
+        } else if (calleeNames.some((calleeName) => PYTHON_SHELL_COMMAND_CALLEES.has(calleeName))) {
+            const shellCommand = argumentList ? pythonShellCommandArgument(argumentList) : null;
+            if (shellCommand !== null && !isPythonStaticString(shellCommand)) addAstFinding(context, 'SEC-009', call);
         }
     }
+}
+
+/** Erstes Positionsargument, sonst `cmd=` (`asyncio.create_subprocess_shell(cmd=...)`). */
+function pythonShellCommandArgument(argumentList: TsNode): TsNode | null {
+    const callArguments = argumentList.namedChildren.filter(
+        (callArgument): callArgument is TsNode => callArgument !== null && callArgument.type !== 'comment',
+    );
+    const positionalCommand = callArguments.find((callArgument) => callArgument.type !== 'keyword_argument');
+    if (positionalCommand) return positionalCommand;
+    const keywordCommand = callArguments.find(
+        (callArgument) => callArgument.type === 'keyword_argument' && callArgument.childForFieldName('name')?.text === 'cmd',
+    );
+    return keywordCommand?.childForFieldName('value') ?? null;
 }
 
 /** f-Strings sind in tree-sitter-python auch `string`-Nodes — nur
@@ -300,27 +329,6 @@ function collectPythonCommandInjection(context: AstRuleContext): void {
 export function isPythonStaticString(argument: TsNode): boolean {
     return argument.type === 'string'
         && !argument.descendantsOfType('interpolation').some((child) => child !== null);
-}
-
-function collectJsCommandInjection(context: AstRuleContext): void {
-    if (!context.source.includes('child_process')) return;
-
-    for (const call of nodesOfType(context, 'call_expression')) {
-        const calleeText = call.childForFieldName('function')?.text ?? '';
-        if (!/(^|\.)exec(Sync)?$/.test(calleeText)) continue;
-
-        const firstArgument = call.childForFieldName('arguments')?.namedChildren[0] ?? null;
-        if (firstArgument && isNonLiteralJsCommand(firstArgument)) {
-            addAstFinding(context, 'SEC-009', call);
-        }
-    }
-}
-
-function isNonLiteralJsCommand(argument: TsNode): boolean {
-    if (argument.type === 'template_string') {
-        return argument.descendantsOfType('template_substitution').some((child) => child !== null);
-    }
-    return argument.type !== 'string';
 }
 
 function collectJavaCommandInjection(context: AstRuleContext): void {
