@@ -49,3 +49,19 @@ describe('review_jobs.source CHECK', () => {
         expect(migrationSql).toMatch(/--\s+CHECK \(source = ANY \(ARRAY\['manual'::text, 'webhook'::text, 'cli'::text, 'mcp'::text\]\)\);/);
     });
 });
+
+describe('Migration 066: höchstens ein laufender Dashboard-Review je PR', () => {
+    const indexMigrationSql = readFileSync(
+        path.join(MIGRATIONS_DIRECTORY, '066_review_jobs_one_running_dashboard_review.sql'), 'utf8',
+    ).replace(/--.*$/gm, '');
+
+    it('legt den Unique-Index an, auf dessen 23505 der Einreiche-Pfad mit review_in_progress antwortet', () => {
+        expect(indexMigrationSql).toMatch(
+            /CREATE UNIQUE INDEX review_jobs_one_running_dashboard_review\s+ON public\.review_jobs \(repository_id, pr_number\)\s+WHERE status IN \('pending', 'processing'\) AND source = 'dashboard';/,
+        );
+    });
+
+    it('läuft ohne CONCURRENTLY, weil apply_migration in einer Transaktion läuft', () => {
+        expect(indexMigrationSql).not.toMatch(/CONCURRENTLY/i);
+    });
+});

@@ -217,7 +217,7 @@ describe('POST /api/webhook — Head-Lebenszyklus (GITHUB_APP_SPEC §4.9)', () =
             expect(recordedJobFilters).toEqual([
                 ['eq', 'repository_id', 'repo-row-under-test'],
                 ['eq', 'pr_number', 7],
-                ['in', 'source', ['webhook', 'dashboard']],
+                ['in', 'source', ['webhook', 'dashboard', 'mcp']],
                 ['eq', 'payload->>pr_head_sha', HEAD_SHA_UNDER_TEST],
                 ['in', 'status', ['done', 'error']],
             ]);
@@ -271,12 +271,12 @@ describe('POST /api/webhook — Head-Lebenszyklus (GITHUB_APP_SPEC §4.9)', () =
             status: 'error',
             error_message: '[superseded] Superseded by b7e23ec',
         });
-        // Nur unfertige Webhook- und Dashboard-Jobs desselben PRs auf dem VORGÄNGER-Head: fertige Jobs bleiben
+        // Nur unfertige PR-Review-Jobs (Webhook, Dashboard, MCP) desselben PRs auf dem VORGÄNGER-Head: fertige Jobs bleiben
         // unangetastet, und eine verspätete Delivery eines älteren Commits trifft nie den Job des neueren.
         expect(recordedJobFilters.slice(0, 5)).toEqual([
             ['eq', 'repository_id', 'repo-row-under-test'],
             ['eq', 'pr_number', 7],
-            ['in', 'source', ['webhook', 'dashboard']],
+            ['in', 'source', ['webhook', 'dashboard', 'mcp']],
             ['in', 'status', ['pending', 'processing']],
             ['eq', 'payload->>pr_head_sha', PREVIOUS_HEAD_SHA_UNDER_TEST],
         ]);
@@ -296,6 +296,23 @@ describe('POST /api/webhook — Head-Lebenszyklus (GITHUB_APP_SPEC §4.9)', () =
             }),
         );
         expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
+    });
+
+    it('supersedes an MCP PR review on the previous head, but no MCP scan can match (MCP_SPEC §4.7)', async () => {
+        supersedeReturningMock.mockResolvedValue({ data: [{ id: 'outdated-mcp-review', check_run_id: 4712 }], error: null });
+
+        await POST(buildPullRequestDelivery('synchronize', PREVIOUS_HEAD_SHA_UNDER_TEST));
+
+        // Ein MCP-Scan trägt weder pr_number noch pr_head_sha: beide Filter schließen ihn aus.
+        expect(recordedJobFilters).toEqual(expect.arrayContaining([
+            ['in', 'source', expect.arrayContaining(['mcp'])],
+            ['eq', 'pr_number', 7],
+            ['eq', 'payload->>pr_head_sha', PREVIOUS_HEAD_SHA_UNDER_TEST],
+        ]));
+        await flushAfterCallbacks();
+        expect(completeGatekeeperCheckRunMock).toHaveBeenCalledWith(
+            'installation-token-under-test', 'acme/widgets', 4712, expect.objectContaining({ conclusion: 'cancelled' }),
+        );
     });
 
     it('starts the review of the new head even when superseding the previous one fails', async () => {

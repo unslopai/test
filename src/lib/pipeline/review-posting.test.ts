@@ -69,6 +69,19 @@ describe('postReviewIdempotently', () => {
             .resolves.toBe(778);
     });
 
+    it('übernimmt einen Review, dessen Antwort mit `terminated` abbrach (Job 0d913d83, unslopai/test#16)', async () => {
+        const socketClosed = new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET', message: 'other side closed' } });
+        createPullRequestReviewMock.mockRejectedValueOnce(socketClosed);
+        listPullRequestReviewsMock.mockResolvedValue([
+            { id: 5400000001, body: REVIEW_BODY, commitId: 'af28c0b', submittedAtMs: JOB_STARTED_AT_MS + 195_000 },
+        ]);
+
+        const postedReviewId = await postReviewIdempotently(buildReviewContext(), REVIEW_BODY, [], 'COMMENT', instantWait);
+
+        expect(postedReviewId).toBe(5400000001);
+        expect(createPullRequestReviewMock).toHaveBeenCalledTimes(1);
+    });
+
     it('ein eindeutiger Fehler (422) wird ohne Abgleich durchgereicht', async () => {
         const selfAuthored = new GitHubApiError(422, '/reviews', 'Can not request changes on your own pull request');
         createPullRequestReviewMock.mockRejectedValueOnce(selfAuthored);

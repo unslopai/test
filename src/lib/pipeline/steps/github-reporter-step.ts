@@ -48,8 +48,9 @@ export const githubReporterStep: PipelineStep = {
         }
 
         if (collectReportableIssues(context).length > 0) {
-            await postReviewWithIssues(context);
-        } else if (reviewOutcome === 'deterministic_only') {
+            return await postReviewWithIssues(context);
+        }
+        if (reviewOutcome === 'deterministic_only') {
             await postDeterministicOnlyComment(context);
         } else {
             await postApprovalComment(context);
@@ -77,7 +78,13 @@ async function postAbortComment(context: PipelineContext): Promise<void> {
     console.log(`[GitHubReporter] Abort-Kommentar gepostet: ${nothingReviewedNotice.reason}`);
 }
 
-async function postReviewWithIssues(context: PipelineContext): Promise<void> {
+/**
+ * Scheitert das Posten selbst, wirft der Step und der Job endet als `error`:
+ * ein `done` ohne sichtbaren Review wäre schlimmer als ein roter Check. Alles
+ * NACH dem Post ist eine Degradation (`report_incomplete`), kein Job-Fehler —
+ * Persister und Check-Abschluss laufen weiter.
+ */
+async function postReviewWithIssues(context: PipelineContext): Promise<PipelineContext> {
     // Merge-Punkt der Lanes (pre_scanner_design.md §5.1): deterministische
     // prescanIssues + LLM-Issues. Anker-Basis sind prFiles, nicht
     // reviewableFiles — der Pre-Scanner findet auch in Dateien (YAML, py),
@@ -104,7 +111,15 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
         `${unanchoredIssues.length} unverankerte Findings im Body.`,
     );
 
-    await persistFindingCommentMap(context, postedReviewId, anchoredIssues, unanchoredIssues);
+    const commentMapPersisted = await persistFindingCommentMap(context, postedReviewId, anchoredIssues, unanchoredIssues);
+    return commentMapPersisted ? context : markReportIncomplete(context);
+}
+
+function markReportIncomplete(context: PipelineContext): PipelineContext {
+    return {
+        ...context,
+        cascade: { ...context.cascade, degradations: [...context.cascade.degradations, 'report_incomplete'] },
+    };
 }
 
 /**
@@ -190,16 +205,19 @@ function isSelfAuthoredPrRejection(reviewError: unknown): boolean {
  * Fail-soft mit EIGENEM catch: der Review ist zu diesem Zeitpunkt gepostet —
  * eine fehlgeschlagene Map-Persistenz darf den Job nicht kippen; Recovery ist
  * der Weiterlauf ohne Map (das Finding bleibt ledger-auflösbar, nur nicht
- * GitHub-auflösbar), der Fehler wird laut geloggt.
+ * GitHub-auflösbar), der Fehler wird laut geloggt und als `report_incomplete`
+ * auf Check und Ergebnis sichtbar.
+ *
+ * @returns false = die Map fehlt ganz oder teilweise.
  */
 async function persistFindingCommentMap(
     context: PipelineContext,
     postedReviewId: number | null,
     anchoredIssues: readonly PipelineIssue[],
     unanchoredIssues: readonly PipelineIssue[],
-): Promise<void> {
+): Promise<boolean> {
     if (!context.repositoryId) {
-        return;
+        return true;
     }
 
     try {
@@ -217,7 +235,7 @@ async function persistFindingCommentMap(
             }));
 
         if (findingCommentRows.length === 0) {
-            return;
+            return true;
         }
 
         const { error: mapInsertError } = await supabase
@@ -231,11 +249,13 @@ async function persistFindingCommentMap(
             `[GitHubReporter] Comment-Map persistiert: ${findingCommentRows.length} Findings, `
             + `${[...commentIdByFindingId.keys()].length} mit Inline-Comment-ID.`,
         );
+        return true;
     } catch (commentMapError: unknown) {
         console.error(
             `[GitHubReporter] Job ${context.jobId}: Comment-Map nicht persistierbar `
-            + `(fail-soft, Review ist gepostet): ${extractErrorMessage(commentMapError)}`,
+            + `(report_incomplete, Review ist gepostet): ${extractErrorMessage(commentMapError)}`,
         );
+        return false;
     }
 }
 
@@ -367,7 +387,9 @@ function buildIntegrityScoreBlock(
  * `cascade.degradations` und bekommt seine eigene Zeile, direkt nach dem
  * halben Draft: beide machen die Abdeckung unvollständig (`hasIncompleteCoverage`).
  * Reihenfolge wie `listDegradationNotices` (CLI, MCP, Extension) und die
- * Check-Summary (`worker.ts`); der Test vergleicht sie.
+ * Check-Summary (`worker.ts`); der Test vergleicht sie. Deren letzte Zeile,
+ * der unvollständige Bericht (`report_incomplete`), fehlt hier: sie entsteht
+ * erst nach dem Post dieses Textes.
  */
 function collectDegradationNotices(
     context: Pick<PipelineContext, 'cascade' | 'prescanStats' | 'repoContext' | 'deepLane'>,

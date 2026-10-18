@@ -8,6 +8,7 @@ const NOW_MS = Date.parse('2026-07-20T14:00:00.000Z');
 function candidateAgedMinutes(minutes: number, id = 'job'): StaleJobCandidate {
     return {
         id,
+        status: 'processing',
         updatedAt: new Date(NOW_MS - minutes * 60_000).toISOString(),
         checkRunId: 4711,
         repoFullName: 'unslopai/test',

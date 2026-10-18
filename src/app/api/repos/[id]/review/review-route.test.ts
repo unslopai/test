@@ -52,6 +52,11 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/worker', () => ({ processReviewJob: processReviewJobMock }));
 vi.mock('@/lib/github', () => ({ getPullRequestHead: getPullRequestHeadMock }));
 vi.mock('@/lib/check-run', () => ({ startGatekeeperCheckRun: startGatekeeperCheckRunMock }));
+// Ein Konflikt ohne toten Job: der Abräum-Pfad findet nichts (eigener Test in pr-head-lifecycle.test.ts).
+vi.mock('@/lib/pr-head-lifecycle', async (importOriginal) => ({
+    ...await importOriginal<typeof import('@/lib/pr-head-lifecycle')>(),
+    releaseDeadDashboardReviews: vi.fn(() => Promise.resolve([])),
+}));
 vi.mock('@/lib/github-app', async (importOriginal) => {
     const actualGithubApp = await importOriginal<typeof import('@/lib/github-app')>();
     return { ...actualGithubApp, getInstallationToken: getInstallationTokenMock };
@@ -303,6 +308,20 @@ describe('POST /api/repos/[id]/review (GITHUB_APP_SPEC §4.10)', () => {
             await scheduledCallback();
         }
         expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
+    });
+
+    it('answers 409 review_in_progress when a parallel click wins the insert (23505, Migration 066)', async () => {
+        jobInsertSingleMock.mockResolvedValue({
+            data: null,
+            error: { code: '23505', message: 'duplicate key value violates unique constraint "review_jobs_one_running_dashboard_review"' },
+        });
+
+        const response = await POST(buildReviewRequest({ prNumber: 16 }), ROUTE_PARAMS);
+
+        expect(response.status).toBe(409);
+        expect(await response.json()).toEqual({ error: 'review_in_progress' });
+        expect(startGatekeeperCheckRunMock).not.toHaveBeenCalled();
+        expect(afterMock).not.toHaveBeenCalled();
     });
 
     it('lets the click through when the running-review lookup fails (a double run beats a refused review)', async () => {

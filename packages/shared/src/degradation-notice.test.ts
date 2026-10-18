@@ -14,6 +14,7 @@ import {
     formatTimeBudgetNotice,
     formatUnreadFileTypesNotice,
     hasIncompleteCoverage,
+    formatReportIncompleteNotice,
     listDegradationNotices,
 } from './degradation-notice.js';
 
@@ -63,9 +64,34 @@ describe('listDegradationNotices (Reihenfolge wie Check-Summary und PR-Review; V
         ]);
     });
 
+    it('stellt den unvollständigen Bericht ans Ende: er entsteht erst nach dem Review-Post (SPEC.md §8)', () => {
+        expect(listDegradationNotices({
+            degradations: ['draft_round2_failed', 'report_incomplete', 'deep_lane_failed'],
+            deepLane: { status: 'degraded', degradations: ['deep_lane_failed'], unreviewedFiles: [] },
+        })).toEqual([
+            formatDraftRound2Notice(['draft_round2_failed']),
+            formatDeepLaneNotice(['deep_lane_failed'], []),
+            formatReportIncompleteNotice(['report_incomplete']),
+        ]);
+    });
+
     it('liefert für einen vollständigen Lauf keine Zeile', () => {
         expect(listDegradationNotices({})).toEqual([]);
         expect(listDegradationNotices({ degradations: ['cache_fallback'] })).toEqual([]);
+    });
+});
+
+describe('formatReportIncompleteNotice (Schritt nach dem Review-Post gescheitert)', () => {
+    it('sagt, dass der Review steht und was fehlt', () => {
+        expect(formatReportIncompleteNotice(['report_incomplete'])).toBe(
+            'Incomplete report: the review was posted, but its comments could not be linked to the findings, '
+            + 'so dismissing a finding will not resolve its review thread on GitHub.',
+        );
+    });
+
+    it('schweigt bei vollständigem Bericht oder fehlendem Feld (Alt-Ergebnis)', () => {
+        expect(formatReportIncompleteNotice(undefined)).toBeNull();
+        expect(formatReportIncompleteNotice(['cache_fallback'])).toBeNull();
     });
 });
 
