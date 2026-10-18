@@ -6,7 +6,7 @@
  * selbst zu traversieren (pre_scanner_design.md §2).
  */
 import { RULE_REGISTRY } from '../registry';
-import type { Node as TsNode } from 'web-tree-sitter';
+import type { Node as TsNode, TreeCursor } from 'web-tree-sitter';
 import type { PrescanLanguage } from '../../language';
 import type { PrescanFinding, PrescanSeverity } from '../../types';
 
@@ -52,9 +52,72 @@ const RULE_NODE_TYPES: readonly string[] = [
     'list_comprehension', 'dictionary_comprehension', 'set_comprehension',
 ];
 
+/** Bucket-Filter über den Knotentext: gesammelt wird nur, was die Regel überhaupt ansehen kann. */
+export interface NodeTextFilter {
+    /** Längere Knoten werden verworfen, ohne ihren Text zu lesen. */
+    readonly maxTextLength: number;
+    readonly accepts: (nodeText: string) => boolean;
+}
+
+/**
+ * Generische Namen aus THE LAW (Condition 3, „Lexical Slop“): `data`, `result`,
+ * `item`, `temp`, jeweils auch mit bis zu zwei Ziffern (`temp1`, `result22`),
+ * dazu `e`. Welche Bindung damit gemeint ist, entscheidet lexical-rules.ts.
+ */
+export const GENERIC_BINDING_NAME_PATTERN = /^(?:(?:data|result|item|temp)\d{0,2}|e)$/;
+const LONGEST_GENERIC_NAME_LENGTH = 'result99'.length;
+/** Typen, die type-rules.ts ansieht: `any` und das `unknown` eines Doppel-Casts. */
+const CAPITULATION_TYPE_NAMES: ReadonlySet<string> = new Set(['any', 'unknown']);
+const TS_DIRECTIVE_MARKER = '@ts-';
+/**
+ * Eine Direktive mit ausführlicher Begründung bleibt darunter. Längere
+ * Kommentare (Lizenzköpfe, Doc-Blöcke) werden gar nicht erst gelesen.
+ */
+const LONGEST_DIRECTIVE_COMMENT_LENGTH = 2000;
+
+/**
+ * Condition 2/3 (type-rules.ts, lexical-rules.ts) brauchen `identifier`,
+ * `predefined_type` und `comment` — die häufigsten Knoten einer TS-Datei.
+ * Ungefiltert gebucketet wären sie genau der Ballast, vor dem RULE_NODE_TYPES
+ * warnt. Der Filter liest den Text am Cursor und materialisiert nur die Knoten
+ * mit einem der wenigen gesuchten Texte.
+ *
+ * ACHTUNG für neue Regeln: `nodesOfType(context, 'comment')` liefert in JS/TS
+ * deshalb NICHT alle Kommentare, sondern nur die mit `@ts-` (entsprechend für
+ * `identifier` und `predefined_type`). Der Guard in nodesOfType merkt das
+ * nicht. Wer mehr braucht, erweitert `accepts` hier.
+ */
+const JS_TS_NODE_TEXT_FILTERS: ReadonlyMap<string, NodeTextFilter> = new Map([
+    ['identifier', {
+        maxTextLength: LONGEST_GENERIC_NAME_LENGTH,
+        accepts: (nodeText: string) => GENERIC_BINDING_NAME_PATTERN.test(nodeText),
+    }],
+    ['predefined_type', {
+        maxTextLength: 'unknown'.length,
+        accepts: (nodeText: string) => CAPITULATION_TYPE_NAMES.has(nodeText),
+    }],
+    ['comment', {
+        maxTextLength: LONGEST_DIRECTIVE_COMMENT_LENGTH,
+        accepts: (nodeText: string) => nodeText.includes(TS_DIRECTIVE_MARKER),
+    }],
+]);
+const NO_NODE_TEXT_FILTERS: ReadonlyMap<string, NodeTextFilter> = new Map();
+
+export function isJsTsLanguage(language: PrescanLanguage): boolean {
+    return language === 'typescript' || language === 'tsx' || language === 'javascript';
+}
+
+export function nodeTextFiltersFor(language: PrescanLanguage): ReadonlyMap<string, NodeTextFilter> {
+    return isJsTsLanguage(language) ? JS_TS_NODE_TEXT_FILTERS : NO_NODE_TEXT_FILTERS;
+}
+
 /** Alle Typen, die für eine Sprache gebucketet werden müssen. */
 export function buildWantedNodeTypes(language: PrescanLanguage): ReadonlySet<string> {
-    return new Set([...RULE_NODE_TYPES, ...functionNodeTypesFor(language)]);
+    return new Set([
+        ...RULE_NODE_TYPES,
+        ...functionNodeTypesFor(language),
+        ...nodeTextFiltersFor(language).keys(),
+    ]);
 }
 
 /**
@@ -65,13 +128,14 @@ export function buildWantedNodeTypes(language: PrescanLanguage): ReadonlySet<str
 export function collectNodesByType(
     rootNode: TsNode,
     wantedNodeTypes: ReadonlySet<string>,
+    nodeTextFilters: ReadonlyMap<string, NodeTextFilter> = NO_NODE_TEXT_FILTERS,
 ): Map<string, TsNode[]> {
     const nodesByType = new Map<string, TsNode[]>();
     const cursor = rootNode.walk();
 
     let reachedEnd = false;
     while (!reachedEnd) {
-        if (wantedNodeTypes.has(cursor.nodeType)) {
+        if (wantedNodeTypes.has(cursor.nodeType) && passesTextFilter(cursor, nodeTextFilters.get(cursor.nodeType))) {
             const currentNode = cursor.currentNode;
             const bucket = nodesByType.get(currentNode.type);
             if (bucket) {
@@ -92,6 +156,12 @@ export function collectNodesByType(
 
     cursor.delete();
     return nodesByType;
+}
+
+function passesTextFilter(cursor: TreeCursor, nodeTextFilter: NodeTextFilter | undefined): boolean {
+    if (!nodeTextFilter) return true;
+    if (cursor.endIndex - cursor.startIndex > nodeTextFilter.maxTextLength) return false;
+    return nodeTextFilter.accepts(cursor.nodeText);
 }
 
 /**
@@ -130,6 +200,43 @@ export function addAstFinding(
         endLine: node.endPosition.row + 1,
         exactQuote: firstLineOf(node.text),
         explanation: detail ? `${explanation} ${detail}` : explanation,
+        fixTemplate: descriptor?.fixTemplate,
+        engine: 'tree-sitter',
+        fileLevel: false,
+    });
+}
+
+/** firstLineOf kappt bei 200 Zeichen: bis zu dieser Spalte zeigt das Zitat ab Zeilenanfang das Token sicher. */
+const LAST_COLUMN_QUOTED_FROM_LINE_START = 120;
+const QUOTE_LEAD_LENGTH = 80;
+
+/**
+ * Finding auf genau der Zeile, in der `node` beginnt, mit der ganzen Zeile als
+ * Zitat. Für Regeln, deren Knoten ein einzelnes Token ist (`any`, ein Name):
+ * das Token allein wäre als Zitat nichtssagend, ein umschließendes Statement
+ * würde den Treffer über Zeilen strecken, die der PR nicht geändert hat.
+ * Steht das Token weit hinten in einer langen Zeile (minifizierter Code),
+ * beginnt das Zitat kurz davor, damit es den Treffer zeigt.
+ */
+export function addAstLineFinding(context: AstRuleContext, ruleId: string, node: TsNode, detail: string): void {
+    const descriptor = RULE_REGISTRY.get(ruleId);
+    const lineNumber = node.startPosition.row + 1;
+    const lineStartIndex = context.source.lastIndexOf('\n', node.startIndex - 1) + 1;
+    const nextNewlineIndex = context.source.indexOf('\n', node.startIndex);
+    const tokenColumn = node.startIndex - lineStartIndex;
+    const quoteStartIndex = tokenColumn > LAST_COLUMN_QUOTED_FROM_LINE_START
+        ? node.startIndex - QUOTE_LEAD_LENGTH
+        : lineStartIndex;
+    const lineText = context.source.substring(quoteStartIndex, nextNewlineIndex === -1 ? undefined : nextNewlineIndex);
+    context.findings.push({
+        ruleId,
+        ruleTitle: descriptor?.title ?? ruleId,
+        severity: descriptor?.severity ?? 'WARNING',
+        path: context.path,
+        line: lineNumber,
+        endLine: lineNumber,
+        exactQuote: firstLineOf(lineText),
+        explanation: `${descriptor?.explanation ?? ''} ${detail}`.trim(),
         fixTemplate: descriptor?.fixTemplate,
         engine: 'tree-sitter',
         fileLevel: false,

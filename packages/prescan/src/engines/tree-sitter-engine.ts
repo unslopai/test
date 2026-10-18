@@ -14,10 +14,12 @@ import { collectCodeExecutionFindings } from '../rules/ast/code-execution-rules'
 import { collectComplexityFindings } from '../rules/ast/complexity-rules';
 import { collectCorrectnessFindings } from '../rules/ast/correctness-rules';
 import { collectExceptionFindings } from '../rules/ast/exception-rules';
+import { collectLexicalFindings } from '../rules/ast/lexical-rules';
 import { collectReactFindings } from '../rules/ast/react-rules';
 import { collectSecurityFindings } from '../rules/ast/security-rules';
 import { collectTestFindings } from '../rules/ast/test-rules';
-import { buildWantedNodeTypes, collectNodesByType } from '../rules/ast/ast-shared';
+import { collectTypeCapitulationFindings } from '../rules/ast/type-rules';
+import { buildWantedNodeTypes, collectNodesByType, nodeTextFiltersFor } from '../rules/ast/ast-shared';
 import type { PrescanLanguage } from '../language';
 import type { AstRuleContext } from '../rules/ast/ast-shared';
 import type { PrescanFinding } from '../types';
@@ -107,7 +109,7 @@ export async function runTreeSitterEngine(input: TreeSitterEngineInput): Promise
                 language: input.language,
                 source: input.source,
                 isTestFile: input.isTestFile,
-                nodesByType: collectNodesByType(tree.rootNode, wantedNodeTypes),
+                nodesByType: collectNodesByType(tree.rootNode, wantedNodeTypes, nodeTextFiltersFor(input.language)),
                 wantedNodeTypes,
                 findings: [],
             };
@@ -119,6 +121,8 @@ export async function runTreeSitterEngine(input: TreeSitterEngineInput): Promise
             collectTestFindings(context);
             collectReactFindings(context);
             collectCorrectnessFindings(context);
+            collectTypeCapitulationFindings(context);
+            collectLexicalFindings(context);
             return context.findings;
         } finally {
             tree.delete();

@@ -150,6 +150,16 @@ const RULE_LIST: readonly RuleDescriptor[] = [
         ruleId: 'COND-011', title: 'Cyclomatic Explosion / God Component', severity: 'WARNING', engine: 'tree-sitter',
         explanation: 'The JSX return contains conditional nesting (elements, ternaries, logical ANDs) deeper than 4 levels, or the component declares more than 2 useEffect hooks — a god component. Extract the deeply nested branches into named child components.',
     },
+    {
+        // Titel wie in conditions.ts: Pre-Scan- und Modell-Finding tragen dasselbe Label „COND-002 (…)“.
+        ruleId: 'COND-002', title: 'Type Capitulation', severity: 'WARNING', engine: 'tree-sitter',
+        explanation: 'The type checker is bypassed here (explicit any, a @ts- suppression directive, or a double cast through unknown). Every such spot is a place where the compiler can no longer catch a wrong value.',
+    },
+    {
+        ruleId: 'COND-003', title: 'Lexical Slop', severity: 'WARNING', engine: 'tree-sitter',
+        explanation: 'A newly introduced binding carries a generic name that says nothing about its content. Generic names force every reader to re-derive what the value is.',
+        fixTemplate: 'Name the value after its role, e.g. retryBudgetPayload instead of data, fetchError instead of e.',
+    },
     // ── ESLint-Engine (TS/JS) ────────────────────────────────────────────────
     {
         ruleId: 'SEC-008', title: 'Weak randomness for security value', severity: 'WARNING', engine: 'eslint',

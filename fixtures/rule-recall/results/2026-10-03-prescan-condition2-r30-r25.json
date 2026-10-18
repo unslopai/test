@@ -1,0 +1,102 @@
+{
+  "capturedAt": "2026-10-03T15:19:48.180Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "production",
+  "ecosystems": "manifest",
+  "llmExtensions": [
+    ".py",
+    ".go",
+    ".ps1",
+    ".psm1"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "356614e9-bb22-44ce-8280-24004eb6e6c5",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 114,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r30-real-pr-conditions.diff",
+      "jobId": "5b1017a2-a157-4628-bbe8-90ec1f2a4bb1",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 1,
+      "survivingFindingCount": 1,
+      "prescanFindingCount": 8,
+      "prescanDurationMs": 192,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r30-real-pr-conditions.diff",
+          "path": "adapters/netlify/src/handler.ts",
+          "ruleContains": "Condition 2|COND-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r30-real-pr-conditions.diff",
+          "path": "adapters/cloudflare-workers/src/serve-static.ts",
+          "ruleContains": "Condition 2|COND-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r30-real-pr-conditions.diff",
+          "path": "adapters/cloudflare-workers/src/utils.ts",
+          "ruleContains": "Condition 2|COND-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r30-real-pr-conditions.diff",
+          "path": "src/lib/pipeline/retry-budget.ts",
+          "ruleContains": "Condition 3|COND-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r30-real-pr-conditions.diff",
+          "path": "src/lib/pipeline/retry-budget.ts",
+          "ruleContains": "MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    }
+  ]
+}

@@ -43,6 +43,27 @@ describe('runPrescan — added-line filter (PROC-007)', () => {
         expect(scanResult.findings[0].ruleId).toBe('SEC-005');
     });
 
+    it('reports COND-002/COND-003 only where the any or the binding sits on an added line', async () => {
+        const fileContent = [
+            'export function readLegacy(data: any) {', // Zeile 1: NICHT im Diff
+            '    return data;',
+            '}',
+            'export function readBudget(result: any) {', // Zeile 4: added
+            '    return result;',
+            '}',
+        ].join('\n');
+
+        const scanResult = await runPrescan({
+            files: [buildScannableFile({
+                content: fileContent,
+                patch: buildPatchForAddedLines(4, ['export function readBudget(result: any) {', '    return result;', '}']),
+            })],
+        }, OFFLINE_CONFIG);
+
+        expect(scanResult.findings.map((finding) => `${finding.ruleId}:${finding.line}:${finding.severity}`).sort())
+            .toEqual(['COND-002:4:WARNING', 'COND-003:4:WARNING']);
+    });
+
     it('skips files whose patch adds no lines', async () => {
         const scanResult = await runPrescan({
             files: [buildScannableFile({

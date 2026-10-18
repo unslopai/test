@@ -119,3 +119,31 @@ Auswertung:
 - **Teilausfall statt Totalausfall belegt.** Derselbe PR, der als R4 den Pre-Scan ganz verlor, bekommt 42 von 54 Dateien geprüft. Der Kill trifft die vierte Anfrage, weil die Batches nacheinander auf derselben warmen Instanz landen und ihr RSS mitnehmen (711 → 1071, dann 1107 → 1800 MB). Die Anfrage danach bekommt eine kalte Instanz (215 MB): ein einmaliger Retry nach 5xx hätte Batch 4 sehr wahrscheinlich gerettet (ROADMAP §1 „Datei-Batches: offene Punkte“ (a)).
 - **Die Lambda-Zuordnung zeigt `eslint`.** Lokal +23…+29 MB je 12 Dateien, in der Lambda +54…+246 MB je Batch. `tree-sitter` folgt mit +19…+100 MB. Die Registry-Phase wächst in Batch 1 noch einmal um rund +390 MB (442 → 831 MB). Nächster Ansatz steht in ROADMAP §1 „Route-Instanz-Leck“.
 - **Payload-Grenze belegt:** 5,2 MB in zwei Batches unter 3 MB, beide HTTP 200.
+
+## 4. Condition 2/3 im Pre-Scan (2026-10-03)
+
+Folge des Befunds „Draft übersieht Condition 2/3 auf realen PRs“ (R5, R11): `COND-002` (Type Capitulation) und `COND-003` (generische Namen) laufen als AST-Regeln der tree-sitter-Engine, Schweregrad WARNING, nur auf hinzugefügten Zeilen. Regeltext und Ausnahmen: `docs/specs/pre_scanner_design.md` §10. Korpus-Gate und Benchmark: `docs/benchmarks/RULE_RECALL_BENCHMARK.md` (2026-10-03).
+
+### 4.1 Treffer auf den Dateien der Kampagne (lokal, Pre-Scanner ohne Registry, Head-Stände der PRs)
+
+| PR | Findings vorher → nachher | CRITICAL | neu COND-002 | neu COND-003 |
+|---|---|---|---|---|
+| unslopai/test#30 (hono, R5) | 10 → 38 | 1 → 1 | 21 (14 in Nicht-Test-Code, 7 in Testdateien) | 7 |
+| unslopai/test#36 (R11) | 1 → 3 | 1 → 1 | 0 | 2 |
+| unslopai/test#29 (trpc, R4) | 12 → 21 | 2 → 2 | 4 | 5 |
+
+Die sieben Stellen aus R5 sind alle dabei: `// @ts-ignore` in `cloudflare-workers/src/serve-static.ts:29` und `lambda-edge/src/handler.ts:6`, `any` in `aws-lambda/src/types.ts:11` (dazu `:50`, `:52`), `netlify/src/handler.ts:5`–`:7` und `lambda-edge/src/handler.ts:117`, `as unknown as ReadableStream` in `cloudflare-workers/src/utils.ts:49`. Sechs davon stehen hinter einem `eslint-disable`-Kommentar (alle außer dem Doppel-Cast); `no-explicit-any` und `ban-ts-comment` hätten sie über die `Linter`-API nicht gemeldet. Die 16 `@ts-expect-error` mit Begründung im selben PR bleiben still. COND-003 auf #30: sechsmal `result` in `aws-lambda/src/handler.ts` (eine Variable, fünf Methoden-Parameter) und `catch (e)` in `deno/src/serve-static.ts:20`. Auf #36: `const data` (`retry-budget.ts:4`) und `catch (e)` (`:6`).
+
+In Produktion laufen diese Treffer durch den Deckel (`prescan-hit-cap.ts`): je Regel drei einzelne Findings, der Rest als ein Sammelfinding mit allen Fundstellen.
+
+### 4.2 Speicher der Prescan-Route (gebauter Handler, lokal)
+
+`next build`, `next start`, die 40 JS/TS-Dateien aus unslopai/test#29 in Batches von 12, drei Runden (12 Requests), `registryChecks: false`, einmal auf `main` (`ff07458`), einmal auf dem Branch.
+
+| Engine | 1. Request, `main` → Branch | Summe über 12 Requests, `main` → Branch |
+|---|---|---|
+| tree-sitter | +35 MB → +39 MB | +26 MB → +12 MB |
+| eslint (Code unverändert) | +52 MB → +43 MB | +153 MB → +220 MB |
+| regex | +0 MB → +3 MB | −1 MB → +3 MB |
+
+Die neuen Regeln laufen in der tree-sitter-Engine und erhöhen deren Zuwachs nicht messbar. Die ESLint-Engine ist unverändert; ihre Summe schwankt zwischen zwei Server-Prozessen um 67 MB, das ist die Messunschärfe dieser Zeile. Die verworfene Alternative: `@typescript-eslint/eslint-plugin` in der ESLint-Engine kostet ungebündelt 29 und 34 MB RSS schon beim Laden (zwei Läufe, 196 → 213 und 183 → 217 MB), ohne Zuwachs je Runde.

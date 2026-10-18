@@ -1,5 +1,44 @@
 # Rule-Recall Benchmark
 
+## Condition 2/3 im Pre-Scan (2026-10-03): neue Fixture r30 5/5 aus dem Pre-Scan, 0 neue CRITICAL auf 8 Korpora, Prescan-only 72/177 → 81/182
+
+Branch `feat/prescan-condition2` auf `main` `ff07458`. Neue AST-Regeln `COND-002` (explizites `any`, `@ts-ignore`/`@ts-nocheck`, `@ts-expect-error` ohne Begründung, `as unknown as`) und `COND-003` (generische Namen an neuen Bindungen), beide WARNING, tree-sitter-Engine. Regeltext: `docs/specs/pre_scanner_design.md` §10. Treffer auf den Kampagnen-PRs und Speicher-Messung: `docs/benchmarks/LARGE_PR_CAMPAIGN.md` §4.
+
+Neue Fixture `r30-real-pr-conditions.diff`: keine gepflanzten Verstöße, sondern echte Dateien. Drei Adapter-Dateien aus honojs/hono#5463 (MIT, Hinweis im Fixture-Kopf; Replay unslopai/test#30) und `retry-budget.ts` aus unslopai/test#36. Die Datei aus #36 trägt drei Befunde (`data`, `e`, leeres `catch`) und weicht damit bewusst von „ein Verstoß je Datei“ ab. `r06`, `r07` und `r24` erkennen `COND-002`/`COND-003` jetzt als Treffer für ihre Condition-2/3-Pflanzungen an.
+
+| Lauf | Aufruf | Ergebnis | Kosten | Report |
+|---|---|---|---|---|
+| Produktionspfad, nur neue Fixture und Kontrolle | `--only r30,r25 --no-escalation --keep` | r30: Pre-Scan **5/5** (3 × COND-002, COND-003, MAINT-001), Draft 0/5, ein weiteres Draft-Finding vom Verifier bestätigt (der Report nennt seine Regel nicht); r25: **0 Findings**; Jobs `5b1017a2` (r30), `356614e9` (r25) | $0,02 (geschätzt $0,07) | `results/2026-10-03-prescan-condition2-r30-r25.json` |
+| Prescan-only, Produktionspfad, `main` → Branch | `--prescan-only` | **72/177 → 81/182**: +5 auf r30, +4 auf alten Pflanzungen (`webhook-parser.ts` und `ReportList.tsx` in r07 und r24); 10 Kontrollen **0 CRITICAL, 0 WARNING** | 0 Token | `results/2026-10-03-prescan-condition2-prescan-only-production.json` |
+
+Der bezahlte Lauf lief auf Commit `0baf912`, vor den Fixes aus der Review-Runde (unten); der Prescan-only-Report ist danach neu erzeugt und zeigt auf r30 und r25 dieselben Treffer. Der Draft fand auf r30 keinen der fünf Befunde, auch nicht mit den Pre-Scan-Treffern in `<already_flagged>`; das deckt sich mit den Live-Läufen `9260a5cc` und `93236c5c`. Nicht getroffen bleibt `const val` in `total-calculator.ts` (r06, r24): `val` steht nicht in THE LAW, das bleibt beim Modell. Eskalationszähler des Dogfooding-Kontos (`billing_accounts.escalation_month_count`): 4 vor dem Lauf, 4 danach.
+
+**Korpus-Gate** (`scripts/prescan-corpus.ts --include-jsts --max-files 5000`, Clones in `C:\dev\sec009-corpora` wie am 2026-10-03 oben; Vorher-Lauf auf `main` vor dem ersten Edit):
+
+| Korpus | Dateien | Findings | CRITICAL | WARNING | neu COND-002 | neu COND-003 |
+|---|---|---|---|---|---|---|
+| `pallets/flask` | 130 | 295 → 295 | 22 → 22 | 273 → 273 | 0 | 0 |
+| `spf13/cobra` | 59 | 21 → 21 | 0 → 0 | 21 → 21 | 0 | 0 |
+| `kubernetes/examples` | 410 | 693 → 694 | 46 → 46 | 647 → 648 | 0 | 1 |
+| `terraform-aws-modules/terraform-aws-vpc` | 108 | 0 → 0 | 0 → 0 | 0 → 0 | 0 | 0 |
+| `pypa/pip` | 772 | 1871 → 1871 | 386 → 386 | 1485 → 1485 | 0 | 0 |
+| dieses Repo mit JS/TS (`a7f1072`) | 774 | 331 → 361 | **30 → 30** | 301 → 331 | 26 | 4 |
+| `vitejs/vite` | 2445 | 603 → 1185 | **98 → 98** | 505 → 1087 | 389 | 193 |
+| `npm/cli` | 3802 | 2246 → 2332 | **102 → 102** | 2144 → 2230 | 0 | 86 |
+
+Gate **0 neue CRITICAL** erfüllt; kein bestehendes Finding fiel weg. Die Korpora werden als vollständig neue Dateien gescannt, deshalb zählt jede Zeile: 699 neue WARNINGs sind die Obergrenze für einen PR, der diese Repos neu anlegt, nicht die Last eines normalen PRs. Von den 389 COND-002 in vite sind 359 `any`, 12 Doppel-Casts und 18 Direktiven; alle 26 im eigenen Repo sind `as unknown as` (23 davon in Testdateien). Von den COND-003-Treffern sind 73 (vite) und 18 (npm/cli) `catch (e)`.
+
+**Fehlalarm-Stichprobe** (jeder k-te neue Treffer je Korpus und Regel, einzeln gelesen). Fehlalarm heißt: der Treffer liegt dort, wo die Regel nach ihrer eigenen Abgrenzung schweigen soll (Testcode, Namenskonvention einer fremden API), oder der Regeltext trifft nicht zu.
+
+| Runde | Stichprobe | Fehlalarme | Quote | Folge |
+|---|---|---|---|---|
+| 1, erste Fassung | 45 (17 COND-002, 28 COND-003) | 9, alle COND-003 in Testcode, den `isTestFile` nicht erkennt: 6 unter `test/` in npm/cli, 3 unter `__tests__/` in vite | 20 % gesamt, **32 % für COND-003** | über 10 % ⇒ COND-003 schweigt unter Test-Verzeichnissen (`TEST_DIRECTORY_PATTERN` in `lexical-rules.ts`); npm/cli 190 → 86, vite 236 → 197 Treffer |
+| 2, nach der Verengung | 44 (11 COND-002, 33 COND-003) | 2, beide COND-003: `catch (e)` in `playground/ssr-html/test-stacktrace-runtime.js` (Test-Hilfsdatei, am Namen erkennbar, nicht am Pfad) und `const validateSemver = (data, k, val)` in `workspaces/config/lib/type-defs.js` (Signatur eines nopt-Validators, als Variable definiert und als Callback übergeben) | **4,5 %** gesamt, 6,1 % für COND-003, 0 % für COND-002 | unter 10 %, Regel bleibt |
+
+COND-002 hatte in beiden Runden keinen Fehlalarm (28 gelesene Treffer): jedes `any`, jede Direktive und jeder Doppel-Cast steht so im Code. Die übrigen COND-003-Treffer sind nach dem Wortlaut von THE LAW richtig (`const result = await …`, `let result = ''`, `const data = JSON.parse(…)`, `catch (e)`); ob ein Team `result` als Rückgabe-Variable als Befund lesen will, ist eine Produktfrage und kein Fehlalarm der Regel (ROADMAP §1).
+
+**Review-Runde vor dem PR** (Subagent, rund 50 Probe-Eingaben gegen `runTreeSitterEngine` und `runPrescan`, Gegenproben mit `tsc`): kein Absturz und kein Fehlalarm in den üblichen Fallen (`any` als Name, in Strings, Kommentaren und JSX-Text; Imports, Destrukturierung, Typen, Enums, Labels). Behoben: Default- und Rest-Parameter in JS (`data = {}`, `...result`) wurden anders behandelt als in TS; CommonJS-Exporte (`module.exports = function (data) {}`) galten nicht als Definition; `declare const data` und Variablen in `declare module` wurden gemeldet; `// @ts-ignore` mit einer Begründung über 400 Zeichen und `(value as unknown)! as T` wurden übersehen; das Zitat einer sehr langen Zeile zeigte das Token nicht; der Längen-Deckel des Namensfilters passte nicht zum Muster (jetzt höchstens zwei Ziffern). Wirkung auf die Korpora: vier Treffer weniger (alle `declare const` in vite), keiner dazu; die Tabelle oben zeigt den Endstand, die Stichproben enthielten keinen der vier. Bewusst offen (ROADMAP §1): Direktive in der letzten Zeile eines mehrzeiligen Block-Kommentars, die Winkel-Form `<T><unknown>value`, und dass `dedupeFindings` je Regel und Zeile nur die erste Ursache behält.
+
 ## Law-Filter und Diff-Sprachen (2026-10-03): r13 und r10 in einem Repo ohne die Sprache, 27/27 über 3 Läufe
 
 Branch `fix/law-filter-diff-languages` auf `main` `7392a10`. Anlass: unslopai/test#48 (Job `482d6f57`), eine neue `.ps1` bekam ohne die PowerShell-Regeln im Prompt „No AI slop found“. Neuer Runner-Flag `--ecosystems <key,key>`: jede Fixture läuft mit dieser Repo-Liste statt mit ihrem Manifest-Wert. Details: `docs/specs/LANGUAGE_COVERAGE_SPEC.md` §6.2, Nachtrag.
