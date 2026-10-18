@@ -154,3 +154,63 @@ describe('resolvePrescanConfig — boundary validation [ARCH-002]', () => {
         expect(resolvedConfig.totalBudgetMs).toBe(20000);
     });
 });
+
+describe('runPrescan — config-file routing and companion files (v4)', () => {
+    const NEXT_MIDDLEWARE_LINES = [
+        "import { NextResponse } from 'next/server';",
+        'export function middleware() {',
+        '  const forwardedResponse = NextResponse.next();',
+        "  forwardedResponse.headers.set('x-request-id', crypto.randomUUID());",
+        '  return forwardedResponse;',
+        '}',
+    ];
+    const middlewareFile = buildScannableFile({
+        path: 'middleware.ts',
+        content: NEXT_MIDDLEWARE_LINES.join('\n'),
+        patch: buildPatchForAddedLines(1, NEXT_MIDDLEWARE_LINES),
+    });
+
+    it('flags SEC-019 on a Next middleware when no next.config is visible', async () => {
+        const prescanResult = await runPrescan({ files: [middlewareFile] }, OFFLINE_CONFIG);
+        expect(prescanResult.findings.map((finding) => [finding.ruleId, finding.line])).toEqual([['SEC-019', 4]]);
+    });
+
+    it('lets a hardened next.config companion suppress SEC-019 and reports an unreadable one as skipped', async () => {
+        const hardened = await runPrescan(
+            { files: [middlewareFile], companionFiles: [{ path: 'next.config.ts', content: "{ key: 'X-Frame-Options' }" }] },
+            OFFLINE_CONFIG,
+        );
+        expect(hardened.findings).toEqual([]);
+
+        const unreadable = await runPrescan(
+            { files: [middlewareFile], companionFiles: [{ path: 'next.config.ts', content: null }] },
+            OFFLINE_CONFIG,
+        );
+        expect(unreadable.findings).toEqual([]);
+        expect(unreadable.skippedChecks).toContainEqual({ ruleId: 'SEC-019', reason: 'companion-unavailable: next.config.ts', path: 'middleware.ts' });
+    });
+
+    it('routes Terraform files through the config checks (SEC-032) and applies the added-line filter', async () => {
+        const terraformLines = [
+            'resource "aws_iam_role_policy" "lambda_access" {',
+            '  role   = aws_iam_role.lambda_exec.id',
+            '  policy = jsonencode({ Statement = [{ Effect = "Allow", Action = "*", Resource = "*" }] })',
+            '}',
+        ];
+        const terraformFile = buildScannableFile({
+            path: 'infra/lambda.tf',
+            content: terraformLines.join('\n'),
+            patch: buildPatchForAddedLines(1, terraformLines),
+        });
+        const flagged = await runPrescan({ files: [terraformFile] }, OFFLINE_CONFIG);
+        expect(flagged.findings.map((finding) => finding.ruleId)).toEqual(['SEC-032']);
+
+        const onlyRoleLineAdded = buildScannableFile({
+            path: 'infra/lambda.tf',
+            content: terraformLines.join('\n'),
+            patch: buildPatchForAddedLines(2, [terraformLines[1]]),
+        });
+        const filtered = await runPrescan({ files: [onlyRoleLineAdded] }, OFFLINE_CONFIG);
+        expect(filtered.findings).toEqual([]);
+    });
+});

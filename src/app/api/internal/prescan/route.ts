@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     logRssBreakdown('prescan-route-start');
     try {
         const prescanResult: PrescanResult = await runPrescan(
-            { files: parsedRequest.files },
+            { files: parsedRequest.files, companionFiles: parsedRequest.companionFiles },
             resolvePrescanConfig(parsedRequest.rawPrescanConfig),
             {
                 registryCache: supabaseRegistryCache,

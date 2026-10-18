@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import * as nodePath from 'node:path';
 import { extractAddedLines, extractNewFileLinesFromPatch } from './diff/added-lines';
 import { detectLanguage, hasTreeSitterGrammar, isTestFile } from './language';
-import { runConfigEngine } from './engines/config-engine';
+import { isNextConfigPath, runConfigFileChecks } from './engines/config';
 import { runEslintEngine } from './engines/eslint-engine';
 import { runRegexEngine } from './engines/regex-engine';
 import { runRegistryEngine } from './engines/registry-engine';
@@ -19,6 +19,7 @@ import { runTreeSitterEngine } from './engines/tree-sitter-engine';
 import { IMPLEMENTED_RULE_IDS } from './rules/registry';
 import type { RegistryEngineFile } from './engines/registry-engine';
 import type {
+    PrescanCompanionFile,
     PrescanConfig,
     PrescanEngineVersions,
     PrescanFile,
@@ -37,11 +38,13 @@ export { detectLanguage, isTestFile } from './language';
 export { extractAddedLines } from './diff/added-lines';
 export { shannonEntropy } from './engines/regex-engine';
 
-export const PRESCAN_CORE_VERSION = '0.3.0';
+export const PRESCAN_CORE_VERSION = '0.4.0';
 
 interface FileScanState {
     readonly config: PrescanConfig;
     readonly enabledRuleIds: ReadonlySet<string>;
+    /** Alle sichtbaren `next.config.*` (Diff + Begleitdateien) für SEC-019. */
+    readonly nextConfigs: readonly PrescanCompanionFile[];
     readonly findings: PrescanFinding[];
     readonly skippedChecks: SkippedCheck[];
     readonly filesSkipped: SkippedFile[];
@@ -62,6 +65,7 @@ export async function runPrescan(
     const scanState: FileScanState = {
         config,
         enabledRuleIds,
+        nextConfigs: collectNextConfigs(input),
         findings: [],
         skippedChecks: [],
         filesSkipped: [],
@@ -130,6 +134,7 @@ async function scanSingleFile(scanState: FileScanState, file: PrescanFile): Prom
         path: file.path,
         language,
         addedLineTexts: restrictLineMap(lineTexts, addedLines),
+        lineTexts: file.path.endsWith('pyproject.toml') ? lineTexts : undefined,
     });
 
     if (file.content === null) {
@@ -140,25 +145,24 @@ async function scanSingleFile(scanState: FileScanState, file: PrescanFile): Prom
     }
     const fullContent = file.content;
 
-    if (language === 'yaml') {
-        runEngineSafely(scanState, file.path, 'config', () => {
-            const configFindings = runConfigEngine({ path: file.path, source: fullContent });
-            scanState.findings.push(...filterToAddedLines(configFindings, addedLines));
+    runEngineSafely(scanState, file.path, 'config', () => {
+        const configResult = runConfigFileChecks({
+            path: file.path, language, source: fullContent, nextConfigs: scanState.nextConfigs,
         });
-        return;
-    }
+        scanState.findings.push(...filterToAddedLines(configResult.findings, addedLines));
+        scanState.skippedChecks.push(...configResult.skippedChecks);
+    });
+    if (!hasTreeSitterGrammar(language)) return;
 
-    if (hasTreeSitterGrammar(language)) {
-        await runEngineSafelyAsync(scanState, file.path, 'tree-sitter', async () => {
-            const astFindings = await runTreeSitterEngine({
-                path: file.path,
-                language,
-                source: fullContent,
-                isTestFile: isTestFile(file.path),
-            });
-            scanState.findings.push(...filterToAddedLines(astFindings, addedLines));
+    await runEngineSafelyAsync(scanState, file.path, 'tree-sitter', async () => {
+        const astFindings = await runTreeSitterEngine({
+            path: file.path,
+            language,
+            source: fullContent,
+            isTestFile: isTestFile(file.path),
         });
-    }
+        scanState.findings.push(...filterToAddedLines(astFindings, addedLines));
+    });
 
     if (language === 'typescript' || language === 'tsx' || language === 'javascript') {
         runEngineSafely(scanState, file.path, 'eslint', () => {
@@ -251,6 +255,14 @@ function restrictLineMap(
         if (lineText !== undefined) restrictedMap.set(lineNumber, lineText);
     }
     return restrictedMap;
+}
+
+/** Diff-eigene `next.config.*` (mit Inhalt) + vom Aufrufer beschaffte Begleitdateien. */
+function collectNextConfigs(input: PrescanInput): PrescanCompanionFile[] {
+    const diffConfigs = input.files
+        .filter((file) => isNextConfigPath(file.path) && file.content !== null)
+        .map((file) => ({ path: file.path, content: file.content }));
+    return [...diffConfigs, ...(input.companionFiles ?? [])];
 }
 
 function byteLengthOf(content: string): number {
