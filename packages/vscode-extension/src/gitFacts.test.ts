@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
     collectGitFacts,
     initGitRepository,
@@ -16,6 +16,11 @@ import {
     parseRepoFullName,
     repoHasCommits,
 } from './gitFacts';
+
+// Echte Wegwerf-Repos (init, commit, push in ein temporäres Origin) brauchen
+// isoliert ~4 s pro Test und rissen unter voller Worker-Parallelität das
+// 5-s-Test-Timeout (ROADMAP §8) — analog zum globalen hookTimeout.
+vi.setConfig({ testTimeout: 30_000 });
 
 function runGitInFixture(gitArgs: readonly string[], cwd: string): void {
     execFileSync('git', [...gitArgs], { cwd, encoding: 'utf-8' });

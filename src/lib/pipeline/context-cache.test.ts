@@ -83,6 +83,7 @@ function buildCachedEnvelope(cacheStatus: 'explicit_hit' | 'explicit_created' = 
         protocolBlock: '=== TASK PROTOCOL: TEST ===',
         keyInputs: BASE_KEY_INPUTS,
         role: 'draft',
+        deadlineAtMs: null,
         plan: {
             mode: 'cached',
             vertexCacheName: 'projects/p/locations/l/cachedContents/existing',
@@ -304,7 +305,7 @@ describe('runEnvelopeGenerateContent', () => {
         expect(sentRequest.contents).toBe('=== TASK PROTOCOL: TEST ===\n\nDYNAMIC TAIL');
     });
 
-    it('Latenz-Guard: NUR die Eskalations-Rolle bekommt eine Call-Deadline (AbortSignal), Draft/Verifier nicht', async () => {
+    it('ohne Job-Budget trägt nur die Eskalations-Rolle ihre 150-s-Deadline (Benchmark-Harness)', async () => {
         await runEnvelopeGenerateContent({ ...buildCachedEnvelope(), role: 'escalation' }, 'TAIL');
         await runEnvelopeGenerateContent({ ...buildCachedEnvelope(), role: 'draft' }, 'TAIL');
         await runEnvelopeGenerateContent(
@@ -319,6 +320,32 @@ describe('runEnvelopeGenerateContent', () => {
         expect(escalationRequest.config.abortSignal.aborted).toBe(false);
         expect(draftRequest.config.abortSignal).toBeUndefined();
         expect(verifierRequest.config.abortSignal).toBeUndefined();
+    });
+
+    it('mit Job-Budget bekommen Draft und Verifier ein Budget-Signal (DEADLINE_GUARD_SPEC §3.2)', async () => {
+        const deadlineAtMs = Date.now() + 120_000;
+        await runEnvelopeGenerateContent({ ...buildCachedEnvelope(), role: 'draft', deadlineAtMs }, 'TAIL');
+        await runEnvelopeGenerateContent(
+            { ...buildCachedEnvelope(), role: 'verifier', deadlineAtMs, plan: { mode: 'inline', cacheStatus: 'inline' } },
+            'TAIL',
+        );
+
+        const [draftRequest, verifierRequest] = generateContentMock.mock.calls.map(
+            (callArguments) => callArguments[0],
+        );
+        expect(draftRequest.config.abortSignal).toBeInstanceOf(AbortSignal);
+        expect(verifierRequest.config.abortSignal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('ein Call ohne Restbudget startet mit bereits abgebrochenem Signal', async () => {
+        const expiredDeadlineAtMs = Date.now() - 1_000;
+        await runEnvelopeGenerateContent(
+            { ...buildCachedEnvelope(), role: 'draft', deadlineAtMs: expiredDeadlineAtMs }, 'TAIL',
+        );
+        await new Promise((resolveNextTick) => setTimeout(resolveNextTick, 5));
+
+        const [draftRequest] = generateContentMock.mock.calls.map((callArguments) => callArguments[0]);
+        expect(draftRequest.config.abortSignal.aborted).toBe(true);
     });
 
     it('inline: systemInstruction = Layer 1, identische Contents', async () => {

@@ -13,6 +13,19 @@ import { extractErrorMessage } from '@/lib/errors';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
 import type { PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
+/**
+ * Der Job war beim terminalen Write nicht mehr 'processing' — Watchdog
+ * oder Reaper haben ihn bereits auf 'error' gesetzt und seinen Check rot
+ * geschlossen. Der Worker darf dann weder 'done' melden noch den Check
+ * überschreiben (DEADLINE_GUARD_SPEC D9).
+ */
+export class JobAlreadyFinalizedError extends Error {
+    constructor(jobId: string) {
+        super(`Job ${jobId} war nicht mehr 'processing' — Ergebnis nicht persistiert.`);
+        this.name = 'JobAlreadyFinalizedError';
+    }
+}
+
 export const resultPersisterStep: PipelineStep = {
     id: 'result-persister',
     displayName: 'Result Persister',
@@ -36,7 +49,7 @@ export const resultPersisterStep: PipelineStep = {
 
         const rerollBookkeeping = await resolveRerollBookkeeping(context, reviewResult.issues);
 
-        const { error: persistError } = await supabase
+        const { data: persistedRows, error: persistError } = await supabase
             .from('review_jobs')
             .update({
                 status: 'done',
@@ -54,6 +67,10 @@ export const resultPersisterStep: PipelineStep = {
                     // degradierter Lauf ist nie von "0 Findings, clean"
                     // ununterscheidbar. null = Step nicht gelaufen/disabled.
                     prescan: context.prescanStats,
+                    // DEADLINE_GUARD_SPEC D6: Degradationen waren bis 2026-09-26 nur
+                    // ein generischer Satz im GitHub-Review — in der DB unsichtbar.
+                    degradations: context.cascade.degradations,
+                    skipped_stages: context.cascade.skippedStages,
                 },
                 unresolved_fingerprint: rerollBookkeeping.unresolvedFingerprint,
                 reroll_count: rerollBookkeeping.rerollCount,
@@ -67,11 +84,20 @@ export const resultPersisterStep: PipelineStep = {
                 cascade_route: context.cascade.route,
                 updated_at: new Date().toISOString(),
             })
-            .eq('id', context.jobId);
+            .eq('id', context.jobId)
+            // Nur aus 'processing' heraus (DEADLINE_GUARD_SPEC D9): hat ein
+            // Watchdog-Timeout oder der Reaper den Job schon auf 'error'
+            // gesetzt, darf dieses Ergebnis ihn nicht wieder auf 'done' drehen.
+            .eq('status', 'processing')
+            .select('id');
 
         if (persistError) {
             console.error('[ResultPersister] Fehler beim Persistieren des Job-Ergebnisses:', persistError);
             throw new Error(`Job-Ergebnis konnte nicht gespeichert werden: ${persistError.message}`);
+        }
+
+        if (!persistedRows || persistedRows.length === 0) {
+            throw new JobAlreadyFinalizedError(context.jobId);
         }
 
         console.log(`[ResultPersister] Job ${context.jobId} persistiert (${reviewResult.issues.length} Issues).`);

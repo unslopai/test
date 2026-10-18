@@ -4,11 +4,24 @@
  * ein sauberer Lauf resettet, Lookup-Fehler degradieren fail-soft.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildPipelineContext, buildPullRequestFile, buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
+import {
+    buildCascadeState,
+    buildPipelineContext,
+    buildPullRequestFile,
+    buildReviewIssue,
+} from '@/lib/pipeline/testing/context-fixture';
 
-const { terminalUpdateMock, terminalUpdateEqMock, previousJobMaybeSingleMock } = vi.hoisted(() => ({
+const {
+    terminalUpdateMock,
+    terminalUpdateEqMock,
+    statusGuardEqMock,
+    terminalSelectMock,
+    previousJobMaybeSingleMock,
+} = vi.hoisted(() => ({
     terminalUpdateMock: vi.fn(),
     terminalUpdateEqMock: vi.fn(),
+    statusGuardEqMock: vi.fn(),
+    terminalSelectMock: vi.fn(),
     previousJobMaybeSingleMock: vi.fn(),
 }));
 
@@ -58,9 +71,13 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
     beforeEach(() => {
         terminalUpdateMock.mockReset();
         terminalUpdateEqMock.mockReset();
+        statusGuardEqMock.mockReset();
+        terminalSelectMock.mockReset();
         previousJobMaybeSingleMock.mockReset();
         terminalUpdateMock.mockImplementation(() => ({ eq: terminalUpdateEqMock }));
-        terminalUpdateEqMock.mockResolvedValue({ error: null });
+        terminalUpdateEqMock.mockImplementation(() => ({ eq: statusGuardEqMock }));
+        statusGuardEqMock.mockImplementation(() => ({ select: terminalSelectMock }));
+        terminalSelectMock.mockResolvedValue({ data: [{ id: 'job-under-test' }], error: null });
         previousJobMaybeSingleMock.mockResolvedValue({ data: null, error: null });
     });
 
@@ -174,5 +191,54 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
 
         expect(capturedUpdatePayload().unresolved_fingerprint).toBeNull();
         expect(capturedUpdatePayload().reroll_count).toBe(0);
+    });
+});
+
+describe('resultPersisterStep — degradations im result (DEADLINE_GUARD_SPEC D6)', () => {
+    beforeEach(() => {
+        terminalUpdateMock.mockReset();
+        terminalUpdateMock.mockImplementation(() => ({ eq: terminalUpdateEqMock }));
+        terminalUpdateEqMock.mockImplementation(() => ({ eq: statusGuardEqMock }));
+        statusGuardEqMock.mockImplementation(() => ({ select: terminalSelectMock }));
+        terminalSelectMock.mockResolvedValue({ data: [{ id: 'job-under-test' }], error: null });
+        previousJobMaybeSingleMock.mockResolvedValue({ data: null, error: null });
+    });
+
+    it('persistiert Degradationen und übersprungene Stufen statt sie nur im Review-Text zu erwähnen', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            cascade: buildCascadeState({
+                degradations: ['cache_fallback', 'time_budget_exhausted'],
+                skippedStages: ['second_opinion', 'escalation'],
+            }),
+        }));
+
+        const persistedResult = terminalUpdateMock.mock.calls[0][0].result;
+        expect(persistedResult.degradations).toEqual(['cache_fallback', 'time_budget_exhausted']);
+        expect(persistedResult.skipped_stages).toEqual(['second_opinion', 'escalation']);
+    });
+});
+
+describe('resultPersisterStep — status guard (DEADLINE_GUARD_SPEC D9)', () => {
+    beforeEach(() => {
+        terminalUpdateMock.mockReset();
+        terminalUpdateMock.mockImplementation(() => ({ eq: terminalUpdateEqMock }));
+        terminalUpdateEqMock.mockImplementation(() => ({ eq: statusGuardEqMock }));
+        statusGuardEqMock.mockImplementation(() => ({ select: terminalSelectMock }));
+        previousJobMaybeSingleMock.mockResolvedValue({ data: null, error: null });
+    });
+
+    it('only finalizes a job that is still processing', async () => {
+        terminalSelectMock.mockResolvedValue({ data: [{ id: 'job-under-test' }], error: null });
+
+        await resultPersisterStep.execute(buildPipelineContext());
+
+        expect(statusGuardEqMock).toHaveBeenCalledWith('status', 'processing');
+    });
+
+    it('meldet einen bereits finalisierten Job, statt still Erfolg zu melden', async () => {
+        terminalSelectMock.mockResolvedValue({ data: [], error: null });
+
+        await expect(resultPersisterStep.execute(buildPipelineContext({ issues: [buildReviewIssue()] })))
+            .rejects.toMatchObject({ name: 'JobAlreadyFinalizedError' });
     });
 });

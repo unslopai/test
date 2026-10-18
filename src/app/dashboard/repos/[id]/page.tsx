@@ -9,6 +9,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { supabase as supabaseAdmin } from '@/lib/supabase';
+import { scheduleLazyReap } from '@/lib/lazy-reaper';
 import RepoDetailClient from './RepoDetailClient';
 
 interface PageParams {
@@ -23,6 +24,9 @@ export default async function RepoDetailPage({ params }: PageParams) {
     if (authError || !user) {
         redirect('/login');
     }
+    // Lazy Reaping (DEADLINE_GUARD_SPEC D10): after() blockiert das Rendern
+    // nicht; ein abgeräumter Job erscheint beim nächsten Scan-Poll der Seite.
+    scheduleLazyReap('dashboard');
 
     // Explizite Spalten [DATA-001]; eine ungültige uuid endet im PostgREST-
     // Fehler und damit ebenfalls in der 404 — kein eigener Validierungspfad.

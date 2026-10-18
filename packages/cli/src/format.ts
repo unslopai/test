@@ -4,7 +4,12 @@
  */
 import type { ScanIssue, ScanResult, Severity } from '@unslop/shared';
 
-import { describeFindingVerification, formatOccurrenceLineRefs, sanitizeModelText } from '@unslop/shared/node';
+import {
+    describeFindingVerification,
+    formatOccurrenceLineRefs,
+    formatTimeBudgetNotice,
+    sanitizeModelText,
+} from '@unslop/shared/node';
 import type { FixReport, FixStatus } from '@unslop/shared/node';
 
 import { red, yellow, green, bold, dim, cyan } from './ui.js';
@@ -21,12 +26,16 @@ function severityBadge(severity: Severity): string {
  * next to an uncertain or self-reported one (SPEC.md §6).
  */
 function integrityScoreLine(scanResult: ScanResult): string {
+    const timeBudgetNotice = formatTimeBudgetNotice(scanResult.skippedStages);
+    const noticeSuffix = timeBudgetNotice ? `\n${yellow(`⚠ ${timeBudgetNotice}`)}` : '';
     if (scanResult.cognitiveIntegrityScore === null) {
-        return dim('Cognitive Integrity Score: n/a — confidence verification was unavailable for this scan.');
+        return dim('Cognitive Integrity Score: n/a — confidence verification was unavailable for this scan.')
+            + noticeSuffix;
     }
     return (
         bold(`Cognitive Integrity Score: ${scanResult.cognitiveIntegrityScore}/100`) +
-        dim(` — ${describeFindingVerification(scanResult.issues)}.`)
+        dim(` — ${describeFindingVerification(scanResult.issues)}.`) +
+        noticeSuffix
     );
 }
 

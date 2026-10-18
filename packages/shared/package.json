@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./node": "./src/node/index.ts",
     "./occurrence-format": "./src/occurrence-format.ts",
-    "./verification-format": "./src/verification-format.ts"
+    "./verification-format": "./src/verification-format.ts",
+    "./degradation-notice": "./src/degradation-notice.ts"
   }
 }

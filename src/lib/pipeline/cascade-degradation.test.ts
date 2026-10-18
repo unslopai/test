@@ -11,7 +11,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { claimVerifierStep } from '@/lib/pipeline/steps/claim-verifier-step';
 import { escalationReviewerStep } from '@/lib/pipeline/steps/escalation-reviewer-step';
 import { integrityScorerStep } from '@/lib/pipeline/steps/integrity-scorer-step';
+import { DEFAULT_CASCADE_CONFIG } from '@/lib/pipeline/defaults';
 import {
+    buildCascadeState,
+    buildClaimVerdict,
     buildPipelineContext,
     buildPullRequestFile,
     buildReviewIssue,
@@ -347,5 +350,147 @@ describe('cascade degradation replay', () => {
 
         expect(generateContentMock).not.toHaveBeenCalled();
         expect(finalContext.cascade.integrityScore).toBe(100);
+    });
+});
+
+// =============================================================================
+// Deadline Guard: Stufen-Skips unter dem Job-Budget (DEADLINE_GUARD_SPEC §3.3)
+// =============================================================================
+
+const deadlineAbort = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+
+/** Drei Draft-Claims in drei Verify-Batches (Batch-Cap 1) mit `remainingMs` Job-Budget. */
+function buildBudgetedThreeClaimContext(remainingMs: number): PipelineContext {
+    return buildPipelineContext({
+        issues: [
+            buildReviewIssue({ severity: 'CRITICAL', line: 42 }),
+            buildReviewIssue({ severity: 'WARNING', line: 50, exactQuote: 'catch (e) {}' }),
+            buildReviewIssue({ severity: 'WARNING', line: 60, exactQuote: 'const temp = 1;' }),
+        ],
+        reviewableFiles: [buildPullRequestFile()],
+        cascadeConfig: { ...DEFAULT_CASCADE_CONFIG, verifierBatchCap: 1 },
+        deadlineAtMs: Date.now() + remainingMs,
+    });
+}
+
+describe('cascade degradation replay — Deadline Guard (DEADLINE_GUARD_SPEC §3.3)', () => {
+    beforeEach(() => {
+        generateContentMock.mockReset();
+        recordLlmCallMock.mockClear();
+        consumeProEscalationBudgetMock.mockReset();
+        consumeProEscalationBudgetMock.mockResolvedValue(true);
+    });
+
+    it('Verifier-Abbruch in Batch 2 von 3: Batch-1-Verdict bleibt, Rest unverifiziert, Score null', async () => {
+        generateContentMock
+            .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'CONFIRMED', confidence: 92 }]))
+            .mockRejectedValueOnce(deadlineAbort());
+
+        const finalContext = await runCascadeTail(buildBudgetedThreeClaimContext(120_000));
+
+        expect(generateContentMock).toHaveBeenCalledTimes(2);
+        expect(finalContext.cascade.verdicts.map((verdictEntry) => verdictEntry.claimId)).toEqual(['c1']);
+        expect(finalContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+        expect(finalContext.cascade.skippedStages).toEqual(['verifier']);
+        expect(finalContext.cascade.integrityScore).toBeNull();
+        expect(finalContext.issues.map((scoredIssue) => scoredIssue.verification))
+            .toEqual(['confirmed', 'unverified', 'unverified']);
+    });
+
+    it('ein Nicht-Zeit-Fehler in Batch 2 degradiert weiter wie bisher (verifier_api_error, alle Verdicts verworfen)', async () => {
+        generateContentMock
+            .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'CONFIRMED', confidence: 92 }]))
+            .mockRejectedValue(new Error('Vertex unavailable'));
+
+        const finalContext = await runCascadeTail(buildBudgetedThreeClaimContext(120_000));
+
+        expect(finalContext.cascade.degradations).toEqual(['verifier_api_error']);
+        expect(finalContext.cascade.verdicts).toEqual([]);
+        expect(finalContext.cascade.skippedStages).toEqual([]);
+    });
+
+    it('unter 40 s Rest startet kein Verify-Batch', async () => {
+        const finalContext = await runCascadeTail(buildBudgetedThreeClaimContext(39_000));
+
+        expect(generateContentMock).not.toHaveBeenCalled();
+        expect(finalContext.cascade.skippedStages).toEqual(['verifier']);
+        expect(finalContext.cascade.integrityScore).toBeNull();
+    });
+
+    it('Eskalation unter 60 s Rest: übersprungen, KEIN Pro-Kontingent verbraucht, Claim ehrlich downgraded', async () => {
+        const markedContext = buildPipelineContext({
+            issues: [buildReviewIssue({ severity: 'CRITICAL', line: 42 })],
+            reviewableFiles: [buildPullRequestFile()],
+            cascade: buildCascadeState({
+                verdicts: [buildClaimVerdict({ claimId: 'c1', verdict: 'REFUTED', confidence: 70 })],
+                escalationClaimIds: ['c1'],
+                escalationReason: 'critical_low_confidence',
+            }),
+            deadlineAtMs: Date.now() + 59_000,
+        });
+
+        const escalatedContext = await escalationReviewerStep.execute(markedContext);
+        const finalContext = await integrityScorerStep.execute(escalatedContext);
+
+        expect(consumeProEscalationBudgetMock).not.toHaveBeenCalled();
+        expect(generateContentMock).not.toHaveBeenCalled();
+        expect(finalContext.cascade.skippedStages).toEqual(['escalation']);
+        expect(finalContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+        expect(finalContext.issues[0].severity).toBe('WARNING');
+        expect(finalContext.issues[0].critique).toContain('budget, API or time-limit degradation');
+    });
+
+    it('Budget endet zwischen zwei Pro-Batches: bezahlte Pro-Verdicts bleiben, der Rest wird konservativ downgraded', async () => {
+        vi.useFakeTimers();
+        try {
+            const twoCriticalContext = buildPipelineContext({
+                issues: [
+                    buildReviewIssue({ severity: 'CRITICAL', line: 42 }),
+                    buildReviewIssue({ severity: 'CRITICAL', line: 50, exactQuote: 'catch (e) {}' }),
+                ],
+                reviewableFiles: [buildPullRequestFile()],
+                cascadeConfig: { ...DEFAULT_CASCADE_CONFIG, verifierBatchCap: 1 },
+                deadlineAtMs: Date.now() + 200_000,
+            });
+            generateContentMock
+                .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'REFUTED', confidence: 80 }]))
+                .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c2', verdict: 'REFUTED', confidence: 80 }]))
+                .mockImplementationOnce(async () => {
+                    vi.setSystemTime((twoCriticalContext.deadlineAtMs ?? 0) - 50_000);
+                    return buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'CONFIRMED', confidence: 90 }]);
+                });
+
+            const finalContext = await runCascadeTail(twoCriticalContext);
+
+            expect(generateContentMock).toHaveBeenCalledTimes(3);
+            expect(finalContext.cascade.skippedStages).toEqual(['escalation']);
+            const survivingIssuesByLine = new Map(finalContext.issues.map((scoredIssue) => [scoredIssue.line, scoredIssue]));
+            expect(survivingIssuesByLine.get(42)?.verification).toBe('confirmed');
+            expect(survivingIssuesByLine.get(50)?.severity).toBe('WARNING');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('Eskalations-Abbruch am Job-Budget zählt als Zeit-Skip, nicht als pro_api_error (D14)', async () => {
+        vi.useFakeTimers();
+        try {
+            const budgetedContext = buildBudgetedThreeClaimContext(200_000);
+            generateContentMock
+                .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c1', verdict: 'UNCERTAIN', confidence: 40 }]))
+                .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c2', verdict: 'CONFIRMED', confidence: 90 }]))
+                .mockResolvedValueOnce(buildVerdictLlmResponse([{ claim_id: 'c3', verdict: 'CONFIRMED', confidence: 90 }]))
+                .mockImplementationOnce(async () => {
+                    vi.setSystemTime(budgetedContext.deadlineAtMs ?? 0);
+                    throw deadlineAbort();
+                });
+
+            const finalContext = await runCascadeTail(budgetedContext);
+
+            expect(finalContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+            expect(finalContext.cascade.skippedStages).toEqual(['escalation']);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

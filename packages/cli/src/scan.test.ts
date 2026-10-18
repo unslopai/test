@@ -44,6 +44,13 @@ describe('formatScanFailure — Server-Fehlercodes auf stderr', () => {
         expect(failureLine).toContain('retry in a minute');
     });
 
+    it('führt bei review_timeout mit dem Code und rät zum erneuten Scan', () => {
+        const failureLine = formatScanFailure('review_timeout');
+
+        expect(failureLine.startsWith('Scan failed: review_timeout — ')).toBe(true);
+        expect(failureLine).toContain('Run the scan again');
+    });
+
     it('lässt Codes ohne Handlungshinweis unverändert', () => {
         expect(formatScanFailure('server_error')).toBe('Scan failed: server_error');
         expect(formatScanFailure(undefined)).toBe('Scan failed: unknown_error');

@@ -18,6 +18,8 @@ import { MODEL_VERIFIER } from '@/lib/pipeline/models';
 import { resolvePromptEnvelope } from '@/lib/pipeline/context-cache';
 import { addTokenUsage } from '@/lib/pipeline/helpers';
 import type { FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
+import { hasBudgetForCall, markStageSkippedForTime } from '@/lib/pipeline/deadline';
+import { isCallDeadlineFailure } from '@/lib/pipeline/vertex-retry';
 import {
     VerdictCallError,
     buildBlindClaims,
@@ -26,7 +28,7 @@ import {
     countVerdicts,
     runVerdictCallWithRetry,
 } from '@/lib/pipeline/claim-verification';
-import type { BlindClaim } from '@/lib/pipeline/claim-verification';
+import type { BlindClaim, VerdictCallResult } from '@/lib/pipeline/claim-verification';
 import type {
     ClaimVerdict,
     EscalationReason,
@@ -50,6 +52,12 @@ export const claimVerifierStep: PipelineStep = {
         if (context.llmSkipped) return context;
         if (context.cascade.route === 'pro-direct') return context;
         if (context.issues.length === 0) return context;
+        // D4: ohne 40 s Rest startet kein Verify-Batch — die Claims bleiben
+        // unverifiziert, der Score wird ehrlich null (D7).
+        if (!hasBudgetForCall(context, 'verify')) {
+            console.warn(`[ClaimVerifier] Zeitbudget reicht nicht für die Verifikation (Job ${context.jobId}).`);
+            return markStageSkippedForTime(context, 'verifier');
+        }
 
         const renderedLaw = await fetchRenderedLawBlock(context.detectedEcosystems);
         // EIN Envelope pro Job: Draft und Verifier teilen denselben Cache-Key,
@@ -61,6 +69,7 @@ export const claimVerifierStep: PipelineStep = {
             detectedEcosystems: context.detectedEcosystems,
             model: MODEL_VERIFIER,
             role: 'verifier',
+            deadlineAtMs: context.deadlineAtMs,
         });
         const claimBatches = chunkClaims(
             buildBlindClaims(context.issues),
@@ -84,6 +93,8 @@ interface VerificationBatchRun {
     readonly verdicts: readonly ClaimVerdict[];
     readonly accumulatedUsage: TokenUsage | null;
     readonly cacheFallbackOccurred: boolean;
+    /** true = das Zeitbudget hat den Lauf vor dem letzten Batch beendet (D4). */
+    readonly stoppedForTime: boolean;
 }
 
 async function verifyAllBatches(
@@ -96,17 +107,46 @@ async function verifyAllBatches(
     let cacheFallbackOccurred = false;
 
     for (const claimBatch of claimBatches) {
-        const batchResult = await runVerdictCallWithRetry(context, verifierEnvelope, claimBatch, {
-            model: MODEL_VERIFIER,
-            verdictPhase: 'flash-verify',
-            telemetryPhase: 'verify',
-        });
+        const batchResult = await runBatchWithinBudget(context, verifierEnvelope, claimBatch);
+        if (batchResult === null) {
+            return { verdicts: collectedVerdicts, accumulatedUsage, cacheFallbackOccurred, stoppedForTime: true };
+        }
         collectedVerdicts.push(...batchResult.verdicts);
         accumulatedUsage = addTokenUsage(accumulatedUsage, batchResult.callUsage);
         cacheFallbackOccurred = cacheFallbackOccurred || batchResult.cacheFallbackOccurred;
     }
 
-    return { verdicts: collectedVerdicts, accumulatedUsage, cacheFallbackOccurred };
+    return { verdicts: collectedVerdicts, accumulatedUsage, cacheFallbackOccurred, stoppedForTime: false };
+}
+
+/**
+ * Ein Batch unter dem Job-Budget (DEADLINE_GUARD_SPEC §3.3). null = das
+ * Budget reicht nicht (mehr): vor dem Start unter der Schwelle oder an der
+ * Deadline abgebrochen. Die bis hier gesammelten Verdicts bleiben erhalten —
+ * früher warf jeder Fehler ALLE Verdicts weg (degradeToUnfilteredDraft).
+ * Nicht-Zeit-Fehler propagieren unverändert in genau diesen Pfad.
+ */
+async function runBatchWithinBudget(
+    context: PipelineContext,
+    verifierEnvelope: FlashPromptEnvelope,
+    claimBatch: readonly BlindClaim[],
+): Promise<VerdictCallResult | null> {
+    if (!hasBudgetForCall(context, 'verify')) return null;
+    try {
+        return await runVerdictCallWithRetry(context, verifierEnvelope, claimBatch, {
+            model: MODEL_VERIFIER,
+            verdictPhase: 'flash-verify',
+            telemetryPhase: 'verify',
+        });
+    } catch (batchFailure: unknown) {
+        // Der Verifier hat keinen eigenen Deckel — jeder Deadline-Abbruch ist das Job-Budget.
+        if (!isCallDeadlineFailure(batchFailure)) throw batchFailure;
+        console.warn(
+            `[ClaimVerifier] Verify-Batch am Zeitbudget beendet (Job ${context.jobId}) — `
+            + 'bisherige Verdicts bleiben, Rest unverifiziert.',
+        );
+        return null;
+    }
 }
 
 function degradeToUnfilteredDraft(
@@ -144,6 +184,7 @@ function applyVerificationResult(
         batchRun.verdicts, context.issues, context.cascadeConfig.confidenceThreshold,
     );
     const verdictCounts = countVerdicts(batchRun.verdicts);
+    const verifiedContext = batchRun.stoppedForTime ? markStageSkippedForTime(context, 'verifier') : context;
 
     console.log(
         `[ClaimVerifier] ${verdictCounts.claimsTotal} Claims: ${verdictCounts.claimsConfirmed} confirmed, ` +
@@ -152,19 +193,19 @@ function applyVerificationResult(
     );
 
     return {
-        ...context,
+        ...verifiedContext,
         tokenUsage: batchRun.accumulatedUsage
             ? addTokenUsage(context.tokenUsage, batchRun.accumulatedUsage)
             : context.tokenUsage,
         cascade: {
-            ...context.cascade,
+            ...verifiedContext.cascade,
             verdicts: batchRun.verdicts,
             escalationClaimIds,
             escalationReason: deriveEscalationReason(batchRun.verdicts, escalationClaimIds),
             degradations: batchRun.cacheFallbackOccurred
-                && !context.cascade.degradations.includes('cache_fallback')
-                ? [...context.cascade.degradations, 'cache_fallback']
-                : context.cascade.degradations,
+                && !verifiedContext.cascade.degradations.includes('cache_fallback')
+                ? [...verifiedContext.cascade.degradations, 'cache_fallback']
+                : verifiedContext.cascade.degradations,
         },
     };
 }

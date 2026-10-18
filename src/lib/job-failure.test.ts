@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildJobErrorMessage, classifyJobFailure } from '@/lib/job-failure';
 import { ModelUnavailableError } from '@/lib/pipeline/vertex-retry';
+import { JobTimeoutError, ReviewTimeoutError } from '@/lib/pipeline/deadline';
 
 describe('job-failure', () => {
     it('ein erschöpfter Modell-Retry wird als model_unavailable persistiert und gelesen', () => {
@@ -13,6 +14,14 @@ describe('job-failure', () => {
 
         expect(persistedMessage).toContain('429 RESOURCE_EXHAUSTED');
         expect(classifyJobFailure(persistedMessage)).toBe('model_unavailable');
+    });
+
+    it('Draft-Timeout und Watchdog teilen den Code review_timeout (DEADLINE_GUARD_SPEC D9)', () => {
+        const draftTimeout = new ReviewTimeoutError('Draft-Call an der Job-Deadline abgebrochen');
+        const watchdogTimeout = new JobTimeoutError('job-under-test', 300_000);
+
+        expect(classifyJobFailure(buildJobErrorMessage(draftTimeout))).toBe('review_timeout');
+        expect(classifyJobFailure(buildJobErrorMessage(watchdogTimeout))).toBe('review_timeout');
     });
 
     it('jeder andere Fehler bleibt server_error — auch ohne Nachricht', () => {

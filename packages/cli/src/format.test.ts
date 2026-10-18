@@ -200,6 +200,21 @@ describe('printHumanResult — Score-Tagline zählt den Verifikationsstatus (SPE
         expect(terminalOutput).not.toContain('every finding survived');
     });
 
+    it('nennt einen Zeit-Skip des Deadline Guards unter dem Score (DEADLINE_GUARD_SPEC §3.4)', () => {
+        const terminalOutput = capturedOutput({
+            hasSlop: true,
+            issues: [buildFinding('confirmed', 10)],
+            summary: 'AI slop detected.',
+            filesReviewed: 1,
+            outcome: 'reviewed',
+            omittedFiles: [],
+            cognitiveIntegrityScore: null,
+            skippedStages: ['verifier'],
+        });
+
+        expect(terminalOutput).toContain('Reduced confidence: time budget exhausted — skipped: blind verification (some or all findings).');
+    });
+
     it('behauptet auf pro-direct keine Blind-Verifikation (self-reported)', () => {
         const terminalOutput = capturedOutput({
             hasSlop: true,

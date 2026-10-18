@@ -5,6 +5,7 @@
  * Reviewer-Pass, Telemetrie) — die Trigger-Logik laeuft echt.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CallBudgetExhaustedError } from '@/lib/pipeline/vertex-retry';
 import {
     buildCascadeState,
     buildPipelineContext,
@@ -169,5 +170,28 @@ describe('D10 — Pro-Fehler degradiert, nie ein Job-Fehler', () => {
         expect(result.cascade.degradations).toContain('pro_api_error');
         expect(result.issues).toEqual(context.issues);
         expect(result.reviewSummary).toBe(context.reviewSummary);
+    });
+});
+
+describe('Deadline Guard (DEADLINE_GUARD_SPEC D4/D13)', () => {
+    it('unter 80 s Rest: Zweitmeinung übersprungen, KEIN Pro-Kontingent verbraucht', async () => {
+        const context = buildTriggeringContext({ deadlineAtMs: Date.now() + 79_000 });
+
+        const skippedContext = await secondOpinionReviewerStep.execute(context);
+
+        expect(consumeProEscalationBudget).not.toHaveBeenCalled();
+        expect(runReviewerPass).not.toHaveBeenCalled();
+        expect(skippedContext.cascade.skippedStages).toEqual(['second_opinion']);
+        expect(skippedContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+    });
+
+    it('ein Abbruch am Job-Budget während des Calls ist ein Zeit-Skip, kein pro_api_error (D14)', async () => {
+        const context = buildTriggeringContext({ deadlineAtMs: Date.now() + 90_000 });
+        runReviewerPass.mockRejectedValueOnce(new CallBudgetExhaustedError('ReviewerPass/escalate_second_opinion'));
+
+        const skippedContext = await secondOpinionReviewerStep.execute(context);
+
+        expect(skippedContext.cascade.degradations).toEqual(['time_budget_exhausted']);
+        expect(skippedContext.cascade.degradations).not.toContain('pro_api_error');
     });
 });

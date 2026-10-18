@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
+import { formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import type { PullRequestReviewComment } from '@/lib/github';
 import type { CascadeState, PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
 
@@ -294,7 +295,13 @@ function buildIntegrityScoreBlock(cascade: CascadeState, reportableIssues: reado
         scoreBlockLines.push('_Confidence verification was unavailable for this review._');
     }
 
-    if (cascade.degradations.length > 0) {
+    // Ein Zeit-Skip nennt die Stufen (DEADLINE_GUARD_SPEC §3.4); alle übrigen
+    // Degradationen behalten den generischen Satz.
+    const timeBudgetNotice = formatTimeBudgetNotice(cascade.skippedStages);
+    if (timeBudgetNotice) {
+        scoreBlockLines.push('');
+        scoreBlockLines.push(`_⚠️ ${timeBudgetNotice}_`);
+    } else if (cascade.degradations.length > 0) {
         scoreBlockLines.push('');
         scoreBlockLines.push('_⚠️ Reduced confidence mode: parts of the verification cascade were unavailable._');
     }

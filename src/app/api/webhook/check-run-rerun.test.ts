@@ -80,6 +80,9 @@ vi.mock('@/lib/supabase', () => ({
     },
 }));
 
+const scheduleLazyReapMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/lazy-reaper', () => ({ scheduleLazyReap: scheduleLazyReapMock }));
+
 const { POST } = await import('./route');
 
 afterAll(() => {
@@ -279,7 +282,8 @@ describe('POST /api/webhook — check_run.rerequested (GITHUB_APP_SPEC §4.8)', 
         expect(checkRunIdAttachUpdate).toEqual({ check_run_id: 999 });
 
         await flushAfterCallbacks();
-        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test');
+        // Job-Uhr ab Handler-Einstieg (DEADLINE_GUARD_SPEC D1).
+        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
         expect(announceGateSkipMock).not.toHaveBeenCalled();
     });
 });

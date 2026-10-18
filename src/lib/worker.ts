@@ -8,16 +8,18 @@
  */
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
-import { buildJobErrorMessage, classifyJobFailure } from '@/lib/job-failure';
+import { FAILED_CHECK_RUN_COPY, buildJobErrorMessage, classifyJobFailure } from '@/lib/job-failure';
 import { resolveRepoAccessToken } from '@/lib/repo-auth';
 import { getInstallationToken } from '@/lib/github-app';
 import { completeGatekeeperCheckRun, deriveReviewConclusion } from '@/lib/check-run';
-import { runPipeline } from '@/lib/pipeline/runner';
+import { runPipelineUnderWatchdog } from '@/lib/job-watchdog';
+import { buildJobClock, resolveJobBudgetMs } from '@/lib/pipeline/deadline';
 import { DEFAULT_PIPELINE_CONFIG, INITIAL_CASCADE_STATE, resolveCascadeConfig } from '@/lib/pipeline/defaults';
 // Subpath-Import mit Absicht: der Index zieht alle Scan-Engines (tree-sitter,
 // ESLint) in den Worker-Modulgraphen — genau der OOM-Pfad aus ROADMAP §1b.
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
+import { formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
 import { preScannerStep } from '@/lib/pipeline/steps/pre-scanner-step';
@@ -29,9 +31,11 @@ import { escalationReviewerStep } from '@/lib/pipeline/steps/escalation-reviewer
 import { secondOpinionReviewerStep } from '@/lib/pipeline/steps/second-opinion-reviewer-step';
 import { integrityScorerStep } from '@/lib/pipeline/steps/integrity-scorer-step';
 import { githubReporterStep } from '@/lib/pipeline/steps/github-reporter-step';
-import { resultPersisterStep } from '@/lib/pipeline/steps/result-persister-step';
+import { JobAlreadyFinalizedError, resultPersisterStep } from '@/lib/pipeline/steps/result-persister-step';
 import type { CheckRunResult } from '@/lib/check-run';
 import type { JobFailureCode } from '@/lib/job-failure';
+import type { JobClock } from '@/lib/pipeline/deadline';
+import type { SkippedStage } from '@unslop/shared';
 import type { CascadeConfig, PipelineContext, PipelineStep, PipelineConfig, RepoAuthMode } from '@/lib/pipeline/types';
 
 // =============================================================================
@@ -112,27 +116,18 @@ function assembleSteps(config: PipelineConfig): PipelineStep[] {
  *
  * Ablauf:
  * 1. Job claimen (Concurrency Guard)
- * 2. GitHub Token entschlüsseln
- * 3. Pipeline-Config laden (DB oder Default)
- * 4. Pipeline Steps zusammenbauen und ausführen
+ * 2. Job-Uhr ab dem Handler-Einstieg der Route setzen (DEADLINE_GUARD_SPEC D1)
+ * 3. GitHub Token entschlüsseln, Pipeline-Config laden (DB oder Default)
+ * 4. Pipeline Steps zusammenbauen und unter Watchdog ausführen (D9)
+ *
+ * @param invocationStartedAtMs - `Date.now()` am Handler-Einstieg der Route;
+ *   der after()-Callback kennt den Invocation-Start sonst nicht.
  */
-export async function processReviewJob(jobId: string, userId: string) {
+export async function processReviewJob(jobId: string, userId: string, invocationStartedAtMs: number) {
     console.log(`[PRWorker] Starte PR-Review Job ${jobId}...`);
 
-    // Explizite Spalten [DATA-001] — check_run_id wird hier gelesen und muss
-    // deshalb benannt sein, statt sich auf ein implizites select('*') zu verlassen.
-    const { data: job, error: fetchError } = await supabase
-        .from('review_jobs')
-        .update({ status: 'processing', updated_at: new Date().toISOString() })
-        .eq('id', jobId)
-        .eq('status', 'pending')
-        .select('id, payload, source, repository_id, check_run_id')
-        .single();
-
-    if (fetchError || !job) {
-        console.error(`[PRWorker] Job ${jobId} nicht gefunden oder bereits verarbeitet:`, fetchError);
-        return;
-    }
+    const job = await claimPendingJob(jobId);
+    if (!job) return;
 
     const payload = job.payload as JobPayload;
     // Pipeline-Wahl nach PAYLOAD-Form, nicht nach source: seit MCP_SPEC gibt es
@@ -144,69 +139,162 @@ export async function processReviewJob(jobId: string, userId: string) {
         || (job.source === 'mcp' && typeof payload.diff === 'string');
     const repoFullName = payload.repo_full_name;
     const prNumber = payload.pr_number;
-    const checkRunId: number | null = job.check_run_id ?? null;
 
     if (!repoFullName || (!prNumber && !isLocalDiffJob)) {
         await markJobError(jobId, 'Payload enthält kein repo_full_name oder pr_number.');
         return;
     }
 
-    // Vor dem try, damit der Fehlerpfad den Check Run auch dann schließen kann,
-    // wenn die Pipeline mittendrin stirbt.
-    let installationId: number | null = null;
+    const jobBudgetMs = resolveJobBudgetMs();
+    const claimedJob: ClaimedJob = {
+        jobId,
+        ownerUserId: userId,
+        repositoryId: job.repository_id,
+        repoFullName,
+        prNumber: prNumber ?? 0,
+        checkRunId: job.check_run_id ?? null,
+        isLocalDiffJob,
+        jobClock: buildJobClock(invocationStartedAtMs, jobBudgetMs),
+        jobBudgetMs,
+    };
+    // Außerhalb des try, damit der Fehlerpfad den Check Run auch dann schließen
+    // kann, wenn die Pipeline mittendrin stirbt.
+    const runState: JobRunState = { installationId: null };
 
     try {
-        const repoRow = await loadRepoRow(job.repository_id, repoFullName, userId);
-
-        if (!repoRow && !isLocalDiffJob) {
-            throw new Error(`Repository ${repoFullName} ist nicht (mehr) verbunden.`);
-        }
-
-        installationId = repoRow?.installationId ?? null;
-
-        // Dual-Auth (GITHUB_APP_SPEC §3): App-Repo → Installation-Token (Bot),
-        // sonst User-OAuth-Token. Lokale Diff-Jobs sprechen nie mit der GitHub API.
-        // Scheitert das Installation-Token, wirft resolveRepoAccessToken — es
-        // gibt bewusst KEINEN stillen Rückfall auf die User-Identität (D1).
-        const repoAccess = isLocalDiffJob
-            ? null
-            : await resolveRepoAccessToken({ installationId, ownerUserId: userId });
-
-        const pipelineConfig = parsePipelineConfig(repoRow?.pipelineConfig) ?? DEFAULT_PIPELINE_CONFIG;
-        const steps = isLocalDiffJob ? [...CLI_PIPELINE_STEPS] : assembleSteps(pipelineConfig);
-
-        const initialContext = buildInitialContext({
-            jobId,
-            repoFullName,
-            prNumber: prNumber ?? 0,
-            ownerUserId: userId,
-            repositoryId: repoRow?.id ?? null,
-            githubToken: repoAccess?.token ?? '',
-            authMode: repoAccess?.mode ?? 'oauth',
-            pipelineConfig,
-            detectedEcosystems: repoRow?.detectedEcosystems ?? null,
-        });
-
-        const finalContext = await runPipeline(initialContext, steps);
-        console.log(`[PRWorker] Job ${jobId} erfolgreich abgeschlossen.`);
-
-        await closeCheckRun(installationId, checkRunId, finalContext);
-
-    } catch (error: unknown) {
-        console.error(`[PRWorker] Fehler bei Job ${jobId}:`, error);
-        const failureMessage = buildJobErrorMessage(error);
-
-        await markJobError(jobId, failureMessage);
-
-        // Stirbt der Job VOR der Auth-Auflösung (z.B. transienter DB-Fehler im
-        // Repo-Lookup), ist installationId hier noch null — der Check Run bliebe
-        // dann ewig in 'in_progress' hängen, genau der Zustand, den D3 ausschließt.
-        // Die Installation wird deshalb im Fehlerpfad notfalls nachgeladen.
-        const checkRunInstallationId = installationId
-            ?? await lookupInstallationId(job.repository_id, userId);
-
-        await failCheckRun(checkRunInstallationId, checkRunId, repoFullName, classifyJobFailure(failureMessage));
+        await executeClaimedJob(claimedJob, runState);
+    } catch (jobFailure: unknown) {
+        await handleJobFailure(claimedJob, runState.installationId, jobFailure);
     }
+}
+
+/** Die Spalten der geclaimten review_jobs-Zeile [DATA-001]. */
+interface ClaimedJobRow {
+    readonly id: string;
+    readonly payload: unknown;
+    readonly source: string;
+    readonly repository_id: string | null;
+    readonly check_run_id: number | null;
+}
+
+/** Der geclaimte Job mit allem, was Pipeline und Fehlerpfad brauchen. */
+interface ClaimedJob {
+    readonly jobId: string;
+    readonly ownerUserId: string;
+    readonly repositoryId: string | null;
+    readonly repoFullName: string;
+    readonly prNumber: number;
+    readonly checkRunId: number | null;
+    readonly isLocalDiffJob: boolean;
+    readonly jobClock: JobClock;
+    readonly jobBudgetMs: number;
+}
+
+/** Bewusst mutabel: die Installation ist erst nach dem Repo-Lookup bekannt, der Fehlerpfad braucht sie. */
+interface JobRunState {
+    installationId: number | null;
+}
+
+/** Concurrency Guard: nur ein 'pending'-Job wird geclaimt; null = nicht da oder schon vergeben. */
+async function claimPendingJob(jobId: string): Promise<ClaimedJobRow | null> {
+    // Explizite Spalten [DATA-001] — check_run_id wird hier gelesen und muss
+    // deshalb benannt sein, statt sich auf ein implizites select('*') zu verlassen.
+    const { data: claimedRow, error: fetchError } = await supabase
+        .from('review_jobs')
+        .update({ status: 'processing', updated_at: new Date().toISOString() })
+        .eq('id', jobId)
+        .eq('status', 'pending')
+        .select('id, payload, source, repository_id, check_run_id')
+        .single();
+
+    if (fetchError || !claimedRow) {
+        console.error(`[PRWorker] Job ${jobId} nicht gefunden oder bereits verarbeitet:`, fetchError);
+        return null;
+    }
+    return claimedRow;
+}
+
+async function executeClaimedJob(claimedJob: ClaimedJob, runState: JobRunState): Promise<void> {
+    const { jobId, ownerUserId, repoFullName, isLocalDiffJob } = claimedJob;
+    const repoRow = await loadRepoRow(claimedJob.repositoryId, repoFullName, ownerUserId);
+
+    if (!repoRow && !isLocalDiffJob) {
+        throw new Error(`Repository ${repoFullName} ist nicht (mehr) verbunden.`);
+    }
+
+    runState.installationId = repoRow?.installationId ?? null;
+
+    // Dual-Auth (GITHUB_APP_SPEC §3): App-Repo → Installation-Token (Bot),
+    // sonst User-OAuth-Token. Lokale Diff-Jobs sprechen nie mit der GitHub API.
+    // Scheitert das Installation-Token, wirft resolveRepoAccessToken — es
+    // gibt bewusst KEINEN stillen Rückfall auf die User-Identität (D1).
+    const repoAccess = isLocalDiffJob
+        ? null
+        : await resolveRepoAccessToken({ installationId: runState.installationId, ownerUserId });
+
+    const pipelineConfig = parsePipelineConfig(repoRow?.pipelineConfig) ?? DEFAULT_PIPELINE_CONFIG;
+    const steps = isLocalDiffJob ? [...CLI_PIPELINE_STEPS] : assembleSteps(pipelineConfig);
+
+    const initialContext = buildInitialContext({
+        jobId,
+        repoFullName,
+        prNumber: claimedJob.prNumber,
+        ownerUserId,
+        repositoryId: repoRow?.id ?? null,
+        githubToken: repoAccess?.token ?? '',
+        authMode: repoAccess?.mode ?? 'oauth',
+        pipelineConfig,
+        detectedEcosystems: repoRow?.detectedEcosystems ?? null,
+        jobClock: claimedJob.jobClock,
+    });
+
+    const { finalContext, postLlmStartedAtMs } = await runPipelineUnderWatchdog(
+        initialContext, steps, claimedJob.jobBudgetMs,
+    );
+    console.log(`[PRWorker] Job ${jobId} erfolgreich abgeschlossen.`);
+
+    await closeCheckRun(runState.installationId, claimedJob.checkRunId, finalContext);
+    logPostLlmPhaseDuration(jobId, postLlmStartedAtMs);
+}
+
+/**
+ * Messpunkt für die 30-s-Reserve (DEADLINE_GUARD_SPEC §8): wie lange Reporter,
+ * Persister und Check-Abschluss real brauchen, steht sonst in keinem Log.
+ */
+function logPostLlmPhaseDuration(jobId: string, postLlmStartedAtMs: number | null): void {
+    if (postLlmStartedAtMs === null) return;
+    console.log(
+        `[PRWorker] Post-LLM-Phase (Reporter, Persister, Check-Abschluss) von Job ${jobId}: `
+        + `${Date.now() - postLlmStartedAtMs} ms`,
+    );
+}
+
+async function handleJobFailure(
+    claimedJob: ClaimedJob,
+    knownInstallationId: number | null,
+    jobFailure: unknown,
+): Promise<void> {
+    // Watchdog/Reaper waren schneller: Job-Status und Check sind schon
+    // korrekt rot — jeder weitere Write würde sie nur verfälschen.
+    if (jobFailure instanceof JobAlreadyFinalizedError) {
+        console.warn(`[PRWorker] ${jobFailure.message} Check Run bleibt unverändert.`);
+        return;
+    }
+    console.error(`[PRWorker] Fehler bei Job ${claimedJob.jobId}:`, jobFailure);
+    const failureMessage = buildJobErrorMessage(jobFailure);
+
+    await markJobError(claimedJob.jobId, failureMessage);
+
+    // Stirbt der Job VOR der Auth-Auflösung (z.B. transienter DB-Fehler im
+    // Repo-Lookup), ist die Installation hier noch null — der Check Run bliebe
+    // dann ewig in 'in_progress' hängen, genau der Zustand, den D3 ausschließt.
+    // Die Installation wird deshalb im Fehlerpfad notfalls nachgeladen.
+    const checkRunInstallationId = knownInstallationId
+        ?? await lookupInstallationId(claimedJob.repositoryId, claimedJob.ownerUserId);
+
+    await failCheckRun(
+        checkRunInstallationId, claimedJob.checkRunId, claimedJob.repoFullName, classifyJobFailure(failureMessage),
+    );
 }
 
 /**
@@ -251,6 +339,7 @@ interface InitialContextParams {
     readonly authMode: RepoAuthMode;
     readonly pipelineConfig: PipelineConfig;
     readonly detectedEcosystems: readonly string[] | null;
+    readonly jobClock: JobClock;
 }
 
 function buildInitialContext(params: InitialContextParams): PipelineContext {
@@ -263,6 +352,8 @@ function buildInitialContext(params: InitialContextParams): PipelineContext {
         authMode: params.authMode,
         repositoryId: params.repositoryId,
         ownerUserId: params.ownerUserId,
+        jobStartedAtMs: params.jobClock.jobStartedAtMs,
+        deadlineAtMs: params.jobClock.deadlineAtMs,
         prFiles: [],
         reviewableFiles: [],
         combinedDiff: '',
@@ -379,10 +470,13 @@ async function closeCheckRun(
             title: 'Nothing to review',
             summary: finalContext.abortReason ?? 'No reviewable files in this pull request.',
         }
-        : deriveReviewConclusion(collectReportableIssues(finalContext), {
-            integrityScore: finalContext.cascade.integrityScore,
-            minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
-        });
+        : appendTimeBudgetNotice(
+            deriveReviewConclusion(collectReportableIssues(finalContext), {
+                integrityScore: finalContext.cascade.integrityScore,
+                minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
+            }),
+            finalContext.cascade.skippedStages,
+        );
 
     try {
         const installationToken = await getInstallationToken(installationId);
@@ -402,24 +496,17 @@ async function closeCheckRun(
 }
 
 /**
- * Öffentlich am PR sichtbare Check-Texte je Fehlercode (ROADMAP §15): nie der
- * rohe Fehlertext, aber ehrlich genug, dass der Autor weiß, ob ein Re-run
- * reicht. `model_unavailable` = Vertex-Kapazität/5xx nach allen Retries.
+ * DEADLINE_GUARD_SPEC §3.4: ein Zeit-Skip steht auch in der Check-Summary —
+ * die Conclusion-Regeln (check-run.ts) bleiben unverändert (D8).
  */
-const FAILED_CHECK_RUN_COPY: Readonly<Record<JobFailureCode, CheckRunResult>> = {
-    model_unavailable: {
-        conclusion: 'failure',
-        title: 'Review failed: AI model temporarily unavailable',
-        summary: 'The AI model provider was temporarily out of capacity, and retries did not succeed. '
-            + 'Nothing is wrong with this pull request or the repository connection — re-run this check in a minute.',
-    },
-    server_error: {
-        conclusion: 'failure',
-        title: 'Review failed',
-        summary: 'The Anti-Slop Gatekeeper could not complete this review due to an internal error. '
-            + 'The details are recorded in the server logs.',
-    },
-};
+function appendTimeBudgetNotice(checkRunResult: CheckRunResult, skippedStages: readonly SkippedStage[]): CheckRunResult {
+    const timeBudgetNotice = formatTimeBudgetNotice(skippedStages);
+    return timeBudgetNotice
+        ? { ...checkRunResult, summary: `${checkRunResult.summary}
+
+${timeBudgetNotice}` }
+        : checkRunResult;
+}
 
 /**
  * Schließt den Check Run eines gescheiterten Jobs mit 'failure' ab.
@@ -458,6 +545,9 @@ async function failCheckRun(
 
 /**
  * Setzt einen Job auf 'error' mit einer Fehlermeldung.
+ *
+ * Nur aus 'processing' heraus (DEADLINE_GUARD_SPEC D9): gewinnt der
+ * Persister das Rennen gegen den Watchdog, bleibt sein 'done' stehen.
  */
 async function markJobError(jobId: string, errorMessage: string): Promise<void> {
     await supabase
@@ -467,7 +557,8 @@ async function markJobError(jobId: string, errorMessage: string): Promise<void> 
             error_message: errorMessage,
             updated_at: new Date().toISOString(),
         })
-        .eq('id', jobId);
+        .eq('id', jobId)
+        .eq('status', 'processing');
 }
 
 /**

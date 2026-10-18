@@ -21,6 +21,9 @@ import {
     runVerdictCallWithRetry,
 } from '@/lib/pipeline/claim-verification';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
+import { hasBudgetForCall, isTimeBudgetFailure, markStageSkippedForTime } from '@/lib/pipeline/deadline';
+import type { FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
+import type { BlindClaim, VerdictCallResult } from '@/lib/pipeline/claim-verification';
 import type {
     CascadeDegradation,
     ClaimVerdict,
@@ -43,6 +46,12 @@ export const escalationReviewerStep: PipelineStep = {
         if (context.llmSkipped) return context;
         if (context.cascade.route === 'pro-direct') return context;
         if (context.cascade.escalationClaimIds.length === 0) return context;
+        // D13: Zeit-Check VOR dem Pro-Kontingent — ein Zeit-Skip darf nie
+        // eine der bezahlten Eskalationen verbrauchen.
+        if (!hasBudgetForCall(context, 'escalate_targeted')) {
+            console.warn(`[EscalationReviewer] Zeitbudget reicht nicht für die Eskalation (Job ${context.jobId}).`);
+            return markStageSkippedForTime(context, 'escalation');
+        }
 
         const escalationBudgetGranted = await consumeProEscalationBudget(context.ownerUserId);
         if (!escalationBudgetGranted) {
@@ -60,6 +69,11 @@ export const escalationReviewerStep: PipelineStep = {
         try {
             return await reverifyMarkedClaims(context);
         } catch (escalationFailure: unknown) {
+            // D14: Abbruch am Job-Budget ist ein Zeit-Skip, kein API-Fehler.
+            if (isTimeBudgetFailure(escalationFailure, context)) {
+                console.warn(`[EscalationReviewer] Eskalation am Zeitbudget beendet (Job ${context.jobId}).`);
+                return markStageSkippedForTime(context, 'escalation');
+            }
             console.error(
                 `[EscalationReviewer] Pro-Re-Verifikation fehlgeschlagen (Job ${context.jobId}):`,
                 escalationFailure instanceof Error ? escalationFailure.message : escalationFailure,
@@ -85,6 +99,7 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
         detectedEcosystems: context.detectedEcosystems,
         model: MODEL_ESCALATION,
         role: 'escalation',
+        deadlineAtMs: context.deadlineAtMs,
     });
 
     const escalationIdSet = new Set(context.cascade.escalationClaimIds);
@@ -96,11 +111,8 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
     let accumulatedUsage: TokenUsage | null = null;
 
     for (const claimBatch of claimBatches) {
-        const batchResult = await runVerdictCallWithRetry(context, escalationEnvelope, claimBatch, {
-            model: MODEL_ESCALATION,
-            verdictPhase: 'pro-verify',
-            telemetryPhase: 'escalate_targeted',
-        });
+        const batchResult = await runEscalationBatchWithinBudget(context, escalationEnvelope, claimBatch);
+        if (batchResult === null) break;
         proVerdicts.push(...batchResult.verdicts);
         accumulatedUsage = addTokenUsage(accumulatedUsage, batchResult.callUsage);
     }
@@ -109,17 +121,61 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
         `[EscalationReviewer] ${proVerdicts.length} Claims per Pro re-verifiziert (Job ${context.jobId}).`,
     );
 
-    return {
+    const reverifiedContext: PipelineContext = {
         ...context,
         tokenUsage: accumulatedUsage
             ? addTokenUsage(context.tokenUsage, accumulatedUsage)
             : context.tokenUsage,
+    };
+    return applyProVerdicts(reverifiedContext, proVerdicts);
+}
+
+/**
+ * Ein Pro-Batch unter dem Job-Budget (DEADLINE_GUARD_SPEC §3.3). null =
+ * Budget reicht nicht (mehr) — vor dem Start unter der Schwelle oder am
+ * Budget abgebrochen. Andere Fehler propagieren in den pro_api_error-Pfad.
+ */
+async function runEscalationBatchWithinBudget(
+    context: PipelineContext,
+    escalationEnvelope: FlashPromptEnvelope,
+    claimBatch: readonly BlindClaim[],
+): Promise<VerdictCallResult | null> {
+    if (!hasBudgetForCall(context, 'escalate_targeted')) return null;
+    try {
+        return await runVerdictCallWithRetry(context, escalationEnvelope, claimBatch, {
+            model: MODEL_ESCALATION,
+            verdictPhase: 'pro-verify',
+            telemetryPhase: 'escalate_targeted',
+        });
+    } catch (batchFailure: unknown) {
+        if (!isTimeBudgetFailure(batchFailure, context)) throw batchFailure;
+        return null;
+    }
+}
+
+/**
+ * Bezahlte Pro-Verdicts gehen nie verloren: Claims mit Pro-Verdict gelten
+ * als eskaliert (ein Pro-REFUTED darf verwerfen). Blieben Claims wegen des
+ * Zeitbudgets ohne Pro-Verdict, bleiben NUR sie markiert — der Scorer
+ * behandelt sie konservativ als übersprungen (Downgrade statt stiller
+ * Verwerfung eines Flash-REFUTED).
+ */
+function applyProVerdicts(context: PipelineContext, proVerdicts: readonly ClaimVerdict[]): PipelineContext {
+    const reverifiedClaimIds = new Set(proVerdicts.map((proVerdict) => proVerdict.claimId));
+    const unreviewedClaimIds = context.cascade.escalationClaimIds
+        .filter((claimId) => !reverifiedClaimIds.has(claimId));
+    const mergedContext: PipelineContext = {
+        ...context,
         cascade: {
             ...context.cascade,
             verdicts: mergeVerdicts(context.cascade.verdicts, proVerdicts),
-            escalated: true,
+            escalated: unreviewedClaimIds.length === 0,
+            escalationClaimIds: unreviewedClaimIds.length === 0
+                ? context.cascade.escalationClaimIds
+                : unreviewedClaimIds,
         },
     };
+    return unreviewedClaimIds.length === 0 ? mergedContext : markStageSkippedForTime(mergedContext, 'escalation');
 }
 
 /** Pro-Verdicts überschreiben die Flash-Verdicts der markierten Claims (D3). */

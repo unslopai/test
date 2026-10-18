@@ -23,6 +23,7 @@ import { addTokenUsage, buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { runReviewerPass } from '@/lib/pipeline/reviewer-call';
 import { dropDuplicateFindings, evaluateSecondOpinionTrigger } from '@/lib/pipeline/second-opinion';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
+import { hasBudgetForCall, isTimeBudgetFailure, markStageSkippedForTime } from '@/lib/pipeline/deadline';
 import type { SecondOpinionTrigger } from '@/lib/pipeline/second-opinion';
 import type { CascadeDegradation, PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
@@ -39,6 +40,12 @@ export const secondOpinionReviewerStep: PipelineStep = {
 
         const trigger = evaluateSecondOpinionTrigger(context);
         if (!trigger) return context;
+        // D4/D13: die Zweitmeinung fällt als ERSTE Stufe weg, und zwar vor
+        // dem Pro-Kontingent — ein Zeit-Skip kostet keine bezahlte Eskalation.
+        if (!hasBudgetForCall(context, 'escalate_second_opinion')) {
+            console.warn(`[SecondOpinion] Zeitbudget reicht nicht für die Zweitmeinung (Job ${context.jobId}).`);
+            return markStageSkippedForTime(context, 'second_opinion');
+        }
 
         const escalationBudgetGranted = await consumeProEscalationBudget(context.ownerUserId);
         if (!escalationBudgetGranted) {
@@ -59,6 +66,11 @@ export const secondOpinionReviewerStep: PipelineStep = {
         try {
             return await runSecondOpinionReview(context, trigger);
         } catch (secondOpinionFailure: unknown) {
+            // D14: Abbruch am Job-Budget ist ein Zeit-Skip, kein API-Fehler.
+            if (isTimeBudgetFailure(secondOpinionFailure, context)) {
+                console.warn(`[SecondOpinion] Zweitmeinung am Zeitbudget beendet (Job ${context.jobId}).`);
+                return markStageSkippedForTime(context, 'second_opinion');
+            }
             console.error(
                 `[SecondOpinion] Pro-Zweitmeinung fehlgeschlagen (Job ${context.jobId}):`,
                 secondOpinionFailure instanceof Error ? secondOpinionFailure.message : secondOpinionFailure,
@@ -86,6 +98,7 @@ async function runSecondOpinionReview(
         detectedEcosystems: context.detectedEcosystems,
         model: MODEL_ESCALATION,
         role: 'escalation',
+        deadlineAtMs: context.deadlineAtMs,
     });
 
     const passResult = await runReviewerPass(context, {

@@ -12,8 +12,9 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { resolveApiKey } from '@/lib/api-keys';
 import { classifyJobFailure } from '@/lib/job-failure';
+import { scheduleLazyReap } from '@/lib/lazy-reaper';
 import { normalizeBareRuleId } from '@/lib/pipeline/helpers';
-import type { RerollNotice, ScanPhase } from '@unslop/shared';
+import type { RerollNotice, ScanPhase, SkippedStage } from '@unslop/shared';
 
 const STALLED_JOB_THRESHOLD_MS = 5 * 60 * 1000;
 
@@ -29,6 +30,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     if (!apiKey) {
         return NextResponse.json({ error: 'invalid_api_key' }, { status: 401 });
     }
+
+    // Lazy Reaping (DEADLINE_GUARD_SPEC D10) — nur für authentifizierte
+    // Aufrufer, gedrosselt auf einen Lauf pro Minute und Instanz.
+    scheduleLazyReap('cli-poll');
 
     const { jobId } = await params;
 
@@ -112,6 +117,8 @@ interface PersistedResultBlob {
     nothing_reviewed?: boolean;
     omitted_files?: unknown;
     cognitive_integrity_score?: number | null;
+    degradations?: unknown;
+    skipped_stages?: unknown;
 }
 
 /**
@@ -136,16 +143,30 @@ function toScanResult(persistedResult: unknown, options: { terminal: boolean }):
         summary: resultBlob.review?.summary ?? '',
         filesReviewed,
         outcome: nothingReviewed ? 'nothing_reviewed' : 'reviewed',
-        omittedFiles: parseOmittedFiles(resultBlob.omitted_files),
+        omittedFiles: parseStringList(resultBlob.omitted_files),
         cognitiveIntegrityScore: resultBlob.cognitive_integrity_score ?? null,
+        degradations: parseStringList(resultBlob.degradations),
+        skippedStages: parseSkippedStages(resultBlob.skipped_stages),
     };
 }
 
 /** Strukturelle Validierung an der DB-Grenze (ARCH-002): alles außer string[] wird []. */
-function parseOmittedFiles(rawOmittedFiles: unknown): readonly string[] {
-    const isStringArray = Array.isArray(rawOmittedFiles)
-        && rawOmittedFiles.every((filePath: unknown) => typeof filePath === 'string');
-    return isStringArray ? rawOmittedFiles as string[] : [];
+/** Strukturelle Validierung eines persistierten String-Arrays (ARCH-002); alles andere wird []. */
+function parseStringList(rawStringList: unknown): readonly string[] {
+    const isStringArray = Array.isArray(rawStringList)
+        && rawStringList.every((listEntry: unknown) => typeof listEntry === 'string');
+    return isStringArray ? rawStringList as string[] : [];
+}
+
+const SKIPPED_STAGE_VALUES: ReadonlySet<string> = new Set<SkippedStage>(['second_opinion', 'escalation', 'verifier']);
+
+function isSkippedStage(stageName: string): stageName is SkippedStage {
+    return SKIPPED_STAGE_VALUES.has(stageName);
+}
+
+/** Nur bekannte Stufen erreichen den Client — ein fremder Wert im Blob wird verworfen. */
+function parseSkippedStages(rawSkippedStages: unknown): readonly SkippedStage[] {
+    return parseStringList(rawSkippedStages).filter(isSkippedStage);
 }
 
 /**

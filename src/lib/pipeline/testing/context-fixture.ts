@@ -69,6 +69,9 @@ export function buildPipelineContext(overrides: Partial<PipelineContext> = {}): 
         authMode: 'oauth',
         repositoryId: 'repo-under-test',
         ownerUserId: 'owner-under-test',
+        // Ohne Budget: Bestandstests prüfen Stufen-Logik, nicht die Job-Uhr.
+        jobStartedAtMs: 0,
+        deadlineAtMs: null,
         prFiles: [],
         reviewableFiles: [],
         combinedDiff: '',

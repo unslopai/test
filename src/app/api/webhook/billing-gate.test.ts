@@ -60,6 +60,9 @@ vi.mock('@/lib/supabase', () => ({
     },
 }));
 
+const scheduleLazyReapMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/lazy-reaper', () => ({ scheduleLazyReap: scheduleLazyReapMock }));
+
 const { POST } = await import('./route');
 
 afterAll(() => {
@@ -281,6 +284,8 @@ describe('POST /api/webhook — Billing-Gate auf dem Legacy-PR-Pfad', () => {
         const response = await POST(buildPullRequestDelivery('opened'));
 
         expect(response.status).toBe(200);
+        // Lazy Reaping (DEADLINE_GUARD_SPEC D10) läuft bei jeder Delivery mit.
+        expect(scheduleLazyReapMock).toHaveBeenCalledWith('webhook');
         expect((await response.json() as { jobId: string }).jobId).toBe('job-under-test');
 
         expect(rpcMock).toHaveBeenCalledWith('consume_scan_quota', {
@@ -299,7 +304,8 @@ describe('POST /api/webhook — Billing-Gate auf dem Legacy-PR-Pfad', () => {
         });
 
         await flushAfterCallbacks();
-        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test');
+        // Job-Uhr ab Handler-Einstieg (DEADLINE_GUARD_SPEC D1).
+        expect(processReviewJobMock).toHaveBeenCalledWith('job-under-test', 'user-under-test', expect.any(Number));
         expect(announceGateSkipMock).not.toHaveBeenCalled();
     });
 });

@@ -47,13 +47,30 @@ export class ModelUnavailableError extends Error {
     }
 }
 
+/**
+ * Ein Retry wurde verweigert, weil das Job-Budget Wartezeit + Startschwelle
+ * der Stufe nicht mehr deckt (DEADLINE_GUARD_SPEC §3.2). Zählt überall wie
+ * ein Deadline-Abbruch: nie retryfähig, auf dem Draft ein review_timeout.
+ */
+export class CallBudgetExhaustedError extends Error {
+    constructor(callLabel: string, options?: { cause?: unknown }) {
+        super(`${callLabel}: Retry verweigert — das Job-Budget deckt ihn nicht mehr.`, options);
+        this.name = 'CallBudgetExhaustedError';
+    }
+}
+
+/** Darf nach `delayMs` Wartezeit noch ein Versuch starten? (Budget-Gate des Deadline Guards) */
+export type RetryBudgetGate = (delayMs: number) => boolean;
+
+const UNGATED_RETRY: RetryBudgetGate = () => true;
+
 export interface TransientRetryPolicy {
     readonly retryDelaysMs: readonly number[];
     readonly waitMs: (delayMs: number) => Promise<void>;
     readonly jitterMs: () => number;
 }
 
-const DEFAULT_RETRY_POLICY: TransientRetryPolicy = {
+export const DEFAULT_RETRY_POLICY: TransientRetryPolicy = {
     retryDelaysMs: DEFAULT_RETRY_DELAYS_MS,
     waitMs: (delayMs) => new Promise((resolveWait) => setTimeout(resolveWait, delayMs)),
     jitterMs: () => Math.floor(Math.random() * MAX_JITTER_MS),
@@ -101,6 +118,8 @@ export function findTransientVertexFailure(callFailure: unknown): TransientVerte
     return findTransientVertexFailure(callFailure.cause);
 }
 
+const DEADLINE_FAILURE_NAMES: ReadonlySet<string> = new Set(['AbortError', 'TimeoutError', 'CallBudgetExhaustedError']);
+
 /**
  * Der Call ist an seiner eigenen Deadline gestorben (Latenz-Guard der
  * Eskalations-Rolle, context-cache.ts): das SDK bricht den fetch über einen
@@ -108,12 +127,21 @@ export function findTransientVertexFailure(callFailure: unknown): TransientVerte
  * (bei einem nackten AbortSignal.timeout waere es `TimeoutError`) — direkt
  * oder als `cause` eines typisierten Wrappers. Ein Deadline-Abbruch ist
  * NIE retryfaehig: ein zweiter Langlaeufer wuerde genau das Routen-Budget
- * verbrauchen, das die Deadline schuetzen soll.
+ * verbrauchen, das die Deadline schuetzen soll. Ein vom Budget verweigerter
+ * Retry (CallBudgetExhaustedError) zählt genauso.
  */
 export function isCallDeadlineFailure(callFailure: unknown): boolean {
     if (!(callFailure instanceof Error)) return false;
-    if (callFailure.name === 'AbortError' || callFailure.name === 'TimeoutError') return true;
+    if (DEADLINE_FAILURE_NAMES.has(callFailure.name)) return true;
     return isCallDeadlineFailure(callFailure.cause);
+}
+
+
+/** Steckt ein vom Budget verweigerter Retry in der Fehlerkette? */
+export function isCallBudgetRefusal(callFailure: unknown): boolean {
+    if (!(callFailure instanceof Error)) return false;
+    if (callFailure instanceof CallBudgetExhaustedError) return true;
+    return isCallBudgetRefusal(callFailure.cause);
 }
 
 /** Backoff + Jitter; ein retryDelay-Hinweis im Fehler-JSON verlängert (gedeckelt). */
@@ -130,11 +158,14 @@ export function resolveRetryDelayMs(callFailure: Error, baseDelayMs: number, jit
  * aus. Nicht-transiente Fehler propagieren sofort unverändert; nach dem
  * letzten transienten Fehlschlag wird ein ModelUnavailableError geworfen.
  * Jeder Versuch schreibt seine Telemetrie selbst (api_error … ok).
+ * Die Wartezeit ist nicht abbrechbar — deshalb fragt `retryBudgetGate` VOR
+ * dem Warten, ob das Job-Budget Wartezeit plus Startschwelle noch deckt.
  */
 export async function runWithTransientRetry<CallOutcome>(
     runAttempt: () => Promise<CallOutcome>,
     callLabel: string,
     retryPolicy: TransientRetryPolicy = DEFAULT_RETRY_POLICY,
+    retryBudgetGate: RetryBudgetGate = UNGATED_RETRY,
 ): Promise<CallOutcome> {
     for (let retryIndex = 0; ; retryIndex += 1) {
         const attemptStartedAt = Date.now();
@@ -152,6 +183,9 @@ export async function runWithTransientRetry<CallOutcome>(
             }
 
             const delayMs = resolveRetryDelayMs(transientFailure, baseDelayMs, retryPolicy.jitterMs());
+            if (!retryBudgetGate(delayMs)) {
+                throw new CallBudgetExhaustedError(callLabel, { cause: attemptFailure });
+            }
             console.warn(
                 `[VertexRetry] ${callLabel}: HTTP ${transientFailure.status} in Versuch ${attemptCount} — ` +
                 `Retry in ${delayMs} ms.`,

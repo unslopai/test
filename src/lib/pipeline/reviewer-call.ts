@@ -13,7 +13,8 @@ import { extractTokenUsage, parseModelJson } from '@/lib/pipeline/helpers';
 import { aggregateIssuesByRuleAndFile } from '@/lib/pipeline/finding-aggregation';
 import { validateIssuesAgainstManifest } from '@/lib/pipeline/issue-validation';
 import { clampConfidence } from '@/lib/pipeline/claim-verification';
-import { runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
+import { CallBudgetExhaustedError, DEFAULT_RETRY_POLICY, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
+import { hasBudgetForCall } from '@/lib/pipeline/deadline';
 import { recordLlmCall } from '@/lib/telemetry/llm-call-log';
 import type { LlmCallPhase, LlmCallStatus } from '@/lib/telemetry/llm-call-log';
 import type { CacheStatus, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
@@ -129,15 +130,22 @@ async function runReviewerCall(
 ): Promise<{ llmOutput: LlmDiffReviewResponse; callUsage: TokenUsage; effectiveCacheStatus: CacheStatus }> {
     // Zwei orthogonale Retry-Achsen: Kapazität (Backoff, innen) und
     // Degeneration (ein Sofort-Retry, außen) — ein 429 verbraucht nie den
-    // Parse-Retry und umgekehrt.
+    // Parse-Retry und umgekehrt. Beide starten nur, wenn das Job-Budget den
+    // vollen Call noch deckt (DEADLINE_GUARD_SPEC §3.2).
+    const callLabel = `ReviewerPass/${options.telemetryPhase}/${options.reviewerModel}`;
     const runAttemptWithBackoff = () => runWithTransientRetry(
         () => runReviewerAttempt(context, options),
-        `ReviewerPass/${options.telemetryPhase}/${options.reviewerModel}`,
+        callLabel,
+        DEFAULT_RETRY_POLICY,
+        (delayMs) => hasBudgetForCall(context, options.telemetryPhase, delayMs),
     );
     try {
         return await runAttemptWithBackoff();
     } catch (firstAttemptError: unknown) {
         if (!(firstAttemptError instanceof ReviewerParseError)) throw firstAttemptError;
+        if (!hasBudgetForCall(context, options.telemetryPhase)) {
+            throw new CallBudgetExhaustedError(callLabel, { cause: firstAttemptError });
+        }
         console.warn(
             `[ReviewerPass] Degenerierte Modell-Antwort (${options.telemetryPhase}) — ` +
             `einmaliger Retry: ${firstAttemptError.message}`,

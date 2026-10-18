@@ -25,6 +25,7 @@ import {
     resolveVertexClientForModel,
 } from '@/lib/pipeline/models';
 import type { CascadeRole } from '@/lib/pipeline/models';
+import { resolveCallDeadlineMs } from '@/lib/pipeline/deadline';
 import {
     PROMPT_CACHE_SCHEMA_VERSION,
     buildCachedPrefix,
@@ -75,6 +76,8 @@ export interface FlashPromptEnvelope {
     readonly keyInputs: CacheKeyInputs;
     /** Rolle des Calls — bestimmt Thinking-Level und Call-Deadline, nie den Cache-Key. */
     readonly role: CascadeRole;
+    /** Job-Deadline für LLM-Calls (DEADLINE_GUARD_SPEC §3.2); null = kein Job-Budget. */
+    readonly deadlineAtMs: number | null;
 }
 
 export interface EnvelopeCallResult {
@@ -86,21 +89,17 @@ export interface EnvelopeCallResult {
 const INLINE_PLAN: InlinePromptPlan = { mode: 'inline', cacheStatus: 'inline' };
 
 /**
- * Latenz-Guard der Eskalations-Rolle (MODEL_STRATEGY_2026-08 §1h): Draft,
- * Verify und Eskalation teilen sich die 300 s `maxDuration` der Routen, und
- * ein Job kann ZWEI Eskalations-Calls ziehen (targeted + Second Opinion).
- * Gemessen (Probe 2026-09-17, r20 pro-direct, 3.8 medium, 15 Calls): Ø 45 s,
- * max 72 s; unter `high` Ø 164 s (03.09.) — und ein Second-Opinion-Call lief
- * dort 2/2 in den 306-s-Undici-Timeout. Ein Eskalations-Call, der die
- * Deadline reißt, wird abgebrochen und degradiert wie ein API-Fehler (D10:
- * pro-direct → Flash-Kaskade, targeted/Second Opinion → Degradation) statt
- * den ganzen Job in den Routen-Timeout zu tragen. Draft und Verifier haben
- * bewusst keine Deadline: ohne sie gibt es keinen Review.
+ * Call-Deadline (DEADLINE_GUARD_SPEC §3.2): JEDER LLM-Call bekommt ein
+ * Signal aus dem Restbudget des Jobs, die Eskalations-Rolle zusätzlich ihren
+ * 150-s-Latenz-Guard (deadline.ts). Das bewusste Gegenteil der früheren Regel
+ * "Draft und Verifier haben keine Deadline": ein Draft, der den Plattform-Kill
+ * reißt, liefert ebenfalls keinen Review — nur einen ewig hängenden Job (e409926e).
+ * Das Signal entsteht PRO VERSUCH zum Call-Zeitpunkt, damit auch ein Retry
+ * (Backoff, Cache-Recreate) nie über die Deadline hinaus läuft.
  */
-export const ESCALATION_CALL_DEADLINE_MS = 150_000;
-
-function resolveCallAbortSignal(role: CascadeRole): AbortSignal | undefined {
-    return role === 'escalation' ? AbortSignal.timeout(ESCALATION_CALL_DEADLINE_MS) : undefined;
+function resolveCallAbortSignal(envelope: FlashPromptEnvelope): AbortSignal | undefined {
+    const callDeadlineMs = resolveCallDeadlineMs(envelope.role, envelope.deadlineAtMs);
+    return callDeadlineMs === null ? undefined : AbortSignal.timeout(callDeadlineMs);
 }
 
 /**
@@ -163,6 +162,7 @@ export interface PromptEnvelopeRequest {
     readonly detectedEcosystems: readonly string[] | null;
     readonly model: string;
     readonly role: CascadeRole;
+    readonly deadlineAtMs: number | null;
 }
 
 /**
@@ -187,6 +187,7 @@ export async function resolveFlashPromptEnvelope(
         protocolBlock: buildProtocolBlock(envelopeRequest.variant),
         keyInputs,
         role: envelopeRequest.role,
+        deadlineAtMs: envelopeRequest.deadlineAtMs,
         plan: await resolveContextCache(cachedPrefix, keyInputs),
     };
 }
@@ -202,6 +203,7 @@ export function buildInlineEnvelope(envelopeRequest: PromptEnvelopeRequest): Fla
         protocolBlock: buildProtocolBlock(envelopeRequest.variant),
         plan: INLINE_PLAN,
         role: envelopeRequest.role,
+        deadlineAtMs: envelopeRequest.deadlineAtMs,
         keyInputs: {
             model: envelopeRequest.model,
             lawContentHash: renderedLaw.lawContentHash,
@@ -478,7 +480,7 @@ function runCachedCall(
             responseMimeType: 'application/json',
             temperature: CASCADE_TEMPERATURE,
             thinkingConfig: resolveThinkingConfig(envelope.role),
-            abortSignal: resolveCallAbortSignal(envelope.role),
+            abortSignal: resolveCallAbortSignal(envelope),
         },
     });
 }
@@ -497,7 +499,7 @@ function runInlineCall(
             responseMimeType: 'application/json',
             temperature: CASCADE_TEMPERATURE,
             thinkingConfig: resolveThinkingConfig(envelope.role),
-            abortSignal: resolveCallAbortSignal(envelope.role),
+            abortSignal: resolveCallAbortSignal(envelope),
         },
     });
 }
