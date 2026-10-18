@@ -2,7 +2,6 @@ import { Silkscreen } from 'next/font/google';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { MARKETING_SOURCES } from '@/app/(marketing)/marketing-sources';
 import { LegalLinks } from '@/app/(marketing)/components/LegalLinks';
 import { DEFAULT_LOCALE, isSupportedLocale } from '@/i18n/config';
 import { LocaleSwitcher } from '../components/LocaleSwitcher';
@@ -95,10 +94,6 @@ async function AuthCard() {
 
 async function BrandPanel() {
   const heroText = await getTranslations('marketing.hero');
-  const statText = await getTranslations('marketing.statBand');
-  const airaSource = MARKETING_SOURCES.find(
-    (registeredSource) => registeredSource.key === 'aira',
-  );
 
   return (
     <aside className="marketing-dot-grid relative hidden border-l border-white/10 lg:flex lg:items-center lg:justify-center">
@@ -110,15 +105,7 @@ async function BrandPanel() {
           {heroText('tagline')}
         </p>
         <div className="mt-12 border-t border-white/10 pt-8">
-          <p className="font-mono text-4xl font-medium tracking-tight text-lime-300">
-            {statText('stats.judgeMiss.value')}
-          </p>
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
-            {statText('stats.judgeMiss.caption')}
-          </p>
-          {airaSource !== undefined && (
-            <p className="mt-2 font-mono text-xs text-zinc-600">arXiv:{airaSource.arxivId}</p>
-          )}
+          <p className="max-w-md text-sm leading-relaxed text-zinc-400">{heroText('sub')}</p>
         </div>
       </div>
     </aside>

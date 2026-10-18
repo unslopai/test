@@ -9,6 +9,7 @@ type SpecRowKey =
   | 'integration'
   | 'webhooks'
   | 'tokens'
+  | 'planned'
   | 'limits';
 
 const SPEC_ROW_KEYS: readonly SpecRowKey[] = [
@@ -19,6 +20,7 @@ const SPEC_ROW_KEYS: readonly SpecRowKey[] = [
   'integration',
   'webhooks',
   'tokens',
+  'planned',
   'limits',
 ];
 

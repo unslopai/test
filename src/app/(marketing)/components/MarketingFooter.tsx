@@ -1,32 +1,24 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@/i18n/config';
-import { MARKETING_SOURCES, arxivAbstractUrl } from '../marketing-sources';
 import { LegalLinks } from './LegalLinks';
 
 interface MarketingFooterProps {
   readonly locale: SupportedLocale;
 }
 
-/** Footer: the sources block every footnote points into, plus legal + language. */
+/**
+ * Footer: Hinweis zur Beleglage der Seite, plus legal + language. Der frühere
+ * Quellenblock mit arXiv-Fußnoten ist entfallen — Paper stehen laut
+ * MARKETING_CLAIMS.md §00 nur noch in Langform-Texten, nicht auf der Landing.
+ */
 export async function MarketingFooter({ locale }: MarketingFooterProps) {
   const footerText = await getTranslations('marketing.footer');
 
   return (
     <footer className="border-t border-white/10">
       <div className="mx-auto max-w-6xl px-6 py-16">
-        <section id="sources" aria-label={footerText('sourcesHeading')} className="scroll-mt-20">
-          <p className="font-pixel text-xs uppercase tracking-[0.2em] text-lime-300">
-            {footerText('sourcesEyebrow')}
-          </p>
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-50">
-            {footerText('sourcesHeading')}
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-400">
-            {footerText('sourcesIntro')}
-          </p>
-          <SourcesList />
-        </section>
+        <p className="max-w-3xl text-sm leading-relaxed text-zinc-500">{footerText('claimsNote')}</p>
         <FooterBottomRow locale={locale} />
         <LegalLinks locale={locale} className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" />
         <p className="mt-8 text-xs text-zinc-600">
@@ -37,40 +29,11 @@ export async function MarketingFooter({ locale }: MarketingFooterProps) {
   );
 }
 
-async function SourcesList() {
-  const footerText = await getTranslations('marketing.footer');
-
-  return (
-    <ol className="mt-8 grid gap-x-10 gap-y-3 text-sm sm:grid-cols-2">
-      {MARKETING_SOURCES.map((registeredSource, sourceIndex) => (
-        <li
-          key={registeredSource.key}
-          id={`source-${sourceIndex + 1}`}
-          className="flex gap-3 scroll-mt-24 text-zinc-500"
-        >
-          <span className="font-mono text-zinc-600">[{sourceIndex + 1}]</span>
-          <span>
-            {footerText(`sources.${registeredSource.key}`)}{' '}
-            <a
-              href={arxivAbstractUrl(registeredSource.arxivId)}
-              rel="noopener noreferrer"
-              target="_blank"
-              className="font-mono text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-lime-300 hover:decoration-lime-300/50"
-            >
-              arXiv:{registeredSource.arxivId}
-            </a>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 async function FooterBottomRow({ locale }: MarketingFooterProps) {
   const footerText = await getTranslations('marketing.footer');
 
   return (
-    <div className="mt-16 flex flex-wrap items-center justify-between gap-6 border-t border-white/10 pt-8">
+    <div className="mt-10 flex flex-wrap items-center justify-between gap-6 border-t border-white/10 pt-8">
       <div className="flex items-baseline gap-3">
         <span className="font-pixel text-base text-zinc-50">unslop</span>
         <span className="text-sm text-zinc-500">{footerText('tagline')}</span>

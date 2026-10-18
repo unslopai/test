@@ -10,8 +10,10 @@ interface ClosingCtaProps {
 
 /**
  * Book-end CTA: the one-liner positioning statement plus the two actions.
- * Bis zum Launch steht hier das Waitlist-Formular statt der Login-Buttons
- * (WAITLIST_SPEC.md Entscheidung 4).
+ * Mit `isWaitlistLive` steht hier das Waitlist-Formular (WAITLIST_SPEC.md
+ * Entscheidung 4). Ohne Flag führt der Hauptbutton zurück zu den Findings
+ * statt auf `/login`: die Registrierung ist gesperrt, also verspricht die
+ * Seite keine Installation (W8). Der Login-Link bleibt für Bestandskonten.
  */
 export async function ClosingCta({ locale }: ClosingCtaProps) {
   const ctaText = await getTranslations('marketing.closingCta');
@@ -28,32 +30,32 @@ export async function ClosingCta({ locale }: ClosingCtaProps) {
             <WaitlistCta locale={locale} source="landing_closing" align="center" />
           </div>
         ) : (
-          <ClosingLoginButtons primaryLabel={ctaText('button')} secondaryLabel={ctaText('secondary')} />
+          <ClosingNeutralButtons primaryLabel={ctaText('button')} loginLabel={ctaText('secondary')} />
         )}
       </div>
     </section>
   );
 }
 
-interface ClosingLoginButtonsProps {
+interface ClosingNeutralButtonsProps {
   readonly primaryLabel: string;
-  readonly secondaryLabel: string;
+  readonly loginLabel: string;
 }
 
-function ClosingLoginButtons({ primaryLabel, secondaryLabel }: ClosingLoginButtonsProps) {
+function ClosingNeutralButtons({ primaryLabel, loginLabel }: ClosingNeutralButtonsProps) {
   return (
     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-      <Link
-        href="/login"
+      <a
+        href="#findings"
         className="rounded-md bg-lime-300 px-7 py-3.5 text-sm font-semibold text-zinc-950 transition hover:-translate-y-px hover:bg-lime-200"
       >
         {primaryLabel}
-      </Link>
+      </a>
       <Link
         href="/login"
         className="rounded-md border border-white/15 px-7 py-3.5 text-sm font-medium text-zinc-200 transition hover:border-white/30 hover:text-white"
       >
-        {secondaryLabel}
+        {loginLabel}
       </Link>
     </div>
   );

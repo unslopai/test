@@ -4,10 +4,10 @@ import { getTranslations } from 'next-intl/server';
 import { isSupportedLocale, type SupportedLocale } from '@/i18n/config';
 import { siteBaseUrl } from '@/lib/site-base-url';
 import { HeroSection } from '../components/HeroSection';
-import { StatBand } from '../components/StatBand';
-import { EvidencePillars } from '../components/EvidencePillars';
+import { FindingShowcase } from '../components/FindingShowcase';
+import { MechanismPillars } from '../components/MechanismPillars';
 import { VerdictTable } from '../components/VerdictTable';
-import { ObjectionGrid } from '../components/ObjectionGrid';
+import { ProblemGrid } from '../components/ProblemGrid';
 import { ArchitectureSpec } from '../components/ArchitectureSpec';
 import { FaqSection, FAQ_ITEM_KEYS } from '../components/FaqSection';
 import { ClosingCta } from '../components/ClosingCta';
@@ -62,10 +62,10 @@ export default async function MarketingLandingPage({ params }: MarketingPageProp
     <main id="main">
       <StructuredData />
       <HeroSection locale={locale} />
-      <StatBand />
-      <EvidencePillars />
+      <FindingShowcase />
+      <MechanismPillars />
       <VerdictTable />
-      <ObjectionGrid />
+      <ProblemGrid />
       <ArchitectureSpec />
       <FaqSection />
       <ClosingCta locale={locale} />

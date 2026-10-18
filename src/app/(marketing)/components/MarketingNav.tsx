@@ -2,13 +2,17 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import type { SupportedLocale } from '@/i18n/config';
 
-const NAV_ANCHOR_IDS = ['evidence', 'comparison', 'architecture', 'faq'] as const;
+const NAV_ANCHOR_IDS = ['findings', 'mechanism', 'architecture', 'faq'] as const;
 
 interface MarketingNavProps {
   readonly locale: SupportedLocale;
 }
 
-/** Sticky top navigation: pixel-font brand, section anchors, login + CTA. */
+/**
+ * Sticky top navigation: pixel-font brand, section anchors, login.
+ * Kein „Get started"-Button mehr: er führte auf `/login`, obwohl die
+ * Registrierung gesperrt ist (W8). Der Login-Link bleibt für Bestandskonten.
+ */
 export async function MarketingNav({ locale }: MarketingNavProps) {
   const navText = await getTranslations('marketing.nav');
   const accessibilityText = await getTranslations('marketing.a11y');
@@ -37,12 +41,6 @@ export async function MarketingNav({ locale }: MarketingNavProps) {
             className="text-sm text-zinc-300 transition-colors hover:text-white"
           >
             {navText('login')}
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-md bg-lime-300 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:-translate-y-px hover:bg-lime-200"
-          >
-            {navText('cta')}
           </Link>
         </div>
       </nav>

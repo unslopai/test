@@ -298,173 +298,176 @@
   },
   "marketing": {
     "meta": {
-      "title": "Unslop — Deterministic AI Code Review",
-      "description": "Unslop is the deterministic review gate for AI-generated code. 119 research-backed rules, verdicts no LLM votes on — on every pull request, in your terminal, in your editor.",
-      "ogTitle": "Deterministic AI Code Review",
-      "ogTagline": "119 research-backed rules. Verdicts no LLM votes on."
+      "title": "Unslop — Review gate for AI-generated code",
+      "description": "Unslop reviews AI-generated code on every pull request: deterministic checks first, then a model review whose findings a second model re-checks blind. Every finding names its rule. In private beta.",
+      "ogTitle": "Review gate for AI-generated code",
+      "ogTagline": "Deterministic checks first. Model findings re-checked blind. Skipped stages reported."
     },
     "a11y": {
       "skipToContent": "Skip to content",
-      "sourceReference": "Source {number}",
       "mainNavigation": "Main navigation",
       "languageSwitcher": "Language"
     },
     "nav": {
-      "evidence": "Evidence",
-      "comparison": "Comparison",
+      "findings": "Findings",
+      "mechanism": "How it works",
       "architecture": "Platform",
       "faq": "FAQ",
-      "login": "Log in",
-      "cta": "Get started"
+      "login": "Log in"
     },
     "hero": {
-      "eyebrow": "Deterministic AI code review",
-      "headline": "Your AI reviewer misses 44× more bugs than a <accent>parser</accent>.",
-      "bluf": "Unslop is the deterministic review gate for AI-generated code. It catches what LLM reviewers miss — on every pull request, in your terminal, and in your editor.",
-      "sub": "Same files, two reviewers: a cloud LLM found 44× fewer issues than a deterministic scan. We built the gate on the side that wins.",
-      "ctaPrimary": "Install the GitHub App",
-      "ctaSecondary": "Read the evidence",
-      "tagline": "The only AI code gate that doesn’t ask an AI whether the AI was wrong."
+      "eyebrow": "Review gate for AI-generated code",
+      "headline": "Looks fine in review. <accent>Breaks in production.</accent>",
+      "bluf": "Unslop reviews every pull request for the ways AI-written code fails: swallowed errors, packages that don’t exist, SQL built from strings, tests that assert nothing.",
+      "sub": "A deterministic pre-scan runs first. Then a model reviews the diff, and a second model re-checks its findings without seeing the first one’s reasoning. Every finding names its rule and quotes the code.",
+      "status": "Private beta. Sign-up is closed, and the CLI, the editor extension and the MCP server are not published yet.",
+      "ctaPrimary": "See a real finding",
+      "ctaSecondary": "How the verdict is made",
+      "tagline": "Show the finding. Explain the verdict. Say what was skipped.",
+      "exhibitCaption": "Real output, not a mock-up: the check run and the review comment on pull request #20 in our own test repository, 2026-09-30. This finding comes from the deterministic pre-scan."
     },
-    "statBand": {
-      "heading": "The research, in numbers",
-      "intro": "Backed by independent, published academic research. All sources in the footer.",
-      "stats": {
-        "judgeMiss": {
-          "value": "44×",
-          "caption": "fewer issues found by an LLM judge than by a deterministic scan of the same files"
+    "findings": {
+      "eyebrow": "Show, don’t claim",
+      "heading": "Two more findings, copied as stored",
+      "intro": "Both come from scans of our own test repository. Rule, quoted code, explanation and fix are product output, unedited. The product writes its findings in English.",
+      "quoteLabel": "Quoted code",
+      "fixLabel": "Suggested fix",
+      "cards": {
+        "confirmed": {
+          "label": "Model finding, confirmed by the blind re-check",
+          "caption": "CLI scan of 2026-09-17, job 0cf82b14. The reviewing model drafted the finding. The second model confirmed it from the rule and the quoted code alone."
         },
-        "severityGap": {
-          "value": "1.80×",
-          "caption": "more high-severity flaws per file in AI-generated code"
-        },
-        "erosion": {
-          "value": "2.1 → 6.2",
-          "caption": "vulnerabilities per sample as “improve this code” rounds pile up"
-        },
-        "selfCorrection": {
-          "value": "27%",
-          "caption": "of LLM “self-corrections” actually made code safer"
-        },
-        "coverageIllusion": {
-          "value": "96.2% vs 63.7%",
-          "caption": "test pass rate vs. real defect detection — the coverage illusion"
-        },
-        "ruleCount": {
-          "value": "119",
-          "caption": "research-backed rules power the Unslop engine"
+        "downgraded": {
+          "label": "Model finding, downgraded because a stage was skipped",
+          "caption": "Pull request #17, 2026-09-26, job f2c676ba. For this run we cut the time budget to 150 seconds on purpose, to exercise this path. The third pass did not run, so the finding was downgraded to a warning, and the comment says why."
         }
+      },
+      "measurement": {
+        "eyebrow": "Our own measurement",
+        "heading": "One number, with its limits",
+        "result": "<strong>125 of 126</strong> planted rule violations found, <strong>0</strong> false positives on 4 clean control fixtures.",
+        "method": "Method: our rule-recall benchmark. We plant known violations in test fixtures and count one as found when the pre-scan or the model review reports the expected rule in the expected file.",
+        "run": "Run: 2026-09-16, one full run. Models: Gemini 3.8 Flash for the review, Gemini 3.6 Flash for the blind re-check.",
+        "limits": "Limits: we wrote the fixtures ourselves; these are not customer repositories. It is a single run, and results vary between runs. The benchmark runs without a time budget and without repository context. On a larger fixture with 48 planted violations (2026-09-29, two runs) the result was 46 of 48 both times. The model for the third pass has changed since this run."
       }
     },
-    "pillarJudge": {
-      "eyebrow": "The judge is compromised",
-      "header": "An LLM cannot be your CI gate.",
-      "paragraphOracle": "The research is blunt. On identical tasks, deterministic checks reach <strong>precision 1.00</strong>; LLM judges manage <strong>0.50–0.67</strong> — a coin flip. Change the sampling temperature, and the verdict changes with it. That’s not a gate. That’s a slot machine.",
-      "paragraphSilent": "Worse: the misses are silent. LLM judges under-count the most dangerous bugs — failures dressed up as success — by <strong>44 to 1</strong>.",
-      "punchlineLabel": "The Unslop answer",
-      "punchline": "Unslop decides pass or fail deterministically. The AI explains findings. It never votes on them."
+    "pillarDeterministic": {
+      "eyebrow": "Deterministic first",
+      "header": "55 rules are checked by code, not by a model.",
+      "paragraphDetectors": "The pre-scan runs before any model call. It uses pattern matchers, syntax-tree queries, config checks, lint rules and package-registry lookups, and it has a detector for <strong>55 rule IDs</strong>.",
+      "paragraphNoRejudge": "A model never re-judges a deterministic finding. If the model reports the same rule at the same place, the deterministic finding wins. In the result it is marked <strong>deterministic</strong>."
     },
-    "pillarErosion": {
-      "eyebrow": "It compounds",
-      "header": "“Just regenerate it” makes code worse.",
-      "paragraphRefinement": "Measured across refinement rounds, vulnerability density climbs <strong>2.1 → 4.7 → 6.2</strong> per sample. Every round. Even with security-focused prompts.",
-      "paragraphSlopsquatting": "And AI doesn’t just write bugs — it invents dependencies. <strong>205,474</strong> hallucinated package names, 43% recurring. A ready-made supply-chain attack surface.",
-      "punchlineLabel": "The Unslop answer",
-      "punchline": "Unslop re-checks every revision, not just the final diff. If quality drops, the build fails."
+    "pillarModel": {
+      "eyebrow": "Model review, re-checked blind",
+      "header": "A second model re-checks each finding without the first one’s reasoning.",
+      "paragraphDraft": "The rule catalogue has <strong>119 entries</strong>. Rules without a detector need judgement, so a model reviews the diff against the rules that apply to your stack. Some rules describe process and cannot be checked on a diff at all. What the model reports is a claim, not yet a finding.",
+      "paragraphBlind": "A second model gets only the rule, the location, the quoted code and the diff. It does not see the first model’s explanation, severity or fix. It answers <strong>confirmed</strong>, <strong>refuted</strong> or <strong>uncertain</strong>. Refuted claims are removed. Uncertain ones, and critical ones that are refuted or weakly confirmed, get a third pass. What stays uncertain becomes a warning and says so.",
+      "paragraphHonest": "Two things to know. All models are Gemini models from one vendor: the independence comes from what the second model is not shown, not from a different model family. And not every finding gets the blind re-check: large diffs can be reviewed in a single pass without it, and the review then says so."
     },
-    "pillarArchitecture": {
-      "eyebrow": "The engine",
-      "header": "Deterministic where it matters. AI where it helps.",
-      "paragraphDeterministic": "Our proprietary engine runs mechanical checks by machine — <strong>perfect precision</strong> on tasks where LLM judges top out at 0.67. Behind it: <strong>119 rules</strong>, distilled from published research on how AI code actually fails.",
-      "paragraphGatedRag": "It adapts to your codebase and applies context only where it measurably helps — lifting fix success from <strong>34.4% to 87.1%</strong>. We publish the results, not the recipe."
+    "pillarDegradation": {
+      "eyebrow": "When a stage is skipped",
+      "header": "A skipped stage is reported, not hidden.",
+      "paragraphBudget": "Every review has a time budget of <strong>300 seconds</strong>. When the re-check or the third pass cannot run because of time, a model error or an exhausted budget, the findings are not passed off as verified. A finding that was waiting for the third pass is downgraded to a warning with a note. If the re-check did not run, the confidence score reads n/a instead of a number.",
+      "paragraphNotice": "The pull request, the check run and the CLI then carry the same line, for example: “Reduced confidence: time budget exhausted — skipped: blind verification (some or all findings).” If the model review fails on some files, those files are listed by name.",
+      "punchlineLabel": "From the CLI",
+      "punchline": "“Nothing was reviewed — this is NOT a clean verdict.”"
     },
     "verdictTable": {
-      "eyebrow": "The comparison",
-      "heading": "LLM judge vs. deterministic gate",
-      "columnCheck": "Check",
-      "columnLlmJudge": "LLM judge",
-      "columnGate": "Unslop",
+      "eyebrow": "Who decides",
+      "heading": "Which part of the verdict comes from where",
+      "columnCheck": "Question",
+      "columnPrescan": "Deterministic pre-scan",
+      "columnModel": "Model review",
       "rows": {
-        "apiHallucination": {
-          "check": "Hallucinated APIs and imports",
-          "llmJudge": "Precision 0.50–0.67",
-          "gate": "Precision 1.00"
+        "rules": {
+          "check": "Rules",
+          "prescan": "55 rule IDs with a detector",
+          "model": "Rules that need judgement, from a catalogue of 119"
         },
-        "swallowedErrors": {
-          "check": "Silent failures",
-          "llmJudge": "Under-counted 44 to 1",
-          "gate": "Caught deterministically"
+        "production": {
+          "check": "How a finding is produced",
+          "prescan": "Code: patterns, syntax tree, config checks, lint rules, registry lookups",
+          "model": "One model drafts it, a second model re-checks it blind"
         },
-        "verdictStability": {
-          "check": "Verdict stability",
-          "llmJudge": "Shifts with sampling temperature",
-          "gate": "Same input, same verdict"
+        "files": {
+          "check": "Files",
+          "prescan": "TypeScript, JavaScript, Python, Java, Go, Rust, C and C++, plus config files such as YAML, JSON, Terraform and TOML",
+          "model": "TypeScript and JavaScript only"
         },
-        "fixGuidance": {
-          "check": "Fix guidance",
-          "llmJudge": "“Improve this code” — flaws rise 2.1 → 6.2",
-          "gate": "Names the violated rule — fix rate 34.4% → 87.1%"
+        "gate": {
+          "check": "Can it fail the check?",
+          "prescan": "Yes. A CRITICAL finding fails the check.",
+          "model": "Yes. A CRITICAL finding fails the check, so a verdict can rest on a model finding."
+        },
+        "label": {
+          "check": "Marked in the result as",
+          "prescan": "deterministic",
+          "model": "confirmed, uncertain or unverified"
         }
       }
     },
-    "objections": {
-      "eyebrow": "Objection handling",
-      "heading": "Four objections, four measurements",
+    "problems": {
+      "eyebrow": "The problem",
+      "heading": "What gets through review",
       "items": {
-        "testsPass": {
-          "claim": "“But our tests pass.”",
-          "rebuttal": "Up to <strong>77%</strong> of AI-written test methods assert nothing. High coverage, poor detection. Green CI is not a verdict."
+        "swallowedErrors": {
+          "claim": "“It ran without errors.”",
+          "rebuttal": "Because the error was caught and dropped. A catch block that logs and returns null looks tidy in a diff and hides the failure in production. The confirmed finding above is exactly this."
         },
-        "securePrompting": {
-          "claim": "“We prompt it to be secure.”",
-          "rebuttal": "Security prompting changed nothing in Java — and C showed <strong>+41–42%</strong> more flaws. A prompt is not a control."
+        "inventedPackages": {
+          "claim": "“The import looked plausible.”",
+          "rebuttal": "The package name was made up. Unslop looks up the dependencies declared in package.json, requirements.txt, pyproject.toml and Cargo.toml on their registry (rule SEC-035)."
         },
-        "demoWorked": {
-          "claim": "“The demo code worked.”",
-          "rebuttal": "<strong>100%</strong> of generated OAuth samples hard-coded the client secret. AI code is a happy-path generator."
+        "greenTests": {
+          "claim": "“The tests are green.”",
+          "rebuttal": "A test without an assertion is always green. Assertion-free tests are one of the deterministic rules (TEST-001)."
         },
-        "agentGuardrails": {
-          "claim": "“Our agent has guardrails.”",
-          "rebuttal": "Up to <strong>98.6%</strong> of real-world agent denylists were bypassable. Agents need harder gates, not softer ones."
+        "unreadDiff": {
+          "claim": "“I didn’t read all forty files.”",
+          "rebuttal": "The agent changed more than anyone read. Unslop reviews every push to the pull request again and comments on the line in question."
         }
       }
     },
     "architectureSpec": {
       "eyebrow": "Platform",
-      "heading": "One engine. Every surface.",
-      "intro": "From pull request to terminal to editor.",
+      "heading": "One review, four surfaces",
+      "intro": "Pull request, terminal, editor, coding agent.",
       "rows": {
         "rules": {
-          "term": "Rule engine",
-          "definition": "119 research-backed rules. Deterministic verdicts. The AI explains — it never decides."
+          "term": "Rule catalogue",
+          "definition": "119 rules, each with an ID. 55 have a deterministic detector. The model review is given the rules that apply to your stack; some rules describe process and cannot be checked on a diff."
         },
         "enforcement": {
           "term": "PR gate",
-          "definition": "Native GitHub App. Findings land as check runs on every pull request."
+          "definition": "GitHub App. Every review is a check run named “Anti-Slop Gatekeeper” plus comments on the lines. A CRITICAL finding fails the check; warnings conclude as neutral."
         },
         "retrieval": {
-          "term": "Codebase awareness",
-          "definition": "The engine adapts to your repo’s own conventions — automatically."
+          "term": "Repository context",
+          "definition": "For connected repositories, signatures and type definitions from your code are retrieved as context for the model. They inform the review; they never excuse a rule violation."
         },
         "rescans": {
-          "term": "Revision tracking",
-          "definition": "Every revision is re-checked. Slipping quality fails the build."
+          "term": "Every push",
+          "definition": "Each push to a pull request is reviewed on its own. There is no comparison with the previous revision."
         },
         "integration": {
-          "term": "CLI & editor",
-          "definition": "Scan local changes with the unslop CLI. Review and apply fixes in VS Code."
+          "term": "CLI, editor, MCP",
+          "definition": "“unslop scan” reviews your local changes against the merge-base and can apply suggested fixes. The VS Code extension shows findings as diagnostics. An MCP server offers the scan to coding agents. All three are built and not published yet."
         },
         "webhooks": {
           "term": "Webhook security",
-          "definition": "Every GitHub webhook is HMAC-verified."
+          "definition": "Every GitHub webhook is verified by its HMAC-SHA256 signature."
         },
         "tokens": {
           "term": "Encryption",
-          "definition": "Tokens are encrypted at rest with AES-256-GCM."
+          "definition": "GitHub OAuth tokens are encrypted at rest with AES-256-GCM. API keys are stored as hashes."
+        },
+        "planned": {
+          "term": "Planned (concept)",
+          "definition": "Not built yet: failing the check when a revision raises findings over the previous one, and a second model vendor for the re-check."
         },
         "limits": {
           "term": "Honest limits",
-          "definition": "Nothing blocks 100% of AI vulnerabilities. We document our gaps — vendors who don’t are selling slop."
+          "definition": "Nothing catches every flaw in AI-written code, and neither do we. The model review reads TypeScript and JavaScript only, and its results vary between runs."
         }
       }
     },
@@ -474,30 +477,34 @@
       "items": {
         "sourceCode": {
           "question": "Do you store or train on our source code?",
-          "answer": "We don't train on it, and neither does Google: inference runs on Google Vertex AI under terms that exclude training on customer prompts, on the EU endpoint with processing guaranteed inside EU member states. We do store data: repository indexing keeps only the API surface — exported signatures, interfaces, type definitions — never implementation bodies; reviews operate on the diff of the change under review, and the findings (with the quoted lines) plus, for CLI and MCP scans, the submitted diff are kept as your scan history. GitHub tokens are encrypted at rest with AES-256-GCM. Full details in the privacy policy."
+          "answer": "We don’t train on it. Model inference runs on Google Vertex AI on EU endpoints. For a pull request we read the diff and the changed files from GitHub for the review, and we store the findings with the quoted lines, not the diff. A scan from the CLI or the MCP server uploads a diff, and that diff is stored with the scan; before the upload, the client refuses any diff in which it detects a secret. The repository index is built from signatures, interfaces and type definitions rather than implementation logic. GitHub OAuth tokens are encrypted at rest with AES-256-GCM."
         },
         "ciSpeed": {
           "question": "Will this slow down our CI/CD or block our merges?",
-          "answer": "No. The webhook is acknowledged instantly and the review runs asynchronously as a native GitHub check run — parallel to your CI, never inside your build. The worst case (full three-model escalation) is hard-capped at 300 seconds; most reviews finish in a single pass. Only CRITICAL findings fail the check; advisory findings conclude as neutral and cannot block a merge. Whether the check is required at all remains your branch-protection decision."
+          "answer": "It runs next to your CI, not inside it. The webhook returns as soon as the review is registered; the review then runs as a GitHub check run with a hard limit of 300 seconds. Only CRITICAL findings fail the check; warnings conclude as neutral and do not block a merge. Whether the check is required is your branch-protection setting."
         },
         "adoption": {
           "question": "Does my team need to learn another dashboard?",
-          "answer": "No. Findings land where your team already works: as check runs and review comments on the pull request, in the terminal via the unslop CLI — it diffs your tracked changes against the merge-base, zero configuration — and in VS Code, where fixes are reviewed and applied without leaving the editor. The dashboard handles configuration and billing, not your daily loop."
+          "answer": "No. Findings appear as a check run and as review comments on the pull request. The CLI diffs your tracked changes against the merge-base, and the VS Code extension shows findings and applies suggested fixes in the editor; both are built and not published yet. The dashboard is for repositories, scan history, API keys and billing."
         },
         "determinism": {
-          "question": "Is this just another noisy AI reviewer?",
-          "answer": "No. Verdicts come from 119 deterministic rules — the LLM explains findings, it never decides them. Every model call runs at temperature 0, so the same diff always produces the same verdict, and every draft finding must survive a blind verification pass before it reaches your PR."
+          "question": "Is this just another AI reviewer?",
+          "answer": "Partly, and we say which part. 55 rules are checked by deterministic detectors, and those findings never pass through a model. The rest is a model review, and a finding from it can fail the check. That is why a second model re-checks the findings without seeing the first one’s reasoning, and why the review states when that re-check did not happen. Model calls run at temperature 0; results still vary somewhat between runs."
+        },
+        "languages": {
+          "question": "Which languages are covered?",
+          "answer": "The model review reads TypeScript and JavaScript files. The deterministic pre-scan also covers Python, Java, Go, Rust, C and C++ and common config files. Today a pull request is only reviewed if it contains at least one TypeScript or JavaScript file; otherwise the check concludes as neutral with “Nothing to review”."
         },
         "outage": {
-          "question": "What happens when Unslop itself is down?",
-          "answer": "Your PRs don’t hang. Every failure path closes the check run explicitly: a crashed review concludes as a failure with the reason in the check output, and a skipped review (quota, deactivated repository) posts a completed check that says why — never an eternal “Expected — waiting for status”. If you mark the check as required, standard GitHub branch-protection overrides still apply."
+          "question": "What happens when a review fails?",
+          "answer": "The check is closed, not left hanging. A failed review concludes as a failure with the reason in the check, for example “Review timed out”. A review that is not started (no subscription, quota used up, repository deactivated) posts a completed check with the conclusion “action required” that says why. If you made the check required, GitHub’s branch-protection overrides still apply."
         }
       }
     },
     "closingCta": {
-      "heading": "The only AI code gate that doesn’t ask an AI whether the AI was wrong.",
-      "sub": "Unslop your next pull request. Evidence, not vibes.",
-      "button": "Install the GitHub App",
+      "heading": "Show the finding. Explain the verdict. Say what was skipped.",
+      "sub": "Unslop is in private beta. Sign-up is closed for now.",
+      "button": "Back to the findings",
       "secondary": "Log in"
     },
     "waitlist": {
@@ -518,28 +525,8 @@
       }
     },
     "footer": {
-      "sourcesEyebrow": "Sources",
-      "sourcesHeading": "Every number has a receipt",
-      "sourcesIntro": "Independent, published findings on LLM-generated code and LLM judges — not benchmarks of Unslop or any competitor.",
-      "sources": {
-        "aira": "AIRA matched-control study",
-        "apiOracle": "API-hallucination oracle study",
-        "erosion": "Iterative-refinement security erosion",
-        "coverage": "Real Detection Rate / coverage illusion",
-        "testSmells": "Test-smell corpus",
-        "mutantDetection": "LLM test-suite mutant detection",
-        "slopsquatting": "Slopsquatting",
-        "selfFixing": "Multi-round self-fixing",
-        "smartContracts": "Smart-contract audit failure",
-        "cryptoMisuse": "Crypto/API misuse",
-        "webAppScoring": "Web-app security scoring",
-        "securePrompting": "Security-prompting measurement",
-        "copilotSmells": "Copilot smell study",
-        "ragDegradation": "RAG degradation",
-        "agentHarness": "Agent-harness security",
-        "agentToctou": "Agent TOCTOU"
-      },
-      "tagline": "Deterministic AI code review.",
+      "claimsNote": "No third-party study numbers on this page. The findings shown are product output from our own test repository. Our one measurement is given with method, date, models and limits.",
+      "tagline": "Review gate for AI-generated code.",
       "languageLabel": "Language",
       "languageEnglish": "English",
       "languageGerman": "Deutsch",
