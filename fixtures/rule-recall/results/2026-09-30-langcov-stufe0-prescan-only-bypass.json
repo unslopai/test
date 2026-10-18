@@ -1,0 +1,2153 @@
+{
+  "capturedAt": "2026-09-30T09:57:09.411Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "model-potential",
+  "ecosystems": "manifest",
+  "results": [
+    {
+      "fixture": "r01-c-memory.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 8,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 122,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/net/session.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/telemetry/channel-store.c",
+          "ruleContains": "SEC-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/codec/image-plane.c",
+          "ruleContains": "SEC-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/crypto/keystore.c",
+          "ruleContains": "SEC-023",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "tools/config-prompt.c",
+          "ruleContains": "SEC-027",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/queue/job-queue.c",
+          "ruleContains": "SEC-028",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/log/audit-log.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "firmware/board/debug-uart.c",
+          "ruleContains": "HAL-005|HAL-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r02-c-concurrency.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 15,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/worker/shutdown-flag.c",
+          "ruleContains": "CONC-003|CONC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/sensors/pulse-counter.c",
+          "ruleContains": "CONC-004|CONC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/comms/frame-rx.c",
+          "ruleContains": "CONC-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/net/session-policy.c",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 519,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r04-python-structure.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 99,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/analytics/regional_orders.py",
+          "ruleContains": "ARCH-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/image_pipeline.py",
+          "ruleContains": "CONC-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/orders/search_endpoint.py",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/accounts/reset_tokens.py",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/thumbnail_endpoint.py",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "app/security/payload_cipher.py",
+          "ruleContains": "HAL-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r05-ts-security.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 7,
+      "prescanDurationMs": 1814,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r06-maintainability.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 117,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/cache-warmer.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/invoicing/total-calculator.ts",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/alerts/channel-formatters.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/billing/seat-proration.ts",
+          "ruleContains": "MAINT-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/usage-summary.ts",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/shared/word-distance.ts",
+          "ruleContains": "MAINT-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/package.json",
+          "ruleContains": "MAINT-009",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/scanner/finding-router.ts",
+          "ruleContains": "ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/onboarding/account-lifecycle.ts",
+          "ruleContains": "ARCH-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/scheduling/scan-scheduler.ts",
+          "ruleContains": "ARCH-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r07-react-conditions.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 11,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 2233,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/drafts/DraftSaveButton.tsx",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "lib/api/webhook-parser.ts",
+          "ruleContains": "Condition 2",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/reports/ReportList.tsx",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "lib/format/order-sorting.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/billing/InvoiceHeader.tsx",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "app/layout.tsx",
+          "ruleContains": "Condition 6",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/profile/FullNameField.tsx",
+          "ruleContains": "Condition 7",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/profile/ProfileCard.tsx",
+          "ruleContains": "Condition 8",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/newsletter/SignupForm.tsx",
+          "ruleContains": "Condition 9",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/session/IdleTracker.tsx",
+          "ruleContains": "Condition 10",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/orders/OrderSummary.tsx",
+          "ruleContains": "Condition 11|ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r08-react-security.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 68,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "components/cms/ArticleBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "app/api/auth/login/route.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "middleware.ts",
+          "ruleContains": "SEC-019",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r09-java-spring.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 7,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/shipping/CarrierRateAdjuster.java",
+          "ruleContains": "HAL-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/billing/ArrearsSummarizer.java",
+          "ruleContains": "HAL-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/transfers/WireTransferService.java",
+          "ruleContains": "HAL-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/profiles/ProfileImportController.java",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/auth/ResetTokenFactory.java",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/vault/CardVaultCipher.java",
+          "ruleContains": "SEC-015",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/gateway/ApiKeyAuthenticator.java",
+          "ruleContains": "SEC-030",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r10-go-hal-conc.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 31,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/quota/usage_ledger.go",
+          "ruleContains": "ARCH-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/invoices/invoice_totals.go",
+          "ruleContains": "HAL-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/handles/display_handle.go",
+          "ruleContains": "HAL-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/failover/failover_router.go",
+          "ruleContains": "CONC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/payouts/submit_payout.go",
+          "ruleContains": "CONC-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/presence/presence_tracker.go",
+          "ruleContains": "CONC-008|CONC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r11-kubernetes.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 11,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 14,
+      "prescanDurationMs": 22,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/log-collector.yaml",
+          "ruleContains": "INFRA-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/report-worker.yaml",
+          "ruleContains": "INFRA-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/metrics-agent.yaml",
+          "ruleContains": "INFRA-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/backup-runner.yaml",
+          "ruleContains": "INFRA-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/ci-build-agent.yaml",
+          "ruleContains": "INFRA-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/invoice-sync.yaml",
+          "ruleContains": "INFRA-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/email-dispatcher.yaml",
+          "ruleContains": "INFRA-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/thumbnail-resizer.yaml",
+          "ruleContains": "INFRA-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/search-indexer.yaml",
+          "ruleContains": "INFRA-009",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/session-cache.yaml",
+          "ruleContains": "INFRA-010",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/checkout-gateway.yaml",
+          "ruleContains": "INFRA-011",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r12-terraform-aws.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 6,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/network/subnets.tf",
+          "ruleContains": "INFRA-012",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/exporter-role.tf",
+          "ruleContains": "SEC-032",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/order-functions.tf",
+          "ruleContains": "SEC-033",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/pdf-render.tf",
+          "ruleContains": "SEC-034",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r13-powershell.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 1,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/install/bootstrap-agent.ps1",
+          "ruleContains": "SEC-048",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/deploy/prepare-host.ps1",
+          "ruleContains": "SEC-049",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/diagnostics/collect-dump.ps1",
+          "ruleContains": "SEC-050",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "not-scanned"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r15-clean-c.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 6,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r17-test-quality.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 4,
+      "prescanDurationMs": 94,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/billing/invoice-summary.test.ts",
+          "ruleContains": "TEST-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/shipping/quote-builder.test.ts",
+          "ruleContains": "TEST-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/payments/iban-parser.test.ts",
+          "ruleContains": "TEST-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/pricing/tiered-discount.test.ts",
+          "ruleContains": "TEST-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/payments/payment-service.test.ts",
+          "ruleContains": "TEST-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/orders/order-reference.test.ts",
+          "ruleContains": "TEST-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/auth/article-guard.test.ts",
+          "ruleContains": "TEST-011",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r18-clean-ts.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 100,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r19-misc-gaps.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r19-misc-gaps.diff",
+          "path": "services/inventory/reservation-flow.ts",
+          "ruleContains": "CONC-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r20-large-pro-direct.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 18,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 11,
+      "prescanDurationMs": 185,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/analytics/model_loader.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/scripts/rule_engine.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/parser/token_buffer.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/io/path_join.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r21-clean-go.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 2,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 1,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r22-instruction-override.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 84,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/notes/app-shell.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/prompts/support-macro.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/components/HelpBanner.tsx",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r23-clean-reviewer-mentions.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 3,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r24-xl-flash-cascade.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": false,
+      "fileCount": 79,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 21,
+      "prescanDurationMs": 412,
+      "integrityScore": null,
+      "planted": [
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/cache-warmer.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/invoicing/total-calculator.ts",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/alerts/channel-formatters.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/billing/seat-proration.ts",
+          "ruleContains": "MAINT-006",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/reporting/usage-summary.ts",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/shared/word-distance.ts",
+          "ruleContains": "MAINT-008",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scanner/finding-router.ts",
+          "ruleContains": "ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/onboarding/account-lifecycle.ts",
+          "ruleContains": "ARCH-002",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/scheduling/scan-scheduler.ts",
+          "ruleContains": "ARCH-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/drafts/DraftSaveButton.tsx",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/api/webhook-parser.ts",
+          "ruleContains": "Condition 2",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/reports/ReportList.tsx",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/lib/format/order-sorting.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/billing/InvoiceHeader.tsx",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/layout.tsx",
+          "ruleContains": "Condition 6",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/FullNameField.tsx",
+          "ruleContains": "Condition 7",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/profile/ProfileCard.tsx",
+          "ruleContains": "Condition 8",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/newsletter/SignupForm.tsx",
+          "ruleContains": "Condition 9",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/session/IdleTracker.tsx",
+          "ruleContains": "Condition 10",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/orders/OrderSummary.tsx",
+          "ruleContains": "Condition 11|ARCH-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/components/cms/ArticleBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/app/api/auth/login/route.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/middleware.ts",
+          "ruleContains": "SEC-019",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/services/inventory/reservation-flow.ts",
+          "ruleContains": "CONC-007",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r24-xl-flash-cascade.diff",
+          "path": "xl/bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "",
+      "route": "prescan-only",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": null,
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Sprachabdeckung: wie unslop Nicht-JS/TS-Code prüft
 
-**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. Kein Produktionscode in diesem PR.
+**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
 
 Code-Stand aller Belege und Messungen: `main` bei `17ee7ec` (2026-09-30). Rohdaten: `fixtures/rule-recall/results/2026-09-30-langcov-*.json`. Die Benchmark-Jobs liegen mit `--keep` in `review_jobs` und `review_job_llm_calls`. Modelle laut `src/lib/pipeline/models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (in keiner Messung gerufen).
 
@@ -73,7 +73,8 @@ Sprache aus der Endung (`packages/prescan/src/language.ts:26-59`). Sieben Regeln
 | Go | 12 | keine Security-AST-Regeln, kein `go.mod`-Check |
 | Terraform | 10 | SEC-032 bis 034 nur mit Lambda/Serverless-Bezug |
 | PowerShell | 9 | |
-| Dockerfile, Markdown, Shell, SQL, Kotlin, C#, Ruby, PHP | 7 | nur die universellen Regeln |
+| Dockerfile, Shell, SQL, Kotlin, C#, Ruby, PHP | 7 | nur die universellen Regeln |
+| Markdown, Übersetzungskataloge | 2 | seit Stufe 0 nur SEC-005 in Provider-Format und SEC-036 (§4.4) |
 
 Quelle: `packages/prescan/src/rules/registry.ts`, `engines/regex-engine.ts:97-138`, `engines/config/index.ts:39-63`, `engines/tree-sitter-engine.ts:24-34`. Im Patch-only-Modus bleiben 13 Regex-Regeln plus SEC-035/036 (`packages/prescan/src/index.ts:124-145`).
 
@@ -244,6 +245,24 @@ Rohdaten: `results/2026-09-30-langcov-corpus-*.json`. Latenz: 83 ms bis 2,9 s je
 - Die Kubernetes-Findings sind nach Regeltext korrekt. Die Menge ist das Problem: 128 von 242 Manifesten mit Finding, im Mittel fünf je betroffener Datei.
 - Go und Terraform sind deterministisch ruhig, finden aber auch wenig (12 und 10 Regel-IDs).
 
+**Stand nach Stufe 0 (2026-09-30).** Derselbe Lauf mit `scripts/prescan-corpus.ts`, Rohdaten `results/2026-09-30-langcov-stufe0-corpus-*.json`:
+
+| Korpus | Findings vorher → nachher | CRITICAL vorher → nachher | SEC-035 CRITICAL | CRITICAL auf `.md` |
+|---|---|---|---|---|
+| `pallets/flask` | 335 → 293 | 72 → 22 | 50 → 0 | 0 |
+| `spf13/cobra` | 21 → 21 | 0 → 0 | 0 | 0 |
+| `kubernetes/examples` | 688 → 683 | 47 → 46 | 1 → 0 | 0 |
+| `terraform-aws-modules/terraform-aws-vpc` | 3 → 0 | 0 → 0 | 0 | 0 |
+| dieses Repo, ohne JS/TS | 27 → 3 | 23 → 1 | 17 → 0 | 3 → 0 |
+
+Die Entscheidungen dahinter:
+
+- **Python-Importe.** Standardbibliothek (CPython 3.13, dazu entfernte Module und Python-2-Namen), Namen mit führendem Unterstrich, Fließtext und Zeilen in dreifach gequoteten Strings sind keine Kandidaten. Ein 404 auf einen verbleibenden Import-Namen ist **WARNING**, nicht CRITICAL. Grund: Ein Import-Name ist kein Distributionsname (`import yaml` kommt aus `PyYAML`), und ein lokales Modul außerhalb des Diffs ist für den Pre-Scanner unsichtbar. Das Urteil „existiert nicht“ ist für Importe deshalb kein Fakt. Deklarationen in `requirements.txt` und `pyproject.toml` bleiben CRITICAL. Auf Flask bleiben 8 WARNINGs, alle auf lokalen Test-Modulen.
+- **`package.json`.** Eine Zeile ist nur in `dependencies`, `devDependencies`, `peerDependencies` oder `optionalDependencies` ein Kandidat. Zeigt ein Patch den Abschnittskopf nicht (CLI/MCP), entscheidet die Form des Werts: nur eine Versionsangabe macht die Zeile zum Kandidaten. Specs mit `workspace:`, `file:`, `link:`, `npm:` oder Git-Quelle werden nicht über den Namen aufgelöst und sind keine Kandidaten.
+- **Workspace-Pakete.** Der Webhook-Pfad lädt die Manifeste der npm-Workspaces als Begleitdateien, sobald der Diff eine `package.json` ändert (`src/lib/prescan/companion-loader.ts`). Deren `name` ist kein Registry-Kandidat. Im CLI/MCP-Pfad gibt es diese Manifeste nicht (ROADMAP To-Do).
+- **Prosa-Dateien.** Auf Markdown (`.md .mdx .markdown .rst .adoc`) und Übersetzungskatalogen (`messages/`, `locales/`, `i18n/`, `l10n/`, `lang/`, `translations/`, `_locales/` mit `.json .yaml .yml .properties`, dazu `.po .pot .arb .xlf`) läuft von den Regex-Regeln nur SEC-005 in Provider-Format. Gewählt wurde „nicht prüfen“ statt „nur WARNING“: SEC-017, SEC-024, SEC-050 und MAINT-006 beschreiben Code-Verhalten, in Prosa treffen sie Zitate und UI-Sätze, und eine WARNING je zitiertem Muster wäre auf jeder Sicherheits-Doku Rauschen. Ein Schlüssel in Provider-Format (`AKIA…`, `ghp_…`, PEM) ist dagegen auch in einer README ein Leck und bleibt CRITICAL. Die Entropie-Heuristik entfällt dort, sie traf den UI-Satz in `messages/en.json:294`.
+- **Rest.** Ein CRITICAL bleibt im eigenen Repo: SEC-017 auf `docs/research/asta_queries.json:97`, ein Suchbegriff in einer JSON-Datendatei. Die 22 CRITICALs auf Flask stammen aus MAINT-001, SEC-014 und TEST-001 und sind nicht gesichtet.
+
 ### 4.5 Live-Daten aus `review_jobs`
 
 Stand 2026-09-30, 09:00 UTC, 179 Jobs mit `status = done`.
@@ -276,7 +295,8 @@ Befund (b) aus dem Landing-Faktencheck: Job `3f26b2da` speichert `summary: "No A
 - **Ursache:** `result-persister-step.ts:47` schreibt `context.reviewSummary || 'No AI slop found.'`. Die Summary kommt vom Draft, der die Pre-Scan-Findings nicht kennt. Meldet der Draft nichts, bleibt sie leer.
 - **Verbreitung live:** 30 Jobs tragen diese Summary bei mindestens einem Finding (Webhook 20, MCP 10). 11 davon mit CRITICAL (Webhook 1, MCP 10). Beleg: SQL vom 2026-09-30.
 - **Zusammenhang mit A:** Unter Option A gibt es bei Nicht-JS/TS-PRs nie einen Draft. Jeder Pre-Scan-only-Job mit Findings trüge den Widerspruch. Ohne Findings käme der Kommentar „No AI slop found. This code meets the quality standards.“ (`github-reporter-step.ts:252-264`) und ein Check `success` mit „No AI slop found“ (`check-run.ts:190-194`), obwohl kein Modell die Dateien gelesen hat.
-- **Folge für die Spec:** Der Fix von (b) ist Voraussetzung für Stufe 1, nicht Beifang. Gefixt wird er in diesem PR nicht.
+- **Folge für die Spec:** Der Fix von (b) ist Voraussetzung für Stufe 1, nicht Beifang.
+- **Gebaut in Stufe 0:** `resolvePublishedSummary` (`src/lib/pipeline/final-summary.ts`) ist die einzige Quelle der Summary für Persister und Reporter. Ohne Findings bleibt der Modell-Text. Mit deterministischen Findings kommt ein eigener Satz dazu („The deterministic pre-scanner found 1 critical and 0 warning findings.“); hat das Modell nichts gemeldet, ersetzt er den Clean-Text. Die Short-Circuit-Summary und die Template-Summary aus A12a zählen beide Lanes schon und bleiben unverändert. Beleg: `result-persister-step.test.ts` „Replay Job 3f26b2da“. Gespeicherte Alt-Jobs werden nicht umgeschrieben.
 
 ## 6. Empfehlung
 
@@ -359,8 +379,9 @@ Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
 
 - Der Runner baut `reviewableFiles` künftig mit `isReviewableFile` und bildet den Abbruch nach. Das ist der **Produktionspfad**.
 - Der bisherige Modus bleibt als `--bypass-filter` und heißt im Report **Modell-Potenzial**.
-- Jeder Report nennt beide Zahlen getrennt und je Fixture, welche Lane die Datei in Produktion erreicht.
-- Fixtures für C, Kubernetes, Terraform, PowerShell bekommen zusätzlich eine Variante mit polyglotten `detectedEcosystems`. Die Variante mit `null` bleibt als „Repo ohne erkanntes Ökosystem“.
+- Jeder Report nennt seinen Pfad (`pathMode` im JSON) und zählt die Treffer getrennt nach der Lane, die die Datei in Produktion erreicht: Modell und Pre-Scan, nur Pre-Scan, keine Lane. Beide Gesamtzahlen brauchen zwei Läufe, einen je Pfad; ein Lauf rechnet den anderen Pfad nicht hoch.
+- Fixtures für C, Kubernetes, Terraform, PowerShell tragen im Manifest zusätzlich `polyglotEcosystems`. `--ecosystems polyglot` fährt sie mit dem Law-Filter eines polyglotten Repos. Die Variante mit `null` bleibt als „Repo ohne erkanntes Ökosystem“.
+- **Gebaut in Stufe 0** (`scripts/lib/rule-recall-benchmark.ts`, `src/lib/benchmark/production-path.ts`). Gefahren: Prescan-only Modell-Potenzial 68/177, Produktionspfad 43/177, davon 0 von 59 auf Dateien ohne Lane; Produktionspfad mit Modell auf r03 (Abbruch) und r16 (2/2 auf den JS/TS-Dateien, 0/5 auf den Python-Dateien).
 - Der Benchmark-Log bekommt einen Nachtrag zum 2026-09-16-Lauf: 125/126 ist Modell-Potenzial, der Produktionspfad lag rechnerisch bei 59/126.
 
 ### 7.2 Welche Aussage nach welcher Option stimmt

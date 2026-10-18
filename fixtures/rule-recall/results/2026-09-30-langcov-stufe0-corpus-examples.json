@@ -1,0 +1,4805 @@
+{
+  "capturedAt": "2026-09-30T09:52:19.652Z",
+  "corpusLabel": "examples",
+  "fileCount": 400,
+  "filesByExtension": {
+    ".md": 74,
+    ".yaml": 242,
+    ".sh": 34,
+    "Dockerfile": 13,
+    ".py": 3,
+    ".go": 7,
+    ".html": 3,
+    ".json": 14,
+    ".sql": 1,
+    ".yml": 4,
+    ".h": 1,
+    ".java": 3,
+    ".css": 1
+  },
+  "totalDurationMs": 1409,
+  "maxScanDurationMs": 420,
+  "findings": [
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "AI/model-serving-tensorflow/deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: tensorflow-serving)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "AI/model-serving-tensorflow/deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: tensorflow-serving)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "AI/model-serving-tensorflow/deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: tensorflow-serving)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "AI/model-serving-tensorflow/deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: tensorflow-serving)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "AI/model-serving-tensorflow/deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: tensorflow-serving)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 149,
+      "exactQuote": "(container: prometheus-adapter)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 149,
+      "exactQuote": "(container: prometheus-adapter)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 149,
+      "exactQuote": "(container: prometheus-adapter)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 149,
+      "exactQuote": "(container: prometheus-adapter)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 149,
+      "exactQuote": "(container: prometheus-adapter)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/hpa/prometheus-adapter.yaml",
+      "line": 152,
+      "exactQuote": "--prometheus-url=http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/vllm-deployment.yaml",
+      "line": 20,
+      "exactQuote": "(container: inference-server)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/vllm-deployment.yaml",
+      "line": 20,
+      "exactQuote": "(container: inference-server)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/vllm-deployment.yaml",
+      "line": 20,
+      "exactQuote": "(container: inference-server)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "AI/vllm-deployment/vllm-deployment.yaml",
+      "line": 20,
+      "exactQuote": "(container: inference-server)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-backend-rc.yaml",
+      "line": 17,
+      "exactQuote": "(container: dns-backend)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-backend-rc.yaml",
+      "line": 17,
+      "exactQuote": "(container: dns-backend)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-backend-rc.yaml",
+      "line": 17,
+      "exactQuote": "(container: dns-backend)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-backend-rc.yaml",
+      "line": 17,
+      "exactQuote": "(container: dns-backend)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-backend-rc.yaml",
+      "line": 17,
+      "exactQuote": "(container: dns-backend)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: dns-frontend)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: dns-frontend)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: dns-frontend)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: dns-frontend)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: dns-frontend)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/cluster-dns/dns-frontend-pod.yaml",
+      "line": 14,
+      "exactQuote": "http://dns-backend.development.svc.cluster.local:8000"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 127,
+      "exactQuote": "(container: cockroachdb)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 127,
+      "exactQuote": "(container: cockroachdb)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 127,
+      "exactQuote": "(container: cockroachdb)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 127,
+      "exactQuote": "(container: cockroachdb)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 127,
+      "exactQuote": "(container: cockroachdb)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 100,
+      "exactQuote": "(container: bootstrap)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 100,
+      "exactQuote": "(container: bootstrap)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 100,
+      "exactQuote": "(container: bootstrap)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 100,
+      "exactQuote": "(container: bootstrap)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cockroachdb/cockroachdb-statefulset.yaml",
+      "line": 100,
+      "exactQuote": "(container: bootstrap)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/be.yaml",
+      "line": 7,
+      "exactQuote": "(container: be)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/be.yaml",
+      "line": 7,
+      "exactQuote": "(container: be)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/be.yaml",
+      "line": 7,
+      "exactQuote": "(container: be)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/be.yaml",
+      "line": 7,
+      "exactQuote": "(container: be)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/be.yaml",
+      "line": 7,
+      "exactQuote": "(container: be)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-1.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-1)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-1.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-1)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-1.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-1)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-1.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-1)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-2)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-2)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-2)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-2)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-3.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-3)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-3.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-3)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-3.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-3)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-3.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-3)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-4.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-4)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-4.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-4)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-4.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-4)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/exclusive-4.yaml",
+      "line": 7,
+      "exactQuote": "(container: exclusive-4)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/shared.yaml",
+      "line": 7,
+      "exactQuote": "(container: shared)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/shared.yaml",
+      "line": 7,
+      "exactQuote": "(container: shared)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/shared.yaml",
+      "line": 7,
+      "exactQuote": "(container: shared)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/shared.yaml",
+      "line": 7,
+      "exactQuote": "(container: shared)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/cpu-manager/shared.yaml",
+      "line": 7,
+      "exactQuote": "(container: shared)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 25,
+      "exactQuote": "(container: es)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 25,
+      "exactQuote": "(container: es)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 23,
+      "exactQuote": "(container: es)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 25,
+      "exactQuote": "(container: es)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 25,
+      "exactQuote": "(container: es)"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 21,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 21,
+      "exactQuote": "(container: init-sysctl)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 21,
+      "exactQuote": "(container: init-sysctl)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: init-sysctl)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 21,
+      "exactQuote": "(container: init-sysctl)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/es-rc.yaml",
+      "line": 21,
+      "exactQuote": "(container: init-sysctl)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-client-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-client)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-client-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-client)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-client-rc.yaml",
+      "line": 18,
+      "exactQuote": "(container: es-client)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-client-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-client)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-client-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-client)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-data-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-data)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-data-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-data)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-data-rc.yaml",
+      "line": 18,
+      "exactQuote": "(container: es-data)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-data-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-data)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-data-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-data)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-master-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-master-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-master-rc.yaml",
+      "line": 18,
+      "exactQuote": "(container: es-master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-master-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/elasticsearch/production_cluster/es-master-rc.yaml",
+      "line": 20,
+      "exactQuote": "(container: es-master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/explorer/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: explorer)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/explorer/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: explorer)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/explorer/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: explorer)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/explorer/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: explorer)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/explorer/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: explorer)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/https-nginx/nginx-app.yaml",
+      "line": 38,
+      "exactQuote": "(container: nginxhttps)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/https-nginx/nginx-app.yaml",
+      "line": 38,
+      "exactQuote": "(container: nginxhttps)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/https-nginx/nginx-app.yaml",
+      "line": 38,
+      "exactQuote": "(container: nginxhttps)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/https-nginx/nginx-app.yaml",
+      "line": 38,
+      "exactQuote": "(container: nginxhttps)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/https-nginx/nginx-app.yaml",
+      "line": 38,
+      "exactQuote": "(container: nginxhttps)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 16,
+      "exactQuote": "MYSQL_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 20,
+      "exactQuote": "MYSQL_ROOT_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaee/mysql-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaee/wildfly-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: wildfly-rc-pod)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaee/wildfly-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: wildfly-rc-pod)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaee/wildfly-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: wildfly-rc-pod)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaee/wildfly-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: wildfly-rc-pod)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaee/wildfly-rc.yaml",
+      "line": 16,
+      "exactQuote": "(container: wildfly-rc-pod)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 14,
+      "exactQuote": "(container: tomcat)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/javaweb-tomcat-sidecar/javaweb.yaml",
+      "line": 7,
+      "exactQuote": "(container: war)"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 20,
+      "exactQuote": "hostNetwork: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 18,
+      "exactQuote": "hostPID: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 19,
+      "exactQuote": "hostIPC: true"
+    },
+    {
+      "ruleId": "INFRA-005",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 52,
+      "exactQuote": "/var/run/docker.sock"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 26,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 26,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 26,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 22,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 26,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/newrelic-infrastructure/newrelic-infra-daemonset.yaml",
+      "line": 26,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 23,
+      "exactQuote": "hostNetwork: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 21,
+      "exactQuote": "hostPID: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 22,
+      "exactQuote": "hostIPC: true"
+    },
+    {
+      "ruleId": "INFRA-005",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 57,
+      "exactQuote": "/var/run/docker.sock"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 29,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 29,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 29,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 25,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 29,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/newrelic/newrelic-daemonset.yaml",
+      "line": 29,
+      "exactQuote": "(container: newrelic)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/mongo-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: mongo)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/mongo-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: mongo)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/mongo-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: mongo)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/mongo-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: mongo)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/mongo-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: mongo)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller-demo.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller-demo.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller-demo.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller-demo.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller-demo.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/nodesjs-mongodb/web-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 50,
+      "exactQuote": "(container: member)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 36,
+      "exactQuote": "ETCD_INITIAL_CLUSTER_TOKEN"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 39,
+      "exactQuote": "ETCD_DISCOVERY_TOKEN"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 50,
+      "exactQuote": "(container: member)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: member)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 50,
+      "exactQuote": "(container: member)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 50,
+      "exactQuote": "(container: member)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 43,
+      "exactQuote": "http://etcd-discovery:2379"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-controller.yaml",
+      "line": 45,
+      "exactQuote": "http://etcd:2379"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-discovery-controller.yaml",
+      "line": 32,
+      "exactQuote": "(container: discovery)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-discovery-controller.yaml",
+      "line": 32,
+      "exactQuote": "(container: discovery)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-discovery-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: discovery)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-discovery-controller.yaml",
+      "line": 32,
+      "exactQuote": "(container: discovery)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/etcd-discovery-controller.yaml",
+      "line": 32,
+      "exactQuote": "(container: discovery)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/openshift-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: origin)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/openshift-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: origin)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/openshift-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: origin)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/openshift-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: origin)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/openshift-origin/openshift-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: origin)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/cinder/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/cinder/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/cinder/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/cinder/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/cinder/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/example-pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/quobyte/quobyte-storage-class.yaml",
+      "line": 7,
+      "exactQuote": "http://138.68.74.142:7860"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/rbd/pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/rbd/pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/rbd/pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/rbd/pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/persistent-volume-provisioning/rbd/pod.yaml",
+      "line": 15,
+      "exactQuote": "(container: server)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 14,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 14,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 14,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 9,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 14,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/podsecuritypolicy/rbac/pod_priv.yaml",
+      "line": 14,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-hub-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: selenium-hub)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-hub-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: selenium-hub)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-hub-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: selenium-hub)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-hub-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: selenium-hub)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-chrome-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-chrome)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-chrome-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-chrome)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-chrome-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-chrome)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-chrome-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-chrome)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-firefox-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-firefox)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-firefox-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-firefox)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-firefox-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-firefox)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/selenium/selenium-node-firefox-deployment.yaml",
+      "line": 22,
+      "exactQuote": "(container: selenium-node-firefox)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-master-controller.yaml",
+      "line": 18,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-master-controller.yaml",
+      "line": 18,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-master-controller.yaml",
+      "line": 18,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-master-controller.yaml",
+      "line": 18,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-master-controller.yaml",
+      "line": 18,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-worker-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-worker-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-worker-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-worker-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-gluster/spark-worker-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-master-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-master-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-master-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-master-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-master-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-ui-proxy-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-ui-proxy)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-ui-proxy-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-ui-proxy)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-ui-proxy-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-ui-proxy)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-ui-proxy-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-ui-proxy)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-ui-proxy-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-ui-proxy)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-worker-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-worker-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-worker-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-worker-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/spark-worker-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: spark-worker)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/spark/zeppelin-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: zeppelin)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/spark/zeppelin-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: zeppelin)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/spark/zeppelin-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: zeppelin)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/spark/zeppelin-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: zeppelin)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/spark/zeppelin-controller.yaml",
+      "line": 15,
+      "exactQuote": "(container: zeppelin)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/hazelcast/hazelcast-deployment.yaml",
+      "line": 17,
+      "exactQuote": "(container: hazelcast)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/hazelcast/hazelcast-deployment.yaml",
+      "line": 17,
+      "exactQuote": "(container: hazelcast)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/hazelcast/hazelcast-deployment.yaml",
+      "line": 17,
+      "exactQuote": "(container: hazelcast)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/hazelcast/hazelcast-deployment.yaml",
+      "line": 17,
+      "exactQuote": "(container: hazelcast)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/hazelcast/hazelcast-deployment.yaml",
+      "line": 17,
+      "exactQuote": "(container: hazelcast)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 19,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 24,
+      "exactQuote": "MINIO_SECRET_KEY"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 19,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 19,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 19,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 19,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 28,
+      "exactQuote": "http://minio-0.minio.default.svc.cluster.local/data"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 29,
+      "exactQuote": "http://minio-1.minio.default.svc.cluster.local/data"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 30,
+      "exactQuote": "http://minio-2.minio.default.svc.cluster.local/data"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-distributed-statefulset.yaml",
+      "line": 31,
+      "exactQuote": "http://minio-3.minio.default.svc.cluster.local/data"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 25,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 36,
+      "exactQuote": "MINIO_SECRET_KEY"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 25,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 25,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 25,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/minio/minio-standalone-deployment.yaml",
+      "line": 25,
+      "exactQuote": "(container: minio)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 33,
+      "exactQuote": "(container: pxc-node1)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 51,
+      "exactQuote": "WSREP_SST_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 55,
+      "exactQuote": "MYSQL_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 57,
+      "exactQuote": "MYSQL_ROOT_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 33,
+      "exactQuote": "(container: pxc-node1)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 35,
+      "exactQuote": "(container: pxc-node1)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 33,
+      "exactQuote": "(container: pxc-node1)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node1.yaml",
+      "line": 33,
+      "exactQuote": "(container: pxc-node1)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node2)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 52,
+      "exactQuote": "WSREP_SST_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 56,
+      "exactQuote": "MYSQL_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 58,
+      "exactQuote": "MYSQL_ROOT_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node2)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 36,
+      "exactQuote": "(container: pxc-node2)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node2)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node2.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node2)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node3)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 52,
+      "exactQuote": "WSREP_SST_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 56,
+      "exactQuote": "MYSQL_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 58,
+      "exactQuote": "MYSQL_ROOT_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node3)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 36,
+      "exactQuote": "(container: pxc-node3)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node3)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/mysql-galera/pxc-node3.yaml",
+      "line": 34,
+      "exactQuote": "(container: pxc-node3)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-controller.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-controller.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-controller.yaml",
+      "line": 22,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-controller.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-controller.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 11,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 11,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 20,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 11,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 11,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 24,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 24,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 24,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 24,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-master.yaml",
+      "line": 24,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-sentinel-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-sentinel-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-sentinel-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-sentinel-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/redis/redis-sentinel-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: sentinel)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/admin-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/admin-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/admin-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/admin-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/admin-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/rc.yaml",
+      "line": 19,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/rc.yaml",
+      "line": 19,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/rc.yaml",
+      "line": 19,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/rc.yaml",
+      "line": 19,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/rethinkdb/rc.yaml",
+      "line": 19,
+      "exactQuote": "(container: rethinkdb)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/etcd-controller-template.yaml",
+      "line": 18,
+      "exactQuote": "(container: etcd)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/etcd-controller-template.yaml",
+      "line": 18,
+      "exactQuote": "(container: etcd)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/etcd-controller-template.yaml",
+      "line": 18,
+      "exactQuote": "(container: etcd)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/etcd-controller-template.yaml",
+      "line": 18,
+      "exactQuote": "(container: etcd)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/etcd-controller-template.yaml",
+      "line": 31,
+      "exactQuote": "ipaddr=$(hostname -i)\nglobal_etcd=$ETCD_GLOBAL_SERVICE_HOST:$ETCD_GLOBAL_SERVICE_PORT\ncell=\"{{cell}}\" && local_etcd_host_var=\"ETCD_${cell^^}_SERVICE_HOST\" && lo"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/guestbook-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/guestbook-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/guestbook-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/guestbook-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtctld-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtctld)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtctld-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtctld)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtctld-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtctld)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtctld-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtctld)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtctld-controller-template.yaml",
+      "line": 31,
+      "exactQuote": "mkdir -p $VTDATAROOT/tmp && chown -R vitess /vt && su -p -c \"/vt/bin/vtctld -debug -templates $VTTOP/go/cmd/vtctld/templates -web_dir $VTTOP/web/vtctld -log_dir"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtgate-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtgate)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtgate-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtgate)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtgate-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtgate)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtgate-controller-template.yaml",
+      "line": 14,
+      "exactQuote": "(container: vtgate)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vtgate-controller-template.yaml",
+      "line": 28,
+      "exactQuote": "mkdir -p $VTDATAROOT/tmp && chown -R vitess /vt && su -p -c \"/vt/bin/vtgate -topo_implementation etcd -etcd_global_addrs http://$ETCD_GLOBAL_SERVICE_HOST:$ETCD_"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 13,
+      "exactQuote": "(container: vttablet)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 13,
+      "exactQuote": "(container: vttablet)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 13,
+      "exactQuote": "(container: vttablet)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 13,
+      "exactQuote": "(container: vttablet)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 79,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 79,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 79,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 79,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-011",
+      "severity": "WARNING",
+      "path": "_archived/storage/vitess/vttablet-pod-template.yaml",
+      "line": 30,
+      "exactQuote": "set -e\nmysql_socket=\"$VTDATAROOT/{{tablet_subdir}}/mysql.sock\"\nmkdir -p $VTDATAROOT/tmp\nchown -R vitess /vt\nwhile [ ! -e $mysql_socket ]; do echo \"[$(date)] wai"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/storm/storm-worker-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: storm-worke)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/storm/storm-worker-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: storm-worke)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/storm/storm-worker-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: storm-worke)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/storm/storm-worker-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: storm-worke)"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 38,
+      "exactQuote": "hostNetwork: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 39,
+      "exactQuote": "hostPID: true"
+    },
+    {
+      "ruleId": "INFRA-005",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 21,
+      "exactQuote": "/var/run/docker.sock"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 44,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 44,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 44,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 41,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 44,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-daemonset.yaml",
+      "line": 44,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 33,
+      "exactQuote": "hostNetwork: true"
+    },
+    {
+      "ruleId": "INFRA-003",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 34,
+      "exactQuote": "hostPID: true"
+    },
+    {
+      "ruleId": "INFRA-005",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 16,
+      "exactQuote": "/var/run/docker.sock"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 42,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 42,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 42,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 36,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 42,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/sysdig-cloud/sysdig-rc.yaml",
+      "line": 42,
+      "exactQuote": "(container: sysdig-agent)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/aws_ebs/aws-ebs-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/aws_ebs/aws-ebs-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/aws_ebs/aws-ebs-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/aws_ebs/aws-ebs-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/aws_ebs/aws-ebs-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/account-specified-hdd/pod-uses-account-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/account-specified-hdd/pod-uses-account-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/account-specified-hdd/pod-uses-account-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/account-specified-hdd/pod-uses-account-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/account-specified-hdd/pod-uses-account-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/dedicated-hdd/pod-uses-dedicated-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/dedicated-hdd/pod-uses-dedicated-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/dedicated-hdd/pod-uses-dedicated-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/dedicated-hdd/pod-uses-dedicated-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/dedicated-hdd/pod-uses-dedicated-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-hdd/pod-uses-shared-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-hdd/pod-uses-shared-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-hdd/pod-uses-shared-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-hdd/pod-uses-shared-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-hdd/pod-uses-shared-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-ssd/pod-uses-shared-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-ssd/pod-uses-shared-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-ssd/pod-uses-shared-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-ssd/pod-uses-shared-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/blob-based-disk/shared-ssd/pod-uses-shared-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-hdd/pod-uses-managed-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-hdd/pod-uses-managed-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-hdd/pod-uses-managed-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-hdd/pod-uses-managed-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-hdd/pod-uses-managed-hdd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-ssd/pod-uses-managed-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-ssd/pod-uses-managed-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-ssd/pod-uses-managed-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-ssd/pod-uses-managed-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/claim/managed-disk/managed-ssd/pod-uses-managed-ssd.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/static-provisioning/managed-disk/pod-uses-existing-managed-disk.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/static-provisioning/managed-disk/pod-uses-existing-managed-disk.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/static-provisioning/managed-disk/pod-uses-existing-managed-disk.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/static-provisioning/managed-disk/pod-uses-existing-managed-disk.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_disk/static-provisioning/managed-disk/pod-uses-existing-managed-disk.yaml",
+      "line": 9,
+      "exactQuote": "(container: az-c-01)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure-2)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure-2)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure-2)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure-2)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure-2.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure-2)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/azure_file/azure.yaml",
+      "line": 7,
+      "exactQuote": "(container: azure)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cephfs/cephfs.yaml",
+      "line": 7,
+      "exactQuote": "(container: cephfs-rw)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cinder/cinder-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cinder/cinder-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cinder/cinder-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cinder/cinder-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/cinder/cinder-web.yaml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/fibre_channel/fc.yaml",
+      "line": 7,
+      "exactQuote": "(container: fc)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/fibre_channel/fc.yaml",
+      "line": 7,
+      "exactQuote": "(container: fc)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/fibre_channel/fc.yaml",
+      "line": 7,
+      "exactQuote": "(container: fc)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/fibre_channel/fc.yaml",
+      "line": 7,
+      "exactQuote": "(container: fc)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/fibre_channel/fc.yaml",
+      "line": 7,
+      "exactQuote": "(container: fc)"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 17,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 17,
+      "exactQuote": "(container: flex-deploy)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 17,
+      "exactQuote": "(container: flex-deploy)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 14,
+      "exactQuote": "(container: flex-deploy)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 17,
+      "exactQuote": "(container: flex-deploy)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/deploy/ds.yaml",
+      "line": 17,
+      "exactQuote": "(container: flex-deploy)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy-attachable.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy-attachable)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy-attachable.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy-attachable)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy-attachable.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy-attachable)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy-attachable.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy-attachable)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy-attachable.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy-attachable)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-dummy.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-dummy)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-lvm.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-lvm.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-lvm.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-lvm.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-lvm.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-nfs.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-nfs)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-nfs.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-nfs)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-nfs.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-nfs)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-nfs.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-nfs)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx-nfs.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx-nfs)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flexvolume/nginx.yaml",
+      "line": 8,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod-with-rc.yml",
+      "line": 31,
+      "exactQuote": "(container: flocker-ghost)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod-with-rc.yml",
+      "line": 31,
+      "exactQuote": "(container: flocker-ghost)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod-with-rc.yml",
+      "line": 31,
+      "exactQuote": "(container: flocker-ghost)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod-with-rc.yml",
+      "line": 31,
+      "exactQuote": "(container: flocker-ghost)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod-with-rc.yml",
+      "line": 31,
+      "exactQuote": "(container: flocker-ghost)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod.yml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod.yml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod.yml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod.yml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/flocker/flocker-pod.yml",
+      "line": 7,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/glusterfs/glusterfs-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: glusterfs)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/glusterfs/glusterfs-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: glusterfs)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/glusterfs/glusterfs-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: glusterfs)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/glusterfs/glusterfs-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: glusterfs)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/glusterfs/glusterfs-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: glusterfs)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi-chap.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-ro)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi-chap.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-ro)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi-chap.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-ro)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi-chap.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-ro)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi-chap.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-ro)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-rw)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-rw)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-rw)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-rw)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/iscsi/iscsi.yaml",
+      "line": 8,
+      "exactQuote": "(container: iscsipd-rw)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-busybox-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: busybox)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-busybox-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: busybox)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-busybox-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: busybox)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-busybox-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: busybox)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-busybox-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: busybox)"
+    },
+    {
+      "ruleId": "INFRA-001",
+      "severity": "CRITICAL",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 26,
+      "exactQuote": "privileged: true"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 26,
+      "exactQuote": "(container: nfs-server)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 26,
+      "exactQuote": "(container: nfs-server)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: nfs-server)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "CRITICAL",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 26,
+      "exactQuote": "(container: nfs-server)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-server-deployment.yaml",
+      "line": 26,
+      "exactQuote": "(container: nfs-server)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-web-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-web-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-web-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-web-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/nfs/nfs-web-deployment.yaml",
+      "line": 19,
+      "exactQuote": "(container: web)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/portworx/portworx-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/quobyte/quobyte-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: quobyte)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/quobyte/quobyte-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: quobyte)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/quobyte/quobyte-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: quobyte)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/quobyte/quobyte-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: quobyte)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/quobyte/quobyte-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: quobyte)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd-with-secret.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/rbd/rbd.yaml",
+      "line": 7,
+      "exactQuote": "(container: rbd-rw)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod-sc-pvc.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-sio-small-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod-sc-pvc.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-sio-small-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod-sc-pvc.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-sio-small-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod-sc-pvc.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-sio-small-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod-sc-pvc.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-sio-small-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-0)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-0)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-0)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-0)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/scaleio/pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: pod-0)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pod.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pvcpod.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-sc-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-sc-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-sc-pvcpod.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-sc-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/storageos/storageos-sc-pvcpod.yaml",
+      "line": 10,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/deployment.yaml",
+      "line": 16,
+      "exactQuote": "(container: redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/simple-statefulset.yaml",
+      "line": 34,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/simple-statefulset.yaml",
+      "line": 34,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/simple-statefulset.yaml",
+      "line": 34,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/simple-statefulset.yaml",
+      "line": 34,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/simple-statefulset.yaml",
+      "line": 34,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscvsanpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscvsanpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscvsanpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscvsanpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "_archived/volumes/vsphere/vsphere-volume-pvcscvsanpod.yaml",
+      "line": 7,
+      "exactQuote": "(container: test-container)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "databases/cassandra/cassandra-statefulset.yaml",
+      "line": 40,
+      "exactQuote": "(container: cassandra)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "databases/cassandra/cassandra-statefulset.yaml",
+      "line": 40,
+      "exactQuote": "(container: cassandra)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "databases/cassandra/cassandra-statefulset.yaml",
+      "line": 40,
+      "exactQuote": "(container: cassandra)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "databases/cassandra/cassandra-statefulset.yaml",
+      "line": 40,
+      "exactQuote": "(container: cassandra)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 9,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-006",
+      "severity": "CRITICAL",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 20,
+      "exactQuote": "MYSQL_ROOT_PASSWORD"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 9,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 11,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 9,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "databases/mysql-cinder-pd/mysql.yaml",
+      "line": 9,
+      "exactQuote": "(container: mysql)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "nginx-platform-app/deployment.yml",
+      "line": 18,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "nginx-platform-app/deployment.yml",
+      "line": 18,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "nginx-platform-app/deployment.yml",
+      "line": 18,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "nginx-platform-app/deployment.yml",
+      "line": 18,
+      "exactQuote": "(container: nginx)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/guestbook-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/guestbook-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/guestbook-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/guestbook-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/guestbook-controller.yaml",
+      "line": 17,
+      "exactQuote": "(container: guestbook)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-master-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: redis-master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-master-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: redis-master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-master-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: redis-master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-master-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: redis-master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-master-controller.yaml",
+      "line": 21,
+      "exactQuote": "(container: redis-master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-replica-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: redis-replica)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-replica-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: redis-replica)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-replica-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: redis-replica)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-replica-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: redis-replica)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook-go/redis-replica-controller.yaml",
+      "line": 20,
+      "exactQuote": "(container: redis-replica)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/frontend.yaml",
+      "line": 37,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/frontend.yaml",
+      "line": 37,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/frontend.yaml",
+      "line": 37,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/frontend.yaml",
+      "line": 37,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/frontend.yaml",
+      "line": 37,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 37,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 37,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 37,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 37,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 37,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 81,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 81,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 81,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 81,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 81,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 134,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 134,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 134,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 134,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/guestbook-all-in-one.yaml",
+      "line": 134,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/redis-replica.yaml",
+      "line": 36,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/redis-replica.yaml",
+      "line": 36,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/redis-replica.yaml",
+      "line": 36,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/redis-replica.yaml",
+      "line": 36,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/all-in-one/redis-replica.yaml",
+      "line": 36,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/frontend-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/frontend-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/frontend-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/frontend-deployment.yaml",
+      "line": 18,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/frontend-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/frontend-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/frontend-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/frontend-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/frontend-controller.yaml",
+      "line": 14,
+      "exactQuote": "(container: php-redis)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-master-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-master-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-master-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-master-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-master-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: master)"
+    },
+    {
+      "ruleId": "INFRA-002",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-replica-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-007",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-replica-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-008",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-replica-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-009",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-replica-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: replica)"
+    },
+    {
+      "ruleId": "INFRA-010",
+      "severity": "WARNING",
+      "path": "web/guestbook/legacy/redis-replica-controller.yaml",
+      "line": 19,
+      "exactQuote": "(container: replica)"
+    }
+  ]
+}

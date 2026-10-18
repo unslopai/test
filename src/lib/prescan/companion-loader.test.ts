@@ -77,6 +77,37 @@ describe('loadCompanionFiles', () => {
     });
 });
 
+describe('loadCompanionFiles — workspace manifests (SEC-035)', () => {
+    it('adds the manifest of every npm workspace when the diff touches a package.json', async () => {
+        const manifestByPath = new Map([
+            ['package.json', '{ "name": "anti-slop", "workspaces": ["packages/*", "tools/cli"] }'],
+            ['packages/shared/package.json', '{ "name": "@unslop/shared" }'],
+            ['tools/cli/package.json', '{ "name": "@unslopcodes/cli" }'],
+        ]);
+        const port = buildPort({
+            listDirectory: vi.fn(async () => [{ name: 'shared', isFile: false }, { name: 'README.md', isFile: true }]),
+            readFile: vi.fn(async (filePath: string) => manifestByPath.get(filePath) ?? null),
+        });
+
+        const companions = await loadCompanionFiles({ ...PARAMS, scannedPaths: ['packages/cli/package.json'] }, port);
+
+        expect(companions).toEqual([
+            { path: 'packages/shared/package.json', content: '{ "name": "@unslop/shared" }' },
+            { path: 'tools/cli/package.json', content: '{ "name": "@unslopcodes/cli" }' },
+        ]);
+        expect(port.listDirectory).toHaveBeenCalledWith('packages');
+    });
+
+    it('returns no workspace manifests when the root manifest is unreadable (fail-soft)', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const port = buildPort({ readFile: vi.fn(async () => { throw new Error('rate limited'); }) });
+
+        expect(await loadCompanionFiles({ ...PARAMS, scannedPaths: ['package.json'] }, port)).toEqual([]);
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
+    });
+});
+
 describe('loadCompanionFiles — default GitHub port', () => {
     it('treats a truncated directory listing (1000-entry cap) as unknown and sends a timeout signal', async () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

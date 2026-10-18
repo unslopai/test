@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
+import { resolvePublishedSummary } from '@/lib/pipeline/final-summary';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import { formatDraftPartialNotice, formatTimeBudgetNotice } from '@unslop/shared/degradation-notice';
@@ -75,7 +76,7 @@ async function postReviewWithIssues(context: PipelineContext): Promise<void> {
     const inlineComments = buildInlineComments(anchoredIssues);
     const reviewBody = formatReviewSummary(
         reportableIssues,
-        context.reviewSummary,
+        resolvePublishedSummary(context, reportableIssues),
         unanchoredIssues,
         context.omittedFiles,
     ) + buildIntegrityScoreBlock(context.cascade, reportableIssues);

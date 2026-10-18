@@ -278,3 +278,114 @@ describe('runRegistryEngine — pyproject.toml manifests (v4)', () => {
         expect(registryResult.findings[0].exactQuote).toContain('hallucinated-http-kit');
     });
 });
+
+describe('runRegistryEngine — SEC-035 false-positive sources (LANGUAGE_COVERAGE_SPEC §4.4)', () => {
+    function pythonFile(sourceLines: readonly string[]): RegistryEngineFile {
+        const lineTexts = new Map(sourceLines.map((lineText, lineIndex) => [lineIndex + 1, lineText]));
+        return buildFile({ path: 'services/report_job.py', language: 'python', addedLineTexts: lineTexts, lineTexts });
+    }
+
+    function packageJsonFile(sourceLines: readonly string[], path = 'package.json'): RegistryEngineFile {
+        const lineTexts = new Map(sourceLines.map((lineText, lineIndex) => [lineIndex + 1, lineText]));
+        return buildFile({ path, language: 'json', addedLineTexts: lineTexts, lineTexts });
+    }
+
+    function buildRecordingFetch(seenUrls: string[]) {
+        return vi.fn(async (url: string | URL | Request) => {
+            seenUrls.push(String(url));
+            return { status: 404, ok: false };
+        }) as unknown as typeof fetch;
+    }
+
+    it('never looks up Python stdlib modules, underscore modules, prose or docstring lines', async () => {
+        const unreachableFetch = vi.fn(async () => { throw new Error('must not be called'); }) as unknown as typeof fetch;
+        const registryResult = await runRegistryEngine(
+            [pythonFile([
+                'from __future__ import annotations',
+                'import socketserver',
+                'from _typeshed.wsgi import WSGIEnvironment',
+                'import codecs, rlcompleter',
+                'def load_config():',
+                '    """Resolve the',
+                '    import name of your application.  For example:',
+                '',
+                '        from yourapplication import default_config',
+                '    """',
+                '    # import name is main.',
+            ])],
+            { fetchImpl: unreachableFetch },
+        );
+
+        expect(unreachableFetch).not.toHaveBeenCalled();
+        expect(registryResult.findings).toEqual([]);
+    });
+
+    it('reports a 404 Python import as WARNING, a 404 requirements.txt entry as CRITICAL', async () => {
+        const registryResult = await runRegistryEngine(
+            [
+                pythonFile(['from blueprintapp import app']),
+                buildFile({
+                    path: 'requirements.txt',
+                    language: 'other',
+                    addedLineTexts: new Map([[1, 'hallucinated-http-kit==1.2.0']]),
+                }),
+            ],
+            { fetchImpl: buildFetchReturning(404) },
+        );
+
+        const severityByPath = new Map(registryResult.findings.map((finding) => [finding.path, finding.severity]));
+        expect(severityByPath.get('services/report_job.py')).toBe('WARNING');
+        expect(severityByPath.get('requirements.txt')).toBe('CRITICAL');
+        expect(registryResult.findings.find((finding) => finding.severity === 'WARNING')?.explanation)
+            .toContain('local modules outside this diff');
+    });
+
+    it('treats package.json lines as dependencies only inside dependency sections', async () => {
+        const seenUrls: string[] = [];
+        await runRegistryEngine(
+            [packageJsonFile([
+                '{',
+                '  "name": "unslop-vscode",',
+                '  "displayName": "Anti-AI-Slop Gatekeeper",',
+                '  "bin": {',
+                '    "unslop-mcp": "./dist/index.js"',
+                '  },',
+                '  "exports": {',
+                '    "./degradation-notice": "./src/degradation-notice.ts"',
+                '  },',
+                '  "contributes": {',
+                '    "configuration": {',
+                '      "markdownDescription": "Gatekeeper API key"',
+                '    }',
+                '  },',
+                '  "devDependencies": {',
+                '    "left-padz-ultra": "^1.0.0"',
+                '  }',
+                '}',
+            ])],
+            { fetchImpl: buildRecordingFetch(seenUrls) },
+        );
+
+        expect(seenUrls).toEqual(['https://registry.npmjs.org/left-padz-ultra']);
+    });
+
+    it('skips workspace packages and specs that do not resolve from the registry', async () => {
+        const seenUrls: string[] = [];
+        await runRegistryEngine(
+            [packageJsonFile([
+                '{',
+                '  "dependencies": {',
+                '    "@unslop/shared": "0.1.0",',
+                '    "@acme/ui": "workspace:*",',
+                '    "local-tool": "file:../local-tool",',
+                '    "@hallucinated/sdk": "^1.0.0"',
+                '  }',
+                '}',
+            ], 'packages/cli/package.json')],
+            { fetchImpl: buildRecordingFetch(seenUrls) },
+            { firstPartyPackages: new Set(['@unslop/shared']) },
+        );
+
+        expect(seenUrls).toEqual(['https://registry.npmjs.org/@hallucinated/sdk']);
+    });
+});

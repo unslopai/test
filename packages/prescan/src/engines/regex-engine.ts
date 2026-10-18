@@ -7,6 +7,7 @@
  * und als virtueller Inhalt der Ursprungszeile gescannt.
  */
 import { RULE_REGISTRY } from '../rules/registry';
+import { isProseFile } from '../language';
 import type { PrescanLanguage } from '../language';
 import type { PrescanFinding, PrescanSeverity } from '../types';
 
@@ -46,6 +47,11 @@ export function shannonEntropy(candidateValue: string): number {
         entropy -= probability * Math.log2(probability);
     }
     return entropy;
+}
+
+function matchesProviderSecret(line: string): boolean {
+    return !SECRET_LOOKUP_EXEMPTION.test(line)
+        && SECRET_PROVIDER_PATTERNS.some((pattern) => pattern.test(line));
 }
 
 function matchesSecretLine(line: string): boolean {
@@ -137,6 +143,15 @@ const REGEX_LINE_RULES: readonly RegexLineRule[] = [
     },
 ];
 
+/**
+ * Prosa-Dateien (Markdown, Übersetzungskataloge): ein Schlüssel in Provider-
+ * Format ist auch dort ein Leck. Die Entropie-Heuristik und alle Regeln über
+ * Code-Verhalten treffen dort nur Zitate und UI-Texte.
+ */
+const PROSE_LINE_RULES: readonly RegexLineRule[] = [
+    { ruleId: 'SEC-005', languages: null, matches: matchesProviderSecret },
+];
+
 // =============================================================================
 // Engine-Einstieg
 // =============================================================================
@@ -150,17 +165,19 @@ export interface RegexEngineInput {
 
 export function runRegexEngine(input: RegexEngineInput): PrescanFinding[] {
     const findings: PrescanFinding[] = [];
+    const proseFile = isProseFile(input.path);
+    const lineRules = proseFile ? PROSE_LINE_RULES : REGEX_LINE_RULES;
 
     for (const [lineNumber, lineText] of input.lines) {
         const scannableTexts = buildScannableTexts(input.language, lineText);
-        for (const rule of REGEX_LINE_RULES) {
+        for (const rule of lineRules) {
             if (rule.languages !== null && !rule.languages.includes(input.language)) continue;
             if (!scannableTexts.some((candidateText) => rule.matches(candidateText))) continue;
             findings.push(buildRegexFinding(rule.ruleId, input.path, lineNumber, lineText));
         }
     }
 
-    findings.push(...collectOverblankingFindings(input));
+    if (!proseFile) findings.push(...collectOverblankingFindings(input));
     return findings;
 }
 

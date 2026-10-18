@@ -24,6 +24,12 @@ export interface ExpectedFinding {
 export interface ManifestEntry {
     readonly description: string;
     readonly detectedEcosystems: readonly string[] | null;
+    /**
+     * Law-Filter-Eingang eines polyglotten Host-Repos (LANGUAGE_COVERAGE_SPEC
+     * §7.1), nur fuer Fixtures, deren Regeln Tags tragen, die die Erkennung
+     * nie erzeugt. Der Runner nutzt ihn mit `--ecosystems polyglot`.
+     */
+    readonly polyglotEcosystems?: readonly string[];
     readonly negativeControl: boolean;
     readonly expected: readonly ExpectedFinding[];
 }

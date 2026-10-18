@@ -232,6 +232,64 @@ describe('resultPersisterStep — degradations im result (DEADLINE_GUARD_SPEC D6
     });
 });
 
+describe('resultPersisterStep — Summary aus den tatsächlichen Findings (LANGUAGE_COVERAGE_SPEC §5, Befund b)', () => {
+    beforeEach(() => {
+        terminalUpdateMock.mockReset();
+        terminalUpdateMock.mockImplementation(() => ({ eq: terminalUpdateEqMock }));
+        terminalUpdateEqMock.mockImplementation(() => ({ eq: statusGuardEqMock }));
+        statusGuardEqMock.mockImplementation(() => ({ select: terminalSelectMock }));
+        terminalSelectMock.mockResolvedValue({ data: [{ id: 'job-under-test' }], error: null });
+        previousJobMaybeSingleMock.mockResolvedValue({ data: null, error: null });
+    });
+
+    const sqlInterpolationFinding = buildReviewIssue({
+        rule: 'SEC-004 (SQL built by string interpolation)',
+        severity: 'CRITICAL',
+        path: 'src/lib/user-lookup.ts',
+        line: 5,
+        endLine: 5,
+        source: 'pre-scanner',
+    });
+
+    it('Replay Job 3f26b2da: nennt das CRITICAL des Pre-Scanners statt "No AI slop found."', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewableFiles: [buildPullRequestFile({ filename: 'src/lib/user-lookup.ts' })],
+            reviewSummary: 'No AI slop found.',
+            issues: [],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload().result.review.summary).toBe(
+            'The deterministic pre-scanner found 1 critical and 0 warning findings. '
+            + 'The model review reported no further findings.',
+        );
+    });
+
+    it('hängt die deterministischen Findings an eine Modell-Summary mit eigenen Findings an', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'Found 1 critical naming issue.',
+            issues: [buildReviewIssue()],
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload().result.review.summary).toBe(
+            'Found 1 critical naming issue. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+        );
+    });
+
+    it('lässt die Summary eines Laufs ohne Findings und die Short-Circuit-Summary unverändert', async () => {
+        await resultPersisterStep.execute(buildPipelineContext({ reviewSummary: '' }));
+        await resultPersisterStep.execute(buildPipelineContext({
+            reviewSummary: 'LLM review skipped: 1 critical structural violations found by the deterministic pre-scanner. Fix these first.',
+            llmSkipped: true,
+            prescanIssues: [sqlInterpolationFinding],
+        }));
+
+        expect(capturedUpdatePayload(0).result.review.summary).toBe('No AI slop found.');
+        expect(capturedUpdatePayload(1).result.review.summary).toContain('LLM review skipped');
+    });
+});
+
 describe('resultPersisterStep — status guard (DEADLINE_GUARD_SPEC D9)', () => {
     beforeEach(() => {
         terminalUpdateMock.mockReset();
