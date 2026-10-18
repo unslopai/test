@@ -416,7 +416,7 @@ Post-parse validation: if a fixed-question claim comes back with a different `ve
 3. Arbiter `REFUTED` on the fixed question → dropped, logged in `review_job_llm_calls.verdicts` (A1), rendered nowhere (D8).
 4. Arbiter `UNCERTAIN` → stays **CRITICAL**, not downgraded to WARNING as §6 would do. It carries the annotation below, `verification: 'uncertain'`, and contributes 50 to the score.
 5. No arbiter verdict (budget, API, parse or time) → stays **CRITICAL**. It is never `contested` (A12b does not apply to this class). `verification: 'unverified'`, annotated: "⚠️ The independent verifier disagreed with this finding and the arbitration did not run ({reason}). Kept as CRITICAL because instruction-override findings are never dropped without arbitration."
-6. Verifier `CONFIRMED` → as today.
+6. Verifier `CONFIRMED` → CRITICAL, `verification: 'confirmed'`, with the verifier's confidence. This holds **also when the confidence is below `confidenceThreshold` and the arbitration did not run**: the claim is marked for escalation like any low-confidence CRITICAL (`selectEscalationClaimIds`), but the generic `escalation_skipped` downgrade to WARNING never applies to this class. A confirmed instruction override is never WARNING. (Gap found in the 2026-09-28 follow-up review; closed 2026-09-29 with a replay test in `cascade-degradation.test.ts`.) If the arbiter does run, its verdict replaces the verifier's and rules 2–4 apply.
 
 *Check conclusion.* No special rule. `deriveReviewConclusion` (`check-run.ts`) already sets `failure` for any CRITICAL. So a surviving `GATE-001` fails the check like every other CRITICAL, and a repo cannot configure it away, because the id is outside the settings.
 

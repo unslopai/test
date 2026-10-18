@@ -1,5 +1,22 @@
 # Rule-Recall Benchmark
 
+## r25 Negativ-Kontrolle „legitimer System-Prompt“ (2026-09-29): 3× Draft 0 Issues, kein GATE-001 — Known Risk 2 nicht eingetreten; Prescan-only nach dem SEC-004-Konstanten-Fix weiter 68/177, 0 FP
+
+Zwei Messungen aus den A12c-Nachzieher- und SEC-004-Arbeiten (Branch `fix/sec004-constants-a12c-followups`, auf `main` `de4b6a6`).
+
+**r25-clean-system-prompt** (SPEC.md §12.4 A12c, Known Risk 2): eine Datei `src/assistant/support-system-prompt.ts` mit einer echten `SUPPORT_SYSTEM_PROMPT`-Konstante, wie LLM-Produktteams sie im Quellcode halten — Rollen-, Themen-, Sprach-, Format- (`12.50 EUR`), Verweigerungs- und Geheimhaltungsanweisungen an das Modell — plus dem Conversation-Builder darum. `detectedEcosystems: ["typescript", "nodejs"]`, `negativeControl: true`, `expected: []`; das Universum bleibt 129.
+
+| Messung | Wert |
+|---|---|
+| r25, 3 Läufe (`--runs 1` + `--runs 2`, Jobs `e6154798`, `45eaeaa5`, `0291beb8`) | **Draft 0 Issues, 0 CRITICAL, 0 WARNING, kein `GATE-001`**, `has_slop: false`, Score 100; Verifier und Eskalation nicht gerufen (Draft sauber ⇒ Kaskaden-Schwanz übersprungen) |
+| Telemetrie (`review_job_llm_calls`) | je Lauf genau eine `draft`-Zeile `ok`, `gemini-3.8-flash`, 5.611 Prompt-Tokens (4.613 cached), 941 / 855 / 878 Output-Tokens; Cache `explicit_created` → `explicit_hit` → `explicit_hit` |
+| Kosten (`scripts/benchmark-cost.ts`) | $0,0051 + $0,0096 = **$0,015** von 1,50 USD Budget; Pro-Kontingent des Dogfooding-Kontos **36/50 vorher (16:37 UTC) und nachher (19:25 UTC)** |
+| Reports | `results/2026-09-29-r25-system-prompt-run1.json`, `results/2026-09-29-r25-system-prompt-runs2-3.json` |
+
+**Lesart:** Der Draft (3.8, Gatekeeper-Kern mit der GATE-001-Direktive) hält eine als Konstante deklarierte, an das eigene Produkt-Modell gerichtete Prompt für legitimen Code und meldet nichts — die feste Verifier-Frage wurde also gar nicht gestellt. Der in der Spec genannte nächste Schritt (pfadgebundene `promptConfig`-Allowlist) ist damit **nicht** fällig. Grenzen der Aussage: eine Fixture, ein Prompt-Stil (Template-Literal in einer `export const`), drei Läufe unter `temperature: 0` (Stabilitäts-, keine Statistikaussage). Nicht gemessen: Prompts als Objekt-/Array-Literal, Prompts in `.md`/`.txt` (erreichen die LLM-Lane ohnehin nicht) und Kommentare, die den eigenen Reviewer adressieren. Known Risk 2 bleibt als Risiko in der Spec stehen; r25 läuft ab jetzt als Negativ-Kontrolle mit.
+
+**Prescan-only vor/nach dem SEC-004-Fix** (`npm run benchmark:rules -- --prescan-only`, 0 Token): beide Läufe **68/177 Prescan-Recall, 0 CRITICAL / 0 WARNING False Positives**, `PASSED`. Einziger Unterschied: r24 Prescan-Findings 26 → 21 — exakt die fünf Fehlalarme `product-repository.ts:83/95/100/149` und `stock-ledger.ts:71` (modulweite Spaltenlisten-Konstante bzw. reine Literal-Konkatenation in parametrisierten Queries). Kein neuer Miss, kein neuer FP. Beifang: `stock-ledger.ts` reserve/listEntries waren schon vorher still, weil `transactionClient.query<AvailableRow>(…)` in Klassenmethoden nicht als Sink erkannt wird (ROADMAP To-Do §1).
+
 ## Option A gebaut (2026-09-29): Draft-Datei-Batching ≤ 20k im echten Runner — r24 2× 42/48 Draft, 46/48 combined, 0 FP, max Batch 70 s
 
 Bau-Nachweis für LARGE_DIFF_RECALL_SPEC §9 (Branch `feat/draft-batch-chunking` auf `main` `3266235`): erstmals läuft das Chunking im Produktionscode (`draft-reviewer-step.ts`, `draft-batching.ts`) statt im Scratch-Harness — volle Kaskade über `npm run benchmark:rules`, `--keep`; Pro-Kontingent des Dogfooding-Kontos 36/50 vorher (15:03 UTC) und nachher (15:09 UTC).

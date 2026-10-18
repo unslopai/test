@@ -15,6 +15,7 @@ import { consumeProEscalationBudget } from '@/lib/billing/entitlements';
 import { MODEL_ESCALATION } from '@/lib/pipeline/models';
 import { resolvePromptEnvelope } from '@/lib/pipeline/context-cache';
 import { addTokenUsage } from '@/lib/pipeline/helpers';
+import { orderGatekeeperClaimsFirst } from '@/lib/pipeline/gatekeeper-rules';
 import {
     buildBlindClaims,
     chunkClaims,
@@ -130,17 +131,6 @@ async function reverifyMarkedClaims(context: PipelineContext): Promise<PipelineC
             : context.tokenUsage,
     };
     return applyProVerdicts(reverifiedContext, proVerdicts);
-}
-
-/**
- * A12c: GATE-001-Claims (feste Prüffrage) zuerst — reicht das Zeitbudget nur
- * für den ersten Batch, wird die Injection-Frage auf jeden Fall arbitriert.
- * Sonst stabile Reihenfolge nach Claim-Index.
- */
-export function orderGatekeeperClaimsFirst(markedClaims: readonly BlindClaim[]): BlindClaim[] {
-    const gatekeeperClaims = markedClaims.filter((blindClaim) => blindClaim.fixedVerificationQuestion !== undefined);
-    const otherClaims = markedClaims.filter((blindClaim) => blindClaim.fixedVerificationQuestion === undefined);
-    return [...gatekeeperClaims, ...otherClaims];
 }
 
 /**
