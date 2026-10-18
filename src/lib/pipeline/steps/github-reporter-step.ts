@@ -28,9 +28,10 @@ import {
     resolveReviewOutcome,
 } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
+import { listOmittedContextPaths } from '@/lib/pipeline/repo-context-result';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import {
-    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
+    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatRepoContextNotice, formatTimeBudgetNotice,
 } from '@unslop/shared/degradation-notice';
 import type { PullRequestReviewComment } from '@/lib/github';
 import type { CascadeState, PipelineContext, PipelineIssue, PipelineStep } from '@/lib/pipeline/types';
@@ -331,7 +332,7 @@ function buildApprovalHeadline(context: PipelineContext): string {
 // =============================================================================
 
 function buildIntegrityScoreBlock(
-    context: Pick<PipelineContext, 'cascade' | 'prescanStats'>,
+    context: Pick<PipelineContext, 'cascade' | 'prescanStats' | 'repoContext'>,
     reportableIssues: readonly PipelineIssue[],
 ): string {
     const cascade = context.cascade;
@@ -360,10 +361,13 @@ function buildIntegrityScoreBlock(
  * die nicht geprüften Dateien (LARGE_DIFF_RECALL_SPEC Option A) — die
  * Dateiliste bleibt bewusst ohne Kursiv-Markup, damit Unterstriche in Pfaden
  * das Markdown nicht kippen. Alle übrigen Degradationen der Cascade behalten
- * den generischen Satz. Ein ausgefallener Pre-Scan steht nicht in
+ * den generischen Satz; ein fehlendes oder gekürztes Kontextpaket hat seinen
+ * eigenen (REPO_CONTEXT_SPEC §9.2). Ein ausgefallener Pre-Scan steht nicht in
  * `cascade.degradations` und bekommt seine eigene Zeile.
  */
-function collectDegradationNotices(context: Pick<PipelineContext, 'cascade' | 'prescanStats'>): string[] {
+function collectDegradationNotices(
+    context: Pick<PipelineContext, 'cascade' | 'prescanStats' | 'repoContext'>,
+): string[] {
     const cascade = context.cascade;
     const timeBudgetNotice = formatTimeBudgetNotice(cascade.skippedStages);
     const draftPartialNotice = formatDraftPartialNotice(cascade.draftUnreviewedFiles, cascade.draftFailureReason ?? undefined);
@@ -373,9 +377,19 @@ function collectDegradationNotices(context: Pick<PipelineContext, 'cascade' | 'p
     const degradationNotices: string[] = [];
     if (timeBudgetNotice) degradationNotices.push(`_⚠️ ${timeBudgetNotice}_`);
     if (draftPartialNotice) degradationNotices.push(`⚠️ ${draftPartialNotice}`);
-    if (degradationNotices.length === 0 && cascade.degradations.length > 0) {
+    // Ohne Kursiv-Markup wie die Dateiliste oben: der Satz kann Pfade tragen.
+    const repoContextNotice = formatRepoContextNotice(
+        context.repoContext.status, listOmittedContextPaths(context.repoContext),
+    );
+    // Der generische Satz steht für Degradationen ohne eigenen Satz. Ein
+    // Paket-Hinweis ersetzt ihn nicht, und ein fehlendes Paket allein löst ihn nicht aus.
+    const hasUnnamedDegradation = cascade.degradations.some(
+        (cascadeDegradation) => cascadeDegradation !== 'repo_context_unavailable',
+    );
+    if (!timeBudgetNotice && !draftPartialNotice && hasUnnamedDegradation) {
         degradationNotices.push('_⚠️ Reduced confidence mode: parts of the verification cascade were unavailable._');
     }
+    if (repoContextNotice) degradationNotices.push(`⚠️ ${repoContextNotice}`);
     if (prescanUnavailableNotice) {
         const namesFiles = (context.prescanStats?.unscannedFiles?.length ?? 0) > 0;
         degradationNotices.push(namesFiles ? `⚠️ ${prescanUnavailableNotice}` : `_⚠️ ${prescanUnavailableNotice}_`);

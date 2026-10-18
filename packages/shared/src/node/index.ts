@@ -39,6 +39,8 @@ export {
     resolveMergeBase,
     resolveRepoFullName,
 } from './git.js';
+export { buildLocalRepoContext } from './repo-context-local.js';
+export type { RepoContextPackage } from '../repo-context.js';
 export type { DiffOptions } from './git.js';
 
 export { HIGH_ENTROPY_PATTERN_CLASS, classifySecretText, findSecretsInDiff } from './secret-filter.js';
@@ -80,6 +82,7 @@ export { countFindingVerifications, describeFindingVerification } from '../verif
 export {
     formatDraftPartialNotice,
     formatPrescanUnavailableNotice,
+    formatRepoContextNotice,
     formatTimeBudgetNotice,
 } from '../degradation-notice.js';
 export type { VerificationCounts, VerifiedFinding } from '../verification-format.js';

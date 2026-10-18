@@ -11,8 +11,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabase as supabaseAdmin } from '@/lib/supabase';
 import { isOperatorUser } from '@/lib/operator';
-import { DEFAULT_PIPELINE_CONFIG, GATED_LLM_EXTENSIONS } from '@/lib/pipeline/defaults';
-import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
+import {
+    DEFAULT_PIPELINE_CONFIG,
+    GATED_LLM_EXTENSIONS,
+    REPO_CONTEXT_MAX_TOKENS_CEILING,
+} from '@/lib/pipeline/defaults';
+import { SELECTABLE_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import type { PipelineConfig } from '@/lib/pipeline/types';
 
 interface RouteParams {
@@ -59,7 +63,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
         fullName: repoRow.full_name,
         config: pipelineConfig,
         defaults: DEFAULT_PIPELINE_CONFIG,
-        availableConditionIds: ALL_CONDITION_IDS,
+        availableConditionIds: SELECTABLE_CONDITION_IDS,
     });
 }
 
@@ -142,7 +146,7 @@ const VALID_STEP_IDS = new Set([
     'integrity-scorer',
     'github-reporter',
 ]);
-const VALID_CONDITION_IDS = new Set(ALL_CONDITION_IDS);
+const VALID_CONDITION_IDS = new Set(SELECTABLE_CONDITION_IDS);
 
 /** Cascade-Felder, die per Repo übersteuerbar sind (SPEC.md §7 / Friction Slider). */
 const CASCADE_OVERRIDE_FIELDS = [
@@ -188,7 +192,27 @@ function validatePipelineConfig(rawInput: unknown): PipelineConfig | null {
         // oben bereits dokumentiert.
         ...(candidate.prescan !== undefined ? { prescan: candidate.prescan } : {}),
         ...validateReviewScope(candidate.reviewScope),
+        ...validateRepoContext(candidate.repoContext),
     };
+}
+
+/**
+ * Repo-Kontext (REPO_CONTEXT_SPEC §12 Frage 2): `enabled` schaltet Paket und
+ * Condition 12 für das Repo ab, `maxTokens` senkt oder hebt die Obergrenze
+ * bis zum Deckel. Nur gültige Felder werden gespeichert; fehlt der Block,
+ * bleibt er weg und der Code-Default gilt (an).
+ */
+function validateRepoContext(rawRepoContext: unknown): Pick<PipelineConfig, 'repoContext'> {
+    if (!rawRepoContext || typeof rawRepoContext !== 'object') return {};
+    const requestedEnabled = 'enabled' in rawRepoContext ? rawRepoContext.enabled : undefined;
+    const requestedMaxTokens = 'maxTokens' in rawRepoContext ? rawRepoContext.maxTokens : undefined;
+    const hasValidMaxTokens = typeof requestedMaxTokens === 'number' && Number.isInteger(requestedMaxTokens)
+        && requestedMaxTokens > 0 && requestedMaxTokens <= REPO_CONTEXT_MAX_TOKENS_CEILING;
+    const validatedRepoContext = {
+        ...(typeof requestedEnabled === 'boolean' ? { enabled: requestedEnabled } : {}),
+        ...(hasValidMaxTokens ? { maxTokens: requestedMaxTokens } : {}),
+    };
+    return Object.keys(validatedRepoContext).length > 0 ? { repoContext: validatedRepoContext } : {};
 }
 
 /**

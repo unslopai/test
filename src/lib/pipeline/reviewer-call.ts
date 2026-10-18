@@ -19,6 +19,7 @@ import {
 import { aggregateIssuesByRuleAndFile } from '@/lib/pipeline/finding-aggregation';
 import { validateIssuesAgainstManifest } from '@/lib/pipeline/issue-validation';
 import { normalizeGatekeeperIssue } from '@/lib/pipeline/gatekeeper-rules';
+import { repositoryMismatchGroupKey, resolveRepositoryMismatchIssue } from '@/lib/pipeline/repository-mismatch';
 import { downgradeImportExistenceClaim, isImportExistenceClaim } from '@/lib/pipeline/import-existence-claims';
 import { clampConfidence } from '@/lib/pipeline/claim-verification';
 import { CallBudgetExhaustedError, DEFAULT_RETRY_POLICY, runWithTransientRetry } from '@/lib/pipeline/vertex-retry';
@@ -28,6 +29,7 @@ import type { LlmCallPhase, LlmCallStatus } from '@/lib/telemetry/llm-call-log';
 import type { CacheStatus, FlashPromptEnvelope } from '@/lib/pipeline/context-cache';
 import type { ModelResponseDiagnostics } from '@/lib/pipeline/helpers';
 import type { DraftFailureReason } from '@unslop/shared';
+import type { RepoContextPackage } from '@unslop/shared/repo-context';
 import type { PullRequestFile } from '@/lib/github';
 import type { PipelineContext, PipelineIssue, IssueSeverity, TokenUsage } from '@/lib/pipeline/types';
 
@@ -45,6 +47,9 @@ interface LlmDiffIssue {
     critique: string;
     fixed_code_snippet?: string;
     confidence?: number;
+    /** Nur an Condition-12-Befunden (REPO_CONTEXT_SPEC §7.1); untrusted wie alles hier. */
+    context_path?: unknown;
+    mismatch_kind?: unknown;
 }
 
 interface LlmDiffReviewResponse {
@@ -69,6 +74,13 @@ export interface ReviewerPassOptions {
     readonly issueSource: string;
     /** true = self-reported Confidence übernehmen (Pro-Pfade, D3). */
     readonly adoptSelfReportedConfidence: boolean;
+    /**
+     * Kontextpaket, das DIESER Call im Prompt trägt (beim Batch die Sicht auf
+     * seine Dateien); null = kein Paket, dann fällt jeder Condition-12-Befund.
+     */
+    readonly repoContextPackage: RepoContextPackage | null;
+    /** Geschätzte Tokens des Paket-Abschnitts im Prompt, für die Telemetrie-Zeile; 0 ohne Paket. */
+    readonly repoContextTokens: number;
 }
 
 export interface ReviewerPassResult {
@@ -91,7 +103,7 @@ export async function runReviewerPass(
 ): Promise<ReviewerPassResult> {
     const { llmOutput, callUsage, effectiveCacheStatus, finishReason } = await runReviewerCall(context, options);
 
-    const pipelineIssues = convertToPipelineIssues(llmOutput.issues, options);
+    const { pipelineIssues, unprovenMismatchCount } = convertToPipelineIssues(llmOutput.issues, options);
     // Validation-Boundary (ROADMAP §12): rule gegen die Enum der tatsächlich
     // gepromoteten Regeln (aktive Conditions + gerenderte Law-IDs),
     // line/endLine gegen die echten Diff-Hunks — alles server-kontrolliert.
@@ -108,9 +120,12 @@ export async function runReviewerPass(
     // occurrences-Liste — also ein Claim, ein Verdict, ein Kommentar.
     // Import-Claims bündeln getrennt: sonst zöge ein HAL-002 auf einem Aufruf
     // derselben Datei den abgestuften Import-Claim wieder auf CRITICAL.
+    // Mismatch-Befunde bündeln je (Art, Kontextdatei): jede Gruppe hat ihre eigene Prüffrage.
+    const ruleScopedIssues = scopedIssues.filter((scopedIssue) => repositoryMismatchGroupKey(scopedIssue) === null);
     const aggregatedIssues = [
-        ...aggregateIssuesByRuleAndFile(scopedIssues.filter((scopedIssue) => !isImportExistenceClaim(scopedIssue))),
-        ...aggregateIssuesByRuleAndFile(scopedIssues.filter(isImportExistenceClaim)),
+        ...aggregateIssuesByRuleAndFile(ruleScopedIssues.filter((scopedIssue) => !isImportExistenceClaim(scopedIssue))),
+        ...aggregateIssuesByRuleAndFile(ruleScopedIssues.filter(isImportExistenceClaim)),
+        ...aggregateMismatchIssues(scopedIssues),
     ];
 
     return {
@@ -119,7 +134,7 @@ export async function runReviewerPass(
         hasSlop: llmOutput.has_slop,
         callUsage,
         effectiveCacheStatus,
-        rejectedCount,
+        rejectedCount: rejectedCount + unprovenMismatchCount,
         scopeFilteredCount: acceptedIssues.length - scopedIssues.length,
         preAggregationIssueCount: scopedIssues.length,
         finishReason,
@@ -229,6 +244,7 @@ async function runReviewerAttempt(
             latencyMs: Date.now() - callStartedAt,
             cacheStatus,
             responseDiagnostics,
+            repoContextTokens: options.repoContextTokens,
         });
 
     let reviewerResponse;
@@ -306,8 +322,32 @@ function normalizeSeverity(rawSeverity: unknown): IssueSeverity {
 function convertToPipelineIssues(
     llmIssues: readonly LlmDiffIssue[],
     options: ReviewerPassOptions,
-): PipelineIssue[] {
-    return llmIssues.map((llmIssue) => ({
+): { pipelineIssues: PipelineIssue[]; unprovenMismatchCount: number } {
+    // Condition 12 (REPO_CONTEXT_SPEC §7.1): ohne belegbare Kontextdatei im Paket
+    // dieses Calls fällt der Befund hier, vor Verifikation und Persistenz.
+    const pipelineIssues = llmIssues.flatMap((llmIssue) => {
+        const resolvedIssue = resolveRepositoryMismatchIssue(
+            toPipelineIssue(llmIssue, options),
+            { contextPath: llmIssue.context_path, mismatchKind: llmIssue.mismatch_kind },
+            options.repoContextPackage,
+        );
+        return resolvedIssue ? [resolvedIssue] : [];
+    });
+    return { pipelineIssues, unprovenMismatchCount: llmIssues.length - pipelineIssues.length };
+}
+
+function aggregateMismatchIssues(scopedIssues: readonly PipelineIssue[]): PipelineIssue[] {
+    const mismatchGroups = new Map<string, PipelineIssue[]>();
+    for (const scopedIssue of scopedIssues) {
+        const mismatchGroupKey = repositoryMismatchGroupKey(scopedIssue);
+        if (mismatchGroupKey === null) continue;
+        mismatchGroups.set(mismatchGroupKey, [...(mismatchGroups.get(mismatchGroupKey) ?? []), scopedIssue]);
+    }
+    return [...mismatchGroups.values()].flatMap(aggregateIssuesByRuleAndFile);
+}
+
+function toPipelineIssue(llmIssue: LlmDiffIssue, options: ReviewerPassOptions): PipelineIssue {
+    return {
         rule: llmIssue.rule,
         severity: normalizeSeverity(llmIssue.severity),
         path: llmIssue.path,
@@ -320,5 +360,5 @@ function convertToPipelineIssues(
         ...(options.adoptSelfReportedConfidence
             ? { confidence: clampConfidence(llmIssue.confidence) }
             : {}),
-    }));
+    };
 }

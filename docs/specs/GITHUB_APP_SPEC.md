@@ -534,3 +534,13 @@ update" aktiviert.
 - **Check-Run Re-Reruns**: Das Behandeln von `check_run` `re_requested` (wenn der User in GitHub auf "Re-run" klickt) ist noch nicht implementiert (Siehe Roadmap).
 - **GitHub App als *Login*-Provider** (User-to-Server-OAuth): bewusst nicht verfolgt. Login
   bleibt Supabase-GitHub-OAuth (`signInWithOAuth`, provider `github`).
+
+## 10. Nachtrag 2026-10-05: Repo-Kontext am Head-SHA (REPO_CONTEXT_SPEC §9 1a)
+
+- Vor dem Draft holt der `RepoContextLoaderStep` mit dem Token des Jobs einen rekursiven Tree und höchstens 15 Dateien über die Contents-API, beides am Head-SHA des Pull Requests, höchstens 8 Abrufe gleichzeitig. Keine neue Berechtigung (`contents` reicht), kein neues Event.
+- Gelesen werden das nächste Manifest und die gleichnamigen der Elternverzeichnisse, höchstens 6 Schema-Dateien (ältere Migrationen nennt das Ergebnis als eine Auslassung), der Einstiegspunkt und Abschnitte geänderter Dateien.
+- Der Step steht in keiner `enabledStepIds`-Liste: der Worker hängt ihn direkt vor `draft-reviewer` ein, sein Schalter ist `pipeline_config.repoContext.enabled` (Default an). Persistierte Configs zählen ihre Steps einzeln auf und bekämen ihn sonst nie.
+- Eigene Zeitgrenze von 10 s, und nur, wenn danach noch 60 s LLM-Budget bleiben. Scheitert der Abruf (Zeitgrenze, 403, 404, 5xx), läuft die Review auf dem Diff weiter und trägt die Degradation `repo_context_unavailable` mit einem Satz in Check Run und Review-Body (`formatRepoContextNotice`). Ein Job-Fehler entsteht daraus nie.
+- Gespeichert wird vom Paket nur `result.repo_context`: Pfadliste, Größe, Auslassungen, Ladezeit.
+- Vor dem Modell läuft der Secret-Filter über den Inhalt dessen, was es liest: im Diff werden Treffer durch `<redacted-secret>` ersetzt (Zeilenzahl und Hunks bleiben, `result.secret_redactions` nennt Datei und Musterklasse), eine Kontextdatei mit Treffer im Inhalt fällt aus dem Paket. Dateipfade laufen durch keinen Secret-Filter; Pfade mit Steuerzeichen oder Zeilentrennern kommen nicht in das Paket. Der Pre-Scanner liest weiter die unveränderten Dateien.
+- Ungeprüft: Pull Requests aus Forks (ob GitHub den Head-Commit des Forks im Basis-Repo ausliefert).

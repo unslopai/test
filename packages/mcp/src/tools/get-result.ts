@@ -7,7 +7,7 @@
  * elapses, the current phase is returned and the agent polls again, exactly as
  * the tool description instructs.
  */
-import { formatPrescanUnavailableNotice } from '@unslop/shared/node';
+import { formatPrescanUnavailableNotice, formatRepoContextNotice } from '@unslop/shared/node';
 
 import { buildEnvelopedResponseText, splitFindings } from '../envelope.js';
 import { mapApiError, pollFailureToToolError, toolErrorResult } from '../errors.js';
@@ -84,6 +84,13 @@ function buildResultResponse(jobId: string, pollResponse: ScanPollResponse): Mcp
         prescanUnscannedFiles: scanResult?.prescan?.unscannedFiles ?? [],
         prescanNotice: scanResult?.outcome === 'reviewed'
             ? formatPrescanUnavailableNotice(scanResult.prescan?.degraded, scanResult.prescan?.unscannedFiles)
+            : null,
+        // Repository context next to the diff (REPO_CONTEXT_SPEC §9.2): which
+        // files the review saw, and the same sentence as the PR review when
+        // the package was missing or trimmed. Paths only, never content.
+        repoContext: scanResult?.repoContext ?? null,
+        repoContextNotice: scanResult?.outcome === 'reviewed'
+            ? formatRepoContextNotice(scanResult.repoContext?.status, scanResult.repoContext?.omittedPaths)
             : null,
         ...(pollResponse.rerollNotice ? { rerollNotice: pollResponse.rerollNotice } : {}),
         ...(pollResponse.phase !== 'complete'

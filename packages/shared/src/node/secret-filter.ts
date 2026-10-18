@@ -210,3 +210,106 @@ export function findSecretsInDiff(unifiedDiff: string): SecretMatch[] {
 
     return secretMatches;
 }
+
+// =============================================================================
+// Redaktion (serverseitig, REPO_CONTEXT_SPEC §9 1a)
+// =============================================================================
+
+/** Steht im Diff an der Stelle des Materials; Zeilenzahl und Struktur der Zeile bleiben. */
+export const SECRET_REDACTION_PLACEHOLDER = '<redacted-secret>';
+
+/**
+ * Wie die Erkennung oben, aber mit Grenze VOR dem Prefix: ohne sie träfe
+ * `sk-` auch `./task-list-item`, `mask-gradient-to-r` und `flask-sqlalchemy`.
+ */
+const KNOWN_KEY_VALUE_PATTERN =
+    /(?<![A-Za-z0-9_-])(?:sk-|sk_live_|rk_live_|ghp_|gho_|ghu_|ghs_|github_pat_|usk_|xoxb-|xoxp-)[A-Za-z0-9_-]{8,}|\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g;
+const ENV_ASSIGNMENT_VALUE_PATTERN =
+    /((?:SECRET|TOKEN|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY|CREDENTIAL)[A-Z_]*\s*=\s*)(['"]?)([^\s'"]{12,})/g;
+/** Unquotierter Wert, der ein Bezeichner, Zugriff oder Aufruf ist (`OTHER_CONSTANT`, `process.env.X`, `getSecret(…)`): Code, kein Material. */
+const CODE_REFERENCE_VALUE_PATTERN = /^[A-Za-z_$][\w$]*;?$|[.(\[]/;
+/** Quotierte Adresse ohne Zugangsdaten (`https://host/path`): Konfiguration, kein Material. */
+const PLAIN_URL_VALUE_PATTERN = /^[a-z][a-z0-9+.-]*:\/\/[^@]*$/i;
+
+export interface LineRedaction {
+    readonly redactedLine: string;
+    /** Musterklassen der ersetzten Stellen; leer = Zeile unverändert. */
+    readonly patternClasses: readonly string[];
+}
+
+function isHarmlessAssignedValue(openingQuote: string, assignedValue: string): boolean {
+    if (assignedValue.includes(SECRET_REDACTION_PLACEHOLDER)) return true;
+    if (openingQuote === '') return CODE_REFERENCE_VALUE_PATTERN.test(assignedValue);
+    return PLAIN_URL_VALUE_PATTERN.test(assignedValue);
+}
+
+/**
+ * Ersetzt mögliches Secret-Material in EINER Zeile durch den Platzhalter:
+ * bekannte Key-Prefixe, den Wert einer env-förmigen Zuweisung und
+ * hochentropische Token. Der Name der Variable bleibt stehen — ein Reviewer
+ * sieht weiter, DASS dort ein Literal stand, nur nicht welches.
+ * `skipEntropy` setzt nur die Entropie-Heuristik aus (öffentliches PEM-Material).
+ */
+export function redactSecretsInLine(lineText: string, options?: ClassifyOptions): LineRedaction {
+    const patternClasses = new Set<string>();
+    let redactedLine = lineText.replace(KNOWN_KEY_VALUE_PATTERN, () => {
+        patternClasses.add('known key prefix');
+        return SECRET_REDACTION_PLACEHOLDER;
+    });
+    redactedLine = redactedLine.replace(
+        ENV_ASSIGNMENT_VALUE_PATTERN,
+        (assignmentText: string, assignmentHead: string, openingQuote: string, assignedValue: string) => {
+            if (isHarmlessAssignedValue(openingQuote, assignedValue)) return assignmentText;
+            patternClasses.add('env-shaped assignment');
+            return `${assignmentHead}${openingQuote}${SECRET_REDACTION_PLACEHOLDER}`;
+        },
+    );
+    if (!options?.skipEntropy && !redactedLine.includes(';base64,')) {
+        redactedLine = redactedLine.replace(ENTROPY_TOKEN_PATTERN, (candidateToken: string) => {
+            const isSecretLike = !isEntropyFalsePositive(candidateToken)
+                && shannonEntropyBitsPerChar(candidateToken) >= ENTROPY_THRESHOLD_BITS_PER_CHAR;
+            if (!isSecretLike) return candidateToken;
+            patternClasses.add(HIGH_ENTROPY_PATTERN_CLASS);
+            return SECRET_REDACTION_PLACEHOLDER;
+        });
+    }
+    return { redactedLine, patternClasses: [...patternClasses] };
+}
+
+export interface PatchRedaction {
+    readonly redactedPatch: string;
+    /** Je ersetzter Zeile die Musterklassen, nie das Material. */
+    readonly redactedLineClasses: readonly (readonly string[])[];
+}
+
+/**
+ * Redigiert den Patch EINER Datei (Hunks ohne Datei-Header), bevor er ein
+ * Modell erreicht. Hunk-Header und das Präfix jeder Zeile bleiben, damit
+ * Zeilennummern und Hunk-Grenzen weiter stimmen. In öffentlichem PEM-Material
+ * (base64, kein Secret) ruht nur die Entropie-Heuristik, wie in
+ * `findSecretsInDiff`; der Zustand endet mit dem Hunk, weil die END-Zeile
+ * außerhalb liegen kann.
+ */
+export function redactSecretsInPatch(patch: string): PatchRedaction {
+    const redactedLineClasses: (readonly string[])[] = [];
+    let inPublicPemBlock = false;
+    const redactedLines = patch.split('\n').map((patchLine) => {
+        if (patchLine.startsWith('@@')) {
+            inPublicPemBlock = false;
+            return patchLine;
+        }
+        if (patchLine.startsWith('\\')) return patchLine;
+        if (PUBLIC_PEM_BEGIN_PATTERN.test(patchLine)) inPublicPemBlock = true;
+        const lineRedaction = redactSecretsInLine(patchLine.slice(1), { skipEntropy: inPublicPemBlock });
+        if (PEM_END_PATTERN.test(patchLine)) inPublicPemBlock = false;
+        if (lineRedaction.patternClasses.length === 0) return patchLine;
+        redactedLineClasses.push(lineRedaction.patternClasses);
+        return `${patchLine.charAt(0)}${lineRedaction.redactedLine}`;
+    });
+    return { redactedPatch: redactedLines.join('\n'), redactedLineClasses };
+}
+
+/** true = mindestens eine Zeile des Texts trägt ein Secret-Muster (Kontextpaket-Abschnitte). */
+export function containsSecretLine(multiLineText: string): boolean {
+    return multiLineText.split('\n').some((textLine) => classifySecretText(textLine) !== null);
+}

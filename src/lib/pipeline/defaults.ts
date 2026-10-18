@@ -5,7 +5,16 @@
  * (z.B. bei neu verbundenen Repos). Dient auch als "Reset to Defaults"-Baseline.
  */
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
-import type { CascadeConfig, CascadeState, PipelineConfig, ReviewScopeConfig } from '@/lib/pipeline/types';
+import { REPOSITORY_MISMATCH_CONDITION_ID } from '@/lib/pipeline/repository-mismatch';
+import { DEFAULT_REPO_CONTEXT_MAX_TOKENS } from '@unslop/shared/repo-context';
+import type {
+    CascadeConfig,
+    CascadeState,
+    PipelineConfig,
+    RepoContextConfig,
+    RepoContextState,
+    ReviewScopeConfig,
+} from '@/lib/pipeline/types';
 
 export const DEFAULT_PIPELINE_CONFIG: Readonly<PipelineConfig> = {
     enabledStepIds: [
@@ -85,6 +94,80 @@ function readConfiguredLlmExtensions(rawReviewScope: unknown): readonly unknown[
     if (!rawReviewScope || typeof rawReviewScope !== 'object') return null;
     const configuredExtensions = 'llmExtensions' in rawReviewScope ? rawReviewScope.llmExtensions : undefined;
     return Array.isArray(configuredExtensions) ? configuredExtensions : null;
+}
+
+/**
+ * Repo-Kontext ohne Repo-Config (REPO_CONTEXT_SPEC §12 Frage 2): an, mit der
+ * gemessenen Token-Obergrenze je Draft-Call (Begründung an der Konstante).
+ */
+export const DEFAULT_REPO_CONTEXT_CONFIG: Readonly<RepoContextConfig> = {
+    enabled: true,
+    maxTokens: DEFAULT_REPO_CONTEXT_MAX_TOKENS,
+};
+
+/**
+ * Harte Obergrenze für `repoContext.maxTokens` aus einer Repo-Config: das
+ * Doppelte des Defaults. Darüber kostet ein Paket je Draft-Call mehr, als die
+ * Kostenleitplanke der Spec (§10) für den ganzen PR vorsieht.
+ */
+export const REPO_CONTEXT_MAX_TOKENS_CEILING = 2 * DEFAULT_REPO_CONTEXT_MAX_TOKENS;
+
+/**
+ * Globaler Rollback ohne Deploy (Muster `UNSLOP_LLM_LANE_JSTS_ONLY`):
+ * `UNSLOP_REPO_CONTEXT_DISABLED=1` schaltet das Paket für jeden Job ab.
+ */
+export function isRepoContextGloballyDisabled(): boolean {
+    return process.env.UNSLOP_REPO_CONTEXT_DISABLED === '1';
+}
+
+/**
+ * Löst `pipeline_config.repoContext` gegen Default und Env-Rollback auf.
+ * Ungültige Einzelfelder fallen auf den Default zurück — eine kaputte
+ * Repo-Config darf nie einen Job töten.
+ */
+export function resolveRepoContextConfig(rawRepoContext: unknown): RepoContextConfig {
+    const configuredEnabled = rawRepoContext && typeof rawRepoContext === 'object' && 'enabled' in rawRepoContext
+        ? rawRepoContext.enabled
+        : undefined;
+    const configuredMaxTokens = rawRepoContext && typeof rawRepoContext === 'object' && 'maxTokens' in rawRepoContext
+        ? rawRepoContext.maxTokens
+        : undefined;
+    const enabledForRepo = typeof configuredEnabled === 'boolean' ? configuredEnabled : DEFAULT_REPO_CONTEXT_CONFIG.enabled;
+    return {
+        enabled: enabledForRepo && !isRepoContextGloballyDisabled(),
+        maxTokens: Math.min(
+            resolvePositiveNumber(configuredMaxTokens, DEFAULT_REPO_CONTEXT_CONFIG.maxTokens),
+            REPO_CONTEXT_MAX_TOKENS_CEILING,
+        ),
+    };
+}
+
+/**
+ * Condition 12 hat keinen eigenen Schalter: sie ist aktiv genau dann, wenn
+ * der Repo-Kontext es ist. Persistierte Configs zählen ihre Conditions
+ * einzeln auf und kennen COND-012 nicht (unslopai/test, 2026-10-05); ohne
+ * diese Regel bliebe das Feature dort still aus.
+ */
+export function resolveActiveConditionIds(
+    configuredConditionIds: readonly string[],
+    repoContextConfig: RepoContextConfig,
+): readonly string[] {
+    const selectableConditionIds = configuredConditionIds.filter(
+        (conditionId) => conditionId !== REPOSITORY_MISMATCH_CONDITION_ID,
+    );
+    return repoContextConfig.enabled
+        ? [...selectableConditionIds, REPOSITORY_MISMATCH_CONDITION_ID]
+        : selectableConditionIds;
+}
+
+/** Ausgangszustand vor dem RepoContextLoaderStep. */
+export function buildInitialRepoContextState(repoContextConfig: RepoContextConfig): RepoContextState {
+    return {
+        status: repoContextConfig.enabled ? 'not_provided' : 'disabled',
+        contextPackage: null,
+        loadMs: null,
+        unavailableReason: null,
+    };
 }
 
 /**

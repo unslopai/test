@@ -16,9 +16,11 @@ import {
     assertInsideWorkTree, computeDiff, isWorkingTreeDirty, resolveGitRoot,
     resolveHeadSha, resolveMergeBase, resolveRepoFullName, GitError,
     submitScan, pollUntilDone, connectRepo, waitForRepoActive, ApiError,
-    findDiffUploadRefusal, applyFixes, SecretUploadBlockedError,
+    findDiffUploadRefusal, applyFixes, SecretUploadBlockedError, buildLocalRepoContext,
 } from '@unslop/shared/node';
-import type { CliConfig, DiffOptions, DiffUploadRefusal, FixReport } from '@unslop/shared/node';
+import type {
+    CliConfig, DiffOptions, DiffUploadRefusal, FixReport, RepoContextPackage,
+} from '@unslop/shared/node';
 import { printFixReport, printHumanResult } from './format.js';
 import { isInteractive, confirm, openBrowser, green, yellow, dim } from './ui.js';
 
@@ -161,12 +163,13 @@ export async function runScan(options: ScanOptions): Promise<number> {
             return reportUploadRefusal(uploadRefusal, options);
         }
 
+        const contextPackage = await buildContextPackageOrWarn(diff);
         let attemptedAutoConnect = false;
 
         // Submit loop: exactly one retry after a successful auto-connect.
         for (;;) {
             try {
-                return await submitAndReport(cliConfig, options, repoFullName, mergeBaseSha, diff);
+                return await submitAndReport(cliConfig, options, { repoFullName, mergeBaseSha, diff, contextPackage });
             } catch (submitError: unknown) {
                 const isNotConnected = submitError instanceof ApiError && submitError.httpStatus === 404;
                 const isPaywalled = submitError instanceof ApiError && submitError.httpStatus === 402;
@@ -238,13 +241,36 @@ export function reportUploadRefusal(uploadRefusal: DiffUploadRefusal, options: S
 // Scan run
 // =============================================================================
 
+/** What one scan uploads: the diff and, when it could be built, the repository context next to it. */
+interface ScanUpload {
+    readonly repoFullName: string;
+    readonly mergeBaseSha: string;
+    readonly diff: string;
+    readonly contextPackage: RepoContextPackage | null;
+}
+
+/**
+ * Repository context for the review (REPO_CONTEXT_SPEC §9 1b): manifests,
+ * schema, entry point and callers of changed symbols, selected by fixed rules
+ * from the work tree. A package that cannot be built never blocks the scan:
+ * the reason goes to stderr and the server reviews the diff only.
+ */
+async function buildContextPackageOrWarn(diff: string): Promise<RepoContextPackage | null> {
+    try {
+        return await buildLocalRepoContext(resolveGitRoot(), diff);
+    } catch (contextError: unknown) {
+        const failureDetail = contextError instanceof Error ? contextError.message : String(contextError);
+        console.error(yellow(`Repository context could not be built (${failureDetail}); scanning the diff only.`));
+        return null;
+    }
+}
+
 async function submitAndReport(
     cliConfig: CliConfig,
     options: ScanOptions,
-    repoFullName: string,
-    mergeBaseSha: string,
-    diff: string,
+    scanUpload: ScanUpload,
 ): Promise<number> {
+    const { repoFullName, mergeBaseSha, diff, contextPackage } = scanUpload;
     if (!options.jsonOutput) {
         console.error(`Scanning ${repoFullName} ${dim(`(diff vs ${mergeBaseSha.substring(0, 10)})`)}…`);
     }
@@ -257,6 +283,7 @@ async function submitAndReport(
         baseSha: mergeBaseSha,
         headSha: resolveHeadSha(),
         dirty: true,
+        ...(contextPackage ? { contextPackage } : {}),
     });
 
     const finalPoll = await pollUntilDone({

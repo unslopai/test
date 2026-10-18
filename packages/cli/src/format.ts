@@ -9,6 +9,7 @@ import {
     formatDraftPartialNotice,
     formatOccurrenceLineRefs,
     formatPrescanUnavailableNotice,
+    formatRepoContextNotice,
     formatTimeBudgetNotice,
     sanitizeModelText,
 } from '@unslop/shared/node';
@@ -44,8 +45,9 @@ function integrityScoreLine(scanResult: ScanResult): string {
 
 /**
  * A time skip (DEADLINE_GUARD_SPEC §3.4), a partial draft (LARGE_DIFF_RECALL_SPEC
- * Option A) and a failed pre-scan next to the model review (fully or for some
- * file batches) each get the same one-line notice as the check run and the PR
+ * Option A), a failed pre-scan next to the model review (fully or for some
+ * file batches) and a missing or trimmed repository context (REPO_CONTEXT_SPEC
+ * §9.2) each get the same one-line notice as the check run and the PR
  * review. Only model-reviewed results reach this line: for a deterministic-only
  * run the server summary already names the failure. File paths come from the
  * diff and are sanitized like every other model-adjacent text.
@@ -53,10 +55,12 @@ function integrityScoreLine(scanResult: ScanResult): string {
 function degradationNotices(scanResult: ScanResult): string[] {
     const unreviewedFiles = (scanResult.draftUnreviewedFiles ?? []).map(sanitizeModelText);
     const unscannedFiles = (scanResult.prescan?.unscannedFiles ?? []).map(sanitizeModelText);
+    const omittedContextPaths = (scanResult.repoContext?.omittedPaths ?? []).map(sanitizeModelText);
     return [
         formatTimeBudgetNotice(scanResult.skippedStages),
         formatDraftPartialNotice(unreviewedFiles, scanResult.draftFailureReason),
         formatPrescanUnavailableNotice(scanResult.prescan?.degraded, unscannedFiles),
+        formatRepoContextNotice(scanResult.repoContext?.status, omittedContextPaths),
     ].filter((degradationNotice): degradationNotice is string => degradationNotice !== null);
 }
 

@@ -727,3 +727,12 @@ Recorded so they are not mistaken for oversights.
 | Ledger read surface | Written in Phase 3, readable never (in v1). Feeds `ROADMAP.md` §10's CTO dashboard later. |
 | Untracked-file coverage | Excluded by D6. A new file an agent writes is not scanned until it is tracked. Revisit if it proves to be the dominant miss. |
 | `/api/cli/*` namespace naming | Now serves CLI, VS Code, and MCP. Renaming is a breaking change for shipped clients; out of scope. |
+
+## 14. Amendment 2026-10-05: repository context next to the diff (REPO_CONTEXT_SPEC §9 1b)
+
+- `unslop_scan` (and `unslop scan` in the CLI, and through it the VS Code extension) now build a repository context package from the work tree and upload it as the field `contextPackage` next to `diff`: nearest manifests, schema files, entry point, the parts of changed files around the hunks, a file tree near the changes, and the files and lines that reference changed symbols (`git grep`). The selection rules are the same file the server uses for pull requests (`@unslop/shared/repo-context`).
+- D3 ("zero analysis") holds: the package is file selection by fixed rules, no judgement. The secret filter runs over the content of every section; a section with a match is left out and named. `.env` files and lockfiles are never read into the package, also when they are part of the diff. `submitScan` re-checks the package at the network boundary like every other payload field.
+- The server validates the field structurally, limits it (64 KB of section content, the per-repository token budget) and runs its own secret filter. As soon as the job starts, its first step replaces the package in the job payload by the list of paths and the size, whether or not the review ends up using it; a job that never starts keeps it until its row is deleted. A scan without the field behaves as before, so older clients stay valid; an invalid field is rejected with `invalid_context_package`.
+- `ToolDeps` gains `buildContextPackage`. If the package cannot be built, the reason goes to stderr and the scan covers the diff only.
+- `unslop_get_result` returns `repoContext` (status, paths, estimated tokens, omitted paths) and `repoContextNotice`, the same sentence as the pull request review when the package was missing or trimmed.
+- MCP still excludes untracked files from the diff (D6); the package reads tracked and untracked, non-ignored files as context.

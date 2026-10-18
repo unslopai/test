@@ -7,8 +7,10 @@
  */
 import {
     DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REPO_CONTEXT_CONFIG,
     DEFAULT_REVIEW_SCOPE_CONFIG,
     INITIAL_CASCADE_STATE,
+    buildInitialRepoContextState,
 } from '@/lib/pipeline/defaults';
 import { DEFAULT_PRESCAN_CONFIG } from '@unslop/prescan';
 import type { PrescanStats } from '@unslop/prescan';
@@ -115,6 +117,9 @@ export function buildPipelineContext(overrides: Partial<PipelineContext> = {}): 
         cascadeConfig: DEFAULT_CASCADE_CONFIG,
         prescanConfig: DEFAULT_PRESCAN_CONFIG,
         reviewScopeConfig: DEFAULT_REVIEW_SCOPE_CONFIG,
+        repoContextConfig: DEFAULT_REPO_CONTEXT_CONFIG,
+        repoContext: buildInitialRepoContextState(DEFAULT_REPO_CONTEXT_CONFIG),
+        secretRedactions: [],
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,

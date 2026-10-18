@@ -55,6 +55,8 @@ import type {
 import type { PromptVariant } from '@/lib/pipeline/prompt-builder';
 import { resolveJobLawEcosystems } from '@/lib/pipeline/law-ecosystems';
 import type { DraftFailureReason } from '@unslop/shared';
+import { estimateContextTokens, renderRepoContextSection, selectContextForFiles } from '@unslop/shared/repo-context';
+import type { RepoContextPackage } from '@unslop/shared/repo-context';
 
 /** PipelineIssue.source der Draft-Claims — der integrity-scorer filtert danach. */
 const DRAFT_ISSUE_SOURCE = 'draft-reviewer';
@@ -155,7 +157,9 @@ function degradeToFlashCascade(context: PipelineContext): PipelineContext {
 
 /** Alles, was jeder Reviewer-Pass dieses Drafts teilt — Envelope und Cache inklusive. */
 interface DraftPassPlan {
-    readonly sharedOptions: Omit<ReviewerPassOptions, 'userPrompt' | 'reviewableFiles'>;
+    readonly sharedOptions: Omit<
+        ReviewerPassOptions, 'userPrompt' | 'reviewableFiles' | 'repoContextPackage' | 'repoContextTokens'
+    >;
     readonly promptVariant: PromptVariant;
 }
 
@@ -218,14 +222,17 @@ async function runDraftOnModel(
 }
 
 async function runSingleDraft(context: PipelineContext, passPlan: DraftPassPlan): Promise<DraftOutcome> {
+    const repoContextSection = renderContextForPass(context.repoContext.contextPackage);
     let passResult: ReviewerPassResult;
     try {
         passResult = await runReviewerPass(context, {
             ...passPlan.sharedOptions,
+            ...repoContextSection.passOptions,
             userPrompt: buildUserPrompt({
                 variant: passPlan.promptVariant,
                 ragPromptSection: context.ragPromptSection,
                 practicesPromptSection: context.practicesPromptSection,
+                repoContextSection: repoContextSection.promptSection,
                 prescanIssues: context.prescanIssues,
                 diffText: context.combinedDiff,
             }),
@@ -292,12 +299,21 @@ async function runBatchPass(
     passPlan: DraftPassPlan,
     draftBatch: DraftBatch,
 ): Promise<ReviewerPassResult> {
+    // Jeder Batch bekommt das Paket für SEINE Dateien, nicht das des ganzen PRs (REPO_CONTEXT_SPEC §5.1).
+    const batchContextPackage = context.repoContext.contextPackage
+        ? selectContextForFiles(
+            context.repoContext.contextPackage, draftBatch.files.map((batchFile) => batchFile.filename),
+        )
+        : null;
+    const repoContextSection = renderContextForPass(batchContextPackage);
     const passResult = await runReviewerPass(context, {
         ...passPlan.sharedOptions,
+        ...repoContextSection.passOptions,
         userPrompt: buildUserPrompt({
             variant: passPlan.promptVariant,
             ragPromptSection: context.ragPromptSection,
             practicesPromptSection: context.practicesPromptSection,
+            repoContextSection: repoContextSection.promptSection,
             prescanIssues: selectPrescanIssuesForBatch(context.prescanIssues, draftBatch.files),
             diffText: draftBatch.diffText,
         }),
@@ -465,6 +481,22 @@ function logPassResult(passResult: ReviewerPassResult, reviewerModel: string, pa
 // Helpers
 // =============================================================================
 
+/** Prompt-Abschnitt und Pass-Optionen eines Calls aus EINEM Rendering: was der Prompt trägt, zählt die Telemetrie. */
+function renderContextForPass(passContextPackage: RepoContextPackage | null): {
+    promptSection: string;
+    passOptions: Pick<ReviewerPassOptions, 'repoContextPackage' | 'repoContextTokens'>;
+} {
+    const promptSection = passContextPackage ? renderRepoContextSection(passContextPackage) : '';
+    return {
+        promptSection,
+        passOptions: {
+            // Ein Paket ohne zeigbaren Abschnitt belegt nichts: Condition 12 fällt dann wie ohne Paket.
+            repoContextPackage: promptSection ? passContextPackage : null,
+            repoContextTokens: estimateContextTokens(promptSection),
+        },
+    };
+}
+
 function selectPromptVariant(ragPromptSection: string): PromptVariant {
     return ragPromptSection ? 'reviewer_rag' : 'reviewer_diff';
 }
@@ -473,6 +505,8 @@ interface DraftPromptInputs {
     readonly variant: PromptVariant;
     readonly ragPromptSection: string;
     readonly practicesPromptSection: string;
+    /** Gerenderter Abschnitt des Kontextpakets für diesen Call; '' = kein Paket. */
+    readonly repoContextSection: string;
     readonly prescanIssues: readonly PipelineIssue[];
     /** Der ganze combinedDiff (Einzel-Call) oder der Diff-Text eines Batches. */
     readonly diffText: string;
@@ -480,7 +514,7 @@ interface DraftPromptInputs {
 
 /**
  * Baut den User-Prompt: optionale Kontext-Sektionen (Evidence, Practices,
- * <already_flagged>-Prescan-Tupel) gefolgt vom Diff. Alles Diff-Variable steht
+ * Repo-Kontextpaket, <already_flagged>-Prescan-Tupel) gefolgt vom Diff. Alles Diff-Variable steht
  * bewusst NUR hier und nie im System-Prompt — der bleibt per-Repo
  * byte-identisch (Cache-Contract). Evidence und Practices sind job-weit und
  * stehen deshalb in jedem Batch-Prompt.
@@ -493,6 +527,9 @@ function buildUserPrompt(promptInputs: DraftPromptInputs): string {
     }
     if (promptInputs.practicesPromptSection) {
         contextSections.push(promptInputs.practicesPromptSection);
+    }
+    if (promptInputs.repoContextSection) {
+        contextSections.push(promptInputs.repoContextSection);
     }
     const alreadyFlaggedSection = buildAlreadyFlaggedSection(promptInputs.prescanIssues);
     if (alreadyFlaggedSection) {

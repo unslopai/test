@@ -422,3 +422,10 @@ UP accordingly (more cacheable tokens per call than estimated).
   cost impact ≤ one duplicate creation per race.
 - **Vercel OOM ceiling**: `context-cache.ts` adds no heavy modules (pure SDK calls on the
   existing client) — no interaction with the known prescan/rag-loader memory budget.
+
+## 14. Amendment 2026-10-05: repository context package (REPO_CONTEXT_SPEC §6.3)
+
+- The repository context package is per-request data and lives only in the dynamic tail of the draft contents (after Evidence and Practices, before `<already_flagged>` and the diff). It is never part of the cached prefix, and it is no input of `computeCacheKey`. Proof: `prompt-stability.test.ts`, "Repo-Kontextpaket": the `systemInstruction` (the cached prefix) is byte-identical with and without a package. The key has no package input by construction: `CacheKeyInputs` carries model, law hash, ecosystems and condition ids only.
+- Condition 12 (Repository Mismatch) is a registry condition and therefore part of the prefix whenever it is active. It is active exactly when `pipeline_config.repoContext.enabled` holds (`resolveActiveConditionIds`), so a repository with the context switched off gets a different conditions key than one with it on.
+- `PROMPT_CACHE_SCHEMA_VERSION` 3 → 4: both draft protocol blocks and the verifier protocol block changed (repository context notice, Priority 3 of the RAG protocol, output fields of a Condition 12 finding, "REPOSITORY CONTEXT CLAIMS" for the verifier). Consequence after the deploy: one `explicit_created` per key.
+- The verifier receives the cited context excerpt in its dynamic contents as well ("REPOSITORY CONTEXT EXCERPTS"), once per cited file and only for claims that carry a `context_path`.

@@ -335,3 +335,41 @@ export function isWorkingTreeDirty(cwd?: string, dirtyOptions: DiffOptions = {})
     const untrackedMode = dirtyOptions.includeUntracked ? '--untracked-files=all' : '--untracked-files=no';
     return runGit(['status', '--porcelain', untrackedMode], cwd).length > 0;
 }
+
+/**
+ * Tracked plus untracked, non-ignored files, repo-root-relative with forward
+ * slashes: the path list the repository context rules select from
+ * (REPO_CONTEXT_SPEC §9 1b).
+ */
+export function listWorkTreeFiles(cwd?: string): string[] {
+    const listOutput = runGit(
+        ['ls-files', '--cached', '--others', '--exclude-standard', '--full-name', '-z', '--', ':/'],
+        cwd,
+        { keepWhitespace: true },
+    );
+    return [...new Set(listOutput.split('\0').filter((listedPath) => listedPath.length > 0 && !listedPath.endsWith('/')))];
+}
+
+export interface WorkTreeGrepHit {
+    readonly path: string;
+    readonly line: number;
+}
+
+const GREP_HIT_PATTERN = /^(.+?):(\d+):/;
+
+/**
+ * Whole-word, fixed-string search over tracked and untracked files. `git grep`
+ * exits 1 without a match; that is an empty result, not a failure. Any other
+ * non-zero exit throws.
+ */
+export function grepWordInWorkTree(searchWord: string, cwd?: string): WorkTreeGrepHit[] {
+    const grepProbe = probeGit(
+        ['grep', '-n', '-w', '-F', '-I', '--untracked', '--full-name', '-e', searchWord, '--', ':/'], cwd,
+    );
+    if (grepProbe.exitCode === 1) return [];
+    if (grepProbe.exitCode !== 0) throw new GitError(`git grep failed: ${grepProbe.stderr || grepProbe.exitCode}`);
+    return grepProbe.stdout.split('\n').flatMap((grepLine) => {
+        const hitMatch = GREP_HIT_PATTERN.exec(grepLine);
+        return hitMatch ? [{ path: hitMatch[1], line: Number.parseInt(hitMatch[2], 10) }] : [];
+    });
+}

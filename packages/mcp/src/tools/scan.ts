@@ -43,6 +43,8 @@ export async function runScanTool(deps: ToolDeps, toolArgs: ScanToolArgs): Promi
         return toolErrorResult(uploadRefusal);
     }
 
+    const contextPackage = await deps.buildContextPackage(repoContext.gitRoot, workingTreeDiff);
+
     let jobId: string;
     try {
         jobId = await deps.api.submitScan({
@@ -52,6 +54,7 @@ export async function runScanTool(deps: ToolDeps, toolArgs: ScanToolArgs): Promi
             headSha: repoContext.headSha,
             dirty: repoContext.isDirty,
             rerollLimit: deps.rerollLimit,
+            contextPackage,
         });
     } catch (submitError: unknown) {
         return toolErrorResult(mapApiError(submitError, deps.baseUrl));

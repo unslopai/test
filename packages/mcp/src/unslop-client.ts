@@ -18,6 +18,7 @@ import {
 } from '@unslop/shared/node';
 import type { CliConfig, FindingResolutionResponse, PrReviewSubmitResponse } from '@unslop/shared/node';
 import type { ScanPollResponse } from '@unslop/shared';
+import type { RepoContextPackage } from '@unslop/shared/node';
 
 export interface SubmitScanRequest {
     readonly repoFullName: string;
@@ -26,6 +27,8 @@ export interface SubmitScanRequest {
     readonly headSha: string;
     readonly dirty: boolean;
     readonly rerollLimit: number;
+    /** Repository context built from the work tree (REPO_CONTEXT_SPEC §9 1b); null = scan the diff only. */
+    readonly contextPackage: RepoContextPackage | null;
 }
 
 export interface ResolveFindingRequest {
@@ -65,6 +68,7 @@ export function createUnslopApiClient(clientConfig: CliConfig): UnslopApiClient 
             dirty: request.dirty,
             source: 'mcp',
             rerollLimit: request.rerollLimit,
+            ...(request.contextPackage ? { contextPackage: request.contextPackage } : {}),
         }),
         fetchScanStatus: (jobId: string) => fetchScanStatus({
             baseUrl: clientConfig.baseUrl,

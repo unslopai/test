@@ -26,7 +26,10 @@ import { buildJobClock, resolveJobBudgetMs } from '@/lib/pipeline/deadline';
 import {
     DEFAULT_PIPELINE_CONFIG,
     INITIAL_CASCADE_STATE,
+    buildInitialRepoContextState,
+    resolveActiveConditionIds,
     resolveCascadeConfig,
+    resolveRepoContextConfig,
     resolveReviewScopeConfig,
 } from '@/lib/pipeline/defaults';
 // Subpath-Import mit Absicht: der Index zieht alle Scan-Engines (tree-sitter,
@@ -34,6 +37,7 @@ import {
 import { resolvePrescanConfig } from '@unslop/prescan/config';
 import { buildDeterministicOnlySummary } from '@/lib/pipeline/final-summary';
 import { collectReportableIssues } from '@/lib/pipeline/helpers';
+import { listOmittedContextPaths } from '@/lib/pipeline/repo-context-result';
 import {
     describeFilesWithoutModelReview,
     describeNothingReviewed,
@@ -41,12 +45,13 @@ import {
     resolveReviewOutcome,
 } from '@/lib/pipeline/review-scope';
 import {
-    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatTimeBudgetNotice,
+    formatDraftPartialNotice, formatPrescanUnavailableNotice, formatRepoContextNotice, formatTimeBudgetNotice,
 } from '@unslop/shared/degradation-notice';
 import { diffLoaderStep } from '@/lib/pipeline/steps/diff-loader-step';
 import { cliDiffLoaderStep } from '@/lib/pipeline/steps/cli-diff-loader-step';
 import { preScannerStep } from '@/lib/pipeline/steps/pre-scanner-step';
 import { ragLoaderStep } from '@/lib/pipeline/steps/rag-loader-step';
+import { repoContextLoaderStep } from '@/lib/pipeline/steps/repo-context-loader-step';
 import { complexityRouterStep } from '@/lib/pipeline/steps/complexity-router-step';
 import { draftReviewerStep } from '@/lib/pipeline/steps/draft-reviewer-step';
 import { claimVerifierStep } from '@/lib/pipeline/steps/claim-verifier-step';
@@ -106,6 +111,8 @@ const CLI_PIPELINE_STEPS: readonly PipelineStep[] = [
     preScannerStep,
     ragLoaderStep,
     complexityRouterStep,
+    // Validiert das vom Client hochgeladene Kontextpaket (REPO_CONTEXT_SPEC §9 1b).
+    repoContextLoaderStep,
     draftReviewerStep,
     claimVerifierStep,
     escalationReviewerStep,
@@ -119,12 +126,18 @@ const CLI_PIPELINE_STEPS: readonly PipelineStep[] = [
  * Nur aktivierte Steps werden instanziiert. Der ResultPersisterStep wird
  * immer terminal angehängt (Pflicht-Step, nicht toggelbar) — auch für
  * bestehende pipeline_configs, die ihn noch nicht kennen.
+ *
+ * Der RepoContextLoaderStep steht in keiner `enabledStepIds`-Liste: er läuft
+ * immer direkt vor dem Draft, sein Schalter ist `pipeline_config.repoContext`.
+ * Persistierte Configs zählen ihre Steps einzeln auf (unslopai/test); eine
+ * neue Step-ID bliebe dort bis zum nächsten Config-Update still aus.
  */
 function assembleSteps(config: PipelineConfig): PipelineStep[] {
     const configuredSteps = config.enabledStepIds
-        .filter((stepId) => stepId !== resultPersisterStep.id)
+        .filter((stepId) => stepId !== resultPersisterStep.id && stepId !== repoContextLoaderStep.id)
         .map((stepId) => STEP_REGISTRY.get(stepId))
-        .filter((step): step is PipelineStep => step !== undefined);
+        .filter((step): step is PipelineStep => step !== undefined)
+        .flatMap((step) => (step.id === draftReviewerStep.id ? [repoContextLoaderStep, step] : [step]));
 
     return [...configuredSteps, resultPersisterStep];
 }
@@ -375,6 +388,7 @@ interface InitialContextParams {
 }
 
 function buildInitialContext(params: InitialContextParams): PipelineContext {
+    const repoContextConfig = resolveRepoContextConfig(params.pipelineConfig.repoContext);
     return {
         jobId: params.jobId,
         repoFullName: params.repoFullName,
@@ -396,7 +410,8 @@ function buildInitialContext(params: InitialContextParams): PipelineContext {
         practicesPromptSection: '',
         detectedEcosystems: params.detectedEcosystems,
         promptConfig: {
-            activeConditionIds: params.pipelineConfig.activeConditionIds,
+            // Condition 12 folgt dem Repo-Kontext-Schalter, nicht der Condition-Liste der Config.
+            activeConditionIds: resolveActiveConditionIds(params.pipelineConfig.activeConditionIds, repoContextConfig),
             filePaths: [],
             overrideSmartDetection: params.pipelineConfig.overrideSmartDetection,
         },
@@ -405,6 +420,9 @@ function buildInitialContext(params: InitialContextParams): PipelineContext {
         cascadeConfig: resolveCascadeConfig(params.pipelineConfig.cascade),
         prescanConfig: resolvePrescanConfig(params.pipelineConfig.prescan),
         reviewScopeConfig: resolveReviewScopeConfig(params.pipelineConfig.reviewScope),
+        repoContextConfig,
+        repoContext: buildInitialRepoContextState(repoContextConfig),
+        secretRedactions: [],
         prescanIssues: [],
         prescanStats: null,
         llmSkipped: false,
@@ -563,6 +581,7 @@ function appendDegradationNotices(checkRunResult: CheckRunResult, finalContext: 
         formatTimeBudgetNotice(finalContext.cascade.skippedStages),
         formatDraftPartialNotice(finalContext.cascade.draftUnreviewedFiles, finalContext.cascade.draftFailureReason ?? undefined),
         formatPrescanUnavailableNotice(finalContext.prescanStats?.degraded, finalContext.prescanStats?.unscannedFiles),
+        formatRepoContextNotice(finalContext.repoContext.status, listOmittedContextPaths(finalContext.repoContext)),
         describeFilesWithoutModelReview(finalContext),
     ].filter((notice): notice is string => notice !== null);
     if (degradationNotices.length === 0) return checkRunResult;
@@ -657,9 +676,10 @@ function parsePipelineConfig(rawConfig: unknown): PipelineConfig | null {
         return null;
     }
 
-    // cascade-/prescan-/reviewScope-Blöcke werden nur strukturell durchgereicht —
-    // die Feld-Validierung (Fallback auf Defaults) machen resolveCascadeConfig,
-    // resolvePrescanConfig und resolveReviewScopeConfig.
+    // cascade-/prescan-/reviewScope-/repoContext-Blöcke werden nur strukturell
+    // durchgereicht — die Feld-Validierung (Fallback auf Defaults) machen
+    // resolveCascadeConfig, resolvePrescanConfig, resolveReviewScopeConfig und
+    // resolveRepoContextConfig.
     const cascadeOverrides = candidate.cascade && typeof candidate.cascade === 'object'
         ? candidate.cascade as Partial<CascadeConfig>
         : undefined;
@@ -671,5 +691,6 @@ function parsePipelineConfig(rawConfig: unknown): PipelineConfig | null {
         cascade: cascadeOverrides,
         prescan: candidate.prescan,
         reviewScope: candidate.reviewScope,
+        repoContext: candidate.repoContext,
     };
 }

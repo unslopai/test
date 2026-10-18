@@ -125,6 +125,18 @@ describe('PUT /api/repos/[id]/settings — validator allowlist', () => {
         expect(persistedConfig().reviewScope).toEqual({ llmExtensions: ['.py', '.java'] });
     });
 
+    it('keeps a valid repoContext block, drops an out-of-range token limit, and never stores COND-012 as a per-repo condition', async () => {
+        await PUT(buildPutRequest({
+            enabledStepIds: ['diff-loader'],
+            activeConditionIds: ['COND-001', 'COND-012'],
+            overrideSmartDetection: false,
+            repoContext: { enabled: false, maxTokens: 999_999, unknownField: true },
+        }), ROUTE_PARAMS);
+
+        expect(persistedConfig().repoContext).toEqual({ enabled: false });
+        expect(persistedConfig().activeConditionIds).toEqual(['COND-001']);
+    });
+
     it('omits prescan entirely when the client sends none (no empty-object noise)', async () => {
         await PUT(buildPutRequest({
             enabledStepIds: ['diff-loader'],

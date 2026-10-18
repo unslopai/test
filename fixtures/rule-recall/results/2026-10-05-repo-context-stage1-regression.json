@@ -1,0 +1,289 @@
+{
+  "capturedAt": "2026-10-05T16:02:59.920Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "production",
+  "ecosystems": "manifest",
+  "llmExtensions": [
+    ".py",
+    ".go",
+    ".ps1",
+    ".psm1"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "fixture": "r05-ts-security.diff",
+      "jobId": "ebee1b56-eaa5-4b11-9b70-f93b07a10768",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 7,
+      "prescanDurationMs": 1832,
+      "integrityScore": 96,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r10-go-hal-conc.diff",
+      "jobId": "2042226b-4697-4881-ab8a-cb4038af8d5a",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 5,
+      "survivingFindingCount": 5,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 32,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/quota/usage_ledger.go",
+          "ruleContains": "ARCH-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/invoices/invoice_totals.go",
+          "ruleContains": "HAL-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/handles/display_handle.go",
+          "ruleContains": "HAL-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/failover/failover_router.go",
+          "ruleContains": "CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/payouts/submit_payout.go",
+          "ruleContains": "CONC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/presence/presence_tracker.go",
+          "ruleContains": "CONC-008|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r13-powershell.diff",
+      "jobId": "329552ea-7466-4f79-9f10-554e504471d3",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 1,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/install/bootstrap-agent.ps1",
+          "ruleContains": "SEC-048",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/deploy/prepare-host.ps1",
+          "ruleContains": "SEC-049",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/diagnostics/collect-dump.ps1",
+          "ruleContains": "SEC-050",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r18-clean-ts.diff",
+      "jobId": "4d5d0ae6-6427-4426-837d-5c8276e88164",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 1648,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "637f9151-55b6-4008-a2c3-dc6a72721824",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

@@ -180,6 +180,26 @@ Die Zahlen gelten für den 2026-09-30; bis zum Eintragungstag wachsen beide (jed
 
 Nicht berührt. Die Änderungen verkürzen nur, wie lange `review_job_llm_calls.verdicts` liegen (90 Tage mit dem Auftrag); die auftragsübergreifende Auswertung bleibt die offene Entscheidung V20.
 
+## §4b Amendment 2026-10-05: Repo-Kontext für die Review
+
+Anlass: `REPO_CONTEXT_SPEC.md` Stufe 1a/1b (freigegeben 2026-10-05, Frage 2: zulassen, Default an, je Repo abschaltbar; die Rechtstexte im selben PR). Seit diesem Bau geht neben dem Diff eine regelbasierte Auswahl weiterer Dateien des Repositorys an das KI-Modell: Liste der Dateipfade, Manifest-Dateien, Dateien mit dem Datenbankschema, die Startdatei eines Dienstes und Abschnitte geänderter Dateien; aus CLI, VS-Code-Erweiterung und MCP-Server zusätzlich eine Liste der Dateien und Zeilen, die geänderte Funktionen verwenden. `.env`-Dateien und Lockfiles sind ausgeschlossen. Derselbe Auftragsverarbeiter, dieselbe Region, kein neuer Zweck.
+
+Geändert in `src/content/legal/` (deutsch und englisch):
+
+| Datei | Stelle | Was jetzt dort steht |
+|---|---|---|
+| `privacy.*.md` | 6.1 GitHub App | welche weiteren Dateien wir am Stand des Pull Requests lesen; gespeichert werden nur Pfadliste und Größe |
+| `privacy.*.md` | 6.1 CLI, VS-Code-Erweiterung, MCP-Server | die Werkzeuge schicken dieselbe Auswahl mit und lassen eine Datei mit erkanntem Geheimnis weg |
+| `privacy.*.md` | 6.3 Vertex AI | neuer Punkt „Was an das Modell geht“ inklusive der serverseitigen Ersetzung von Geheimnissen im Diff |
+| `privacy.*.md` | 6.4 Was wir speichern | die hochgeladene Auswahl bleibt nur, bis die Prüfung sie geladen hat |
+| `dpa.*.md` | Anlage 2, Art und Zweck, Nummern 1 und 3 | Abruf bzw. Empfang der Auswahl, Übermittlung an das Modell ohne Speicherung des Inhalts |
+| `dpa.*.md` | Anlage 3 (TOMs) | der Satz „keine serverseitige Filterung“ ist ersetzt: der Server ersetzt Geheimnis-Muster im Modell-Diff und lässt betroffene Dateien der Auswahl weg; musterbasiert, kann Geheimnisse übersehen |
+| `dpa.*.md` | Anlage 3 (Datenminimierung) | Aufzählung dessen, was an die KI-Modelle geht |
+
+Dazu die Landing-FAQ „Was passiert mit meinem Code“ (`messages/*.json`) und das README der VS-Code-Erweiterung, weil sie sonst nur Diff und geänderte Dateien nennten.
+
+Nicht geändert: Speicherfristen (die Auswahl wird nicht gespeichert), die Liste der Unterauftragsverarbeiter, die Terms. **Offen:** Die neuen Sätze sind nicht durch die Gegenprüfung aus §8 gelaufen und nicht anwaltlich geprüft; vor Stufe A einmal gegen den Code lesen (`packages/shared/src/repo-context.ts`, `src/lib/pipeline/secret-redaction.ts`). Wird der Repo-Kontext für ein Repo abgeschaltet (`pipeline_config.repoContext.enabled = false`), gilt für dieses Repo wieder der Stand vor diesem Amendment.
+
 ## §5 Umsetzung (Phase 3, erst nach Freigabe)
 
 ### 5.1 Routen

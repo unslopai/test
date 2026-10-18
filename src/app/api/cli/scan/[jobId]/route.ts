@@ -16,7 +16,7 @@ import { classifyJobFailure } from '@/lib/job-failure';
 import { scheduleLazyReap } from '@/lib/lazy-reaper';
 import { normalizeBareRuleId } from '@/lib/pipeline/helpers';
 import type {
-    DraftFailureReason, RerollNotice, ScanOutcome, ScanPhase, ScanPrescanStatus, SkippedStage,
+    DraftFailureReason, RerollNotice, ScanOutcome, ScanPhase, ScanPrescanStatus, ScanRepoContext, SkippedStage,
 } from '@unslop/shared';
 
 const STALLED_JOB_THRESHOLD_MS = 5 * 60 * 1000;
@@ -126,6 +126,7 @@ interface PersistedResultBlob {
     skipped_stages?: unknown;
     draft_unreviewed_files?: unknown;
     draft_failure_reason?: unknown;
+    repo_context?: { status?: unknown; paths?: unknown; estimated_tokens?: unknown; omissions?: unknown } | null;
 }
 
 /**
@@ -165,6 +166,39 @@ function toScanResult(persistedResult: unknown, options: { terminal: boolean }):
         draftUnreviewedFiles: parseStringList(resultBlob.draft_unreviewed_files),
         ...parseDraftFailureReason(resultBlob.draft_failure_reason),
         ...parsePrescanStatus(resultBlob.prescan),
+        ...parseRepoContext(resultBlob.repo_context),
+    };
+}
+
+const REPO_CONTEXT_STATUS_VALUES: ReadonlySet<string> = new Set<ScanRepoContext['status']>([
+    'loaded', 'unavailable', 'disabled', 'not_provided',
+]);
+
+function isRepoContextStatus(rawStatus: unknown): rawStatus is ScanRepoContext['status'] {
+    return typeof rawStatus === 'string' && REPO_CONTEXT_STATUS_VALUES.has(rawStatus);
+}
+
+/**
+ * Additiv (REPO_CONTEXT_SPEC §9.2): Pfade und Größe des Kontextpakets, nie
+ * Inhalt. Fehlt bei Ergebnissen vor Stufe 1 und bei Partials.
+ */
+function parseRepoContext(persistedContext: PersistedResultBlob['repo_context']): { repoContext?: ScanRepoContext } {
+    if (!persistedContext || !isRepoContextStatus(persistedContext.status)) return {};
+    const omittedPaths = Array.isArray(persistedContext.omissions)
+        ? persistedContext.omissions.flatMap((rawOmission: unknown) =>
+            // `not_selected` (ältere Migrationen jenseits des Schema-Deckels) ist die Regel, keine Kürzung.
+            (rawOmission && typeof rawOmission === 'object' && 'path' in rawOmission && typeof rawOmission.path === 'string'
+                && !('reason' in rawOmission && rawOmission.reason === 'not_selected')
+                ? [rawOmission.path]
+                : []))
+        : [];
+    return {
+        repoContext: {
+            status: persistedContext.status,
+            paths: parseStringList(persistedContext.paths),
+            estimatedTokens: typeof persistedContext.estimated_tokens === 'number' ? persistedContext.estimated_tokens : 0,
+            omittedPaths,
+        },
     };
 }
 

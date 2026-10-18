@@ -500,4 +500,28 @@ describe('GET /api/cli/scan/[jobId] — Feld aiGenerated (LEGAL_PAGES_SPEC §4a.
         expect(pollResponse.partialResult.outcome).toBe('reviewed');
         expect(pollResponse.partialResult.aiGenerated).toBe(false);
     });
+
+    it('liefert Status, Pfade, Tokens und ausgelassene Pfade des Repo-Kontextpakets, nie Inhalt (REPO_CONTEXT_SPEC §9.2)', async () => {
+        mockJobRow({
+            status: 'done',
+            result: {
+                review: { has_slop: false, issues: [], summary: 'No AI slop found.' },
+                files_reviewed: 1,
+                repo_context: {
+                    status: 'loaded',
+                    paths: ['web/package.json'],
+                    estimated_tokens: 412,
+                    bytes: 1650,
+                    omissions: [{ kind: 'schema', path: 'db/schema.sql', reason: 'budget' }],
+                    max_tokens: 8000,
+                },
+            },
+        });
+
+        const pollResponse = await (await GET(buildPollRequest(), ROUTE_PARAMS)).json();
+
+        expect(pollResponse.result.repoContext).toEqual({
+            status: 'loaded', paths: ['web/package.json'], estimatedTokens: 412, omittedPaths: ['db/schema.sql'],
+        });
+    });
 });

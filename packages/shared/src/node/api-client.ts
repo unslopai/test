@@ -9,6 +9,8 @@
  */
 import type { ScanPollResponse, ScanSubmitResponse } from '@unslop/shared';
 import { SecretUploadBlockedError, findWirePayloadSecret } from './diff-upload-guard.js';
+import { containsSecretLine } from './secret-filter.js';
+import type { RepoContextPackage } from '../repo-context.js';
 
 export class ApiError extends Error {
     constructor(
@@ -32,6 +34,27 @@ interface SubmitScanParams {
     readonly source?: 'cli' | 'mcp';
     /** Client-konfigurierte Re-roll-Schwelle (§4.5); Server clamped [0, 50]. */
     readonly rerollLimit?: number;
+    /**
+     * Lokal gebautes Repo-Kontextpaket (REPO_CONTEXT_SPEC §9 1b). Fehlt es,
+     * prüft der Server nur den Diff, wie vor Stufe 1.
+     */
+    readonly contextPackage?: RepoContextPackage;
+}
+
+/**
+ * Dieselbe letzte Verteidigungslinie wie für die Skalar-Felder, für das
+ * Paket: `buildLocalRepoContext` hat Abschnitte mit Treffer schon entfernt;
+ * ein Paket aus anderer Quelle wird hier trotzdem geprüft, bevor fetch startet.
+ */
+function assertContextPackageHasNoSecret(contextPackage: RepoContextPackage | undefined): void {
+    const secretSection = contextPackage?.sections.find(
+        (contextSection) => containsSecretLine(contextSection.content),
+    );
+    if (secretSection) {
+        throw new SecretUploadBlockedError({
+            path: `(context:${secretSection.path})`, line: 0, patternClass: 'secret in repository context',
+        });
+    }
 }
 
 export async function submitScan(params: SubmitScanParams): Promise<string> {
@@ -52,6 +75,7 @@ export async function submitScan(params: SubmitScanParams): Promise<string> {
     if (payloadSecret) {
         throw new SecretUploadBlockedError(payloadSecret);
     }
+    assertContextPackageHasNoSecret(params.contextPackage);
 
     const response = await fetchOrThrow(`${params.baseUrl}/api/cli/scan`, {
         method: 'POST',
@@ -59,7 +83,9 @@ export async function submitScan(params: SubmitScanParams): Promise<string> {
             'Content-Type': 'application/json',
             'x-api-key': params.apiKey,
         },
-        body: JSON.stringify(wirePayload),
+        body: JSON.stringify(
+            params.contextPackage ? { ...wirePayload, contextPackage: params.contextPackage } : wirePayload,
+        ),
     });
 
     if (response.status !== 202) {

@@ -12,6 +12,7 @@ import {
 import { isReviewableFile, buildCombinedDiff } from '@/lib/pipeline/helpers';
 import { trimReviewableFiles } from '@/lib/pipeline/diff-utils';
 import { planUnreviewableDiff } from '@/lib/pipeline/review-scope';
+import { redactSecretsInFiles } from '@/lib/pipeline/secret-redaction';
 import type { PipelineContext, PipelineStep } from '@/lib/pipeline/types';
 
 export const diffLoaderStep: PipelineStep = {
@@ -36,7 +37,9 @@ export const diffLoaderStep: PipelineStep = {
         const candidateFiles = prFiles.filter(
             (file) => file.patch && isReviewableFile(file.filename, context.reviewScopeConfig.llmExtensions),
         );
-        const { trimmedFiles: reviewableFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
+        const { trimmedFiles, omittedFilePaths } = trimReviewableFiles(candidateFiles);
+        // Was ein Modell liest, geht vorher durch den Secret-Filter; `prFiles` bleibt für den Pre-Scanner unverändert.
+        const { redactedFiles: reviewableFiles, secretRedactions } = redactSecretsInFiles(trimmedFiles);
 
         if (reviewableFiles.length === 0) {
             const unreviewablePlan = planUnreviewableDiff({
@@ -69,6 +72,7 @@ export const diffLoaderStep: PipelineStep = {
             headSha,
             reviewableFiles,
             combinedDiff,
+            secretRedactions,
             omittedFiles: omittedFilePaths,
             promptConfig: {
                 ...context.promptConfig,

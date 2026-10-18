@@ -41,6 +41,7 @@ function buildDeps(fetchScanStatusMock: ToolDeps['api']['fetchScanStatus']): Too
         resolveRepoContext: vi.fn() as unknown as ToolDeps['resolveRepoContext'],
         resolveRepoIdentity: vi.fn() as unknown as ToolDeps['resolveRepoIdentity'],
         buildDiff: vi.fn() as unknown as ToolDeps['buildDiff'],
+        buildContextPackage: vi.fn().mockResolvedValue(null),
         baseUrl: 'https://unslop.codes',
         rerollLimit: 3,
         waitMs: vi.fn().mockResolvedValue(undefined),
