@@ -112,3 +112,72 @@ body {
     animation: none;
   }
 }
+
+/* Rechtsseiten (LEGAL_PAGES_SPEC.md §5.3): Markdown-Typografie im Marketing-Design. */
+.legal-document h1 {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #fafafa;
+}
+.legal-document h2 {
+  margin-top: 3rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fafafa;
+  scroll-margin-top: 5rem;
+}
+.legal-document h3 {
+  margin-top: 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+.legal-document p,
+.legal-document li {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.legal-document ul,
+.legal-document ol {
+  padding-left: 1.5rem;
+}
+.legal-document ul { list-style: disc; }
+.legal-document ol { list-style: decimal; }
+.legal-document a {
+  color: #bef264;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.legal-document blockquote {
+  margin-top: 1.5rem;
+  border-left: 3px solid #bef264;
+  padding-left: 1rem;
+}
+.legal-document code {
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  color: #e4e4e7;
+}
+.legal-document hr {
+  margin: 3rem 0;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.legal-document table {
+  margin-top: 1.5rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.legal-document th,
+.legal-document td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.legal-document th {
+  color: #fafafa;
+}

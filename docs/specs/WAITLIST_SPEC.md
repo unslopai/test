@@ -100,7 +100,7 @@ Fehlt bei Flag `true` eine der Brevo-Variablen ⇒ Route 503 `waitlist_misconfig
 
 - **`WaitlistForm`** (`'use client'`, `src/app/(marketing)/components/WaitlistForm.tsx`): ein `<input type="email" required>`, ein Button, versteckter Honeypot (`autocomplete="off"`, `tabIndex=-1`, visuell verborgen), Consent-Zeile unter dem Feld. Zustand als Union `'idle' | 'submitting' | 'sent' | 'error'`, ein `AbortController` pro Submit, Abbruch beim Unmount. Keine `useEffect`-Kaskade.
 - Einbau: `HeroCtaRow` und `ClosingCta` rendern bei `isWaitlistLive()` das Formular statt der Link-Buttons; `source` unterscheidet Hero und Closing. Der Sekundär-Link „Read the evidence" bleibt im Hero.
-- **Copy** in `messages/{en,de}.json` unter `marketing.waitlist` (Catalog-Parity-Test greift automatisch): `eyebrow`, `placeholder`, `button`, `consent` (mit Link auf `/{locale}/datenschutz` bzw. `/privacy`), `sent` („Check your inbox — confirm the link and you're on the list."), `error`, `rateLimited`. Fact Discipline (MARKETING_CLAIMS §0): keine Launch-Datumszusage, keine Rabattzusage im Formular.
+- **Copy** in `messages/{en,de}.json` unter `marketing.waitlist` (Catalog-Parity-Test greift automatisch): `eyebrow`, `placeholder`, `button`, `consent` (mit Link auf `/{locale}/privacy`, locale-unabhängiger Slug, s. LEGAL_PAGES_SPEC E18), `sent` („Check your inbox — confirm the link and you're on the list."), `error`, `rateLimited`. Fact Discipline (MARKETING_CLAIMS §0): keine Launch-Datumszusage, keine Rabattzusage im Formular.
 - **`/{locale}/waitlist/confirmed`**: statische Server-Seite im Marketing-Layout, ein Satz Dank, Link zur Evidenz-Sektion. Kein State, kein Fetch (die Bestätigung ist bei Brevo bereits passiert).
 - Marketing-Nav behält „Sign in" → `/login`.
 

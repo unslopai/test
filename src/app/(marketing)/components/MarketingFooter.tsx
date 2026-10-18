@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@/i18n/config';
 import { MARKETING_SOURCES, arxivAbstractUrl } from '../marketing-sources';
+import { LegalLinks } from './LegalLinks';
 
 interface MarketingFooterProps {
   readonly locale: SupportedLocale;
@@ -27,6 +28,7 @@ export async function MarketingFooter({ locale }: MarketingFooterProps) {
           <SourcesList />
         </section>
         <FooterBottomRow locale={locale} />
+        <LegalLinks locale={locale} className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" />
         <p className="mt-8 text-xs text-zinc-600">
           {footerText('rights', { year: new Date().getFullYear() })}
         </p>
