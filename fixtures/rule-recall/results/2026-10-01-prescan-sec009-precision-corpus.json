@@ -1,0 +1,327 @@
+{
+  "capturedAt": "2026-10-01",
+  "harness": "npx tsx --tsconfig tsconfig.json scripts/prescan-corpus.ts --root <corpus> --label <label> --out <report.json> [harnessFlags]",
+  "before": "main a7f1072",
+  "after": "fix/prescan-sec009-precision (nach Review-Fixes)",
+  "note": "Pairs are [before, after]. self = git archive of main a7f1072, identical for both runs. The 5 SEC-035 removals in npmcli-jsts are live registry lookup noise: the first after-run with identical SEC-035 code still had them.",
+  "corpora": [
+    {
+      "label": "flask",
+      "repository": "pallets/flask",
+      "commit": "d73fa1c",
+      "harnessFlags": "",
+      "fileCount": 130,
+      "findings": [
+        295,
+        295
+      ],
+      "critical": [
+        22,
+        22
+      ],
+      "sec009": [
+        0,
+        0
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "cobra",
+      "repository": "spf13/cobra",
+      "commit": "adbc881",
+      "harnessFlags": "",
+      "fileCount": 59,
+      "findings": [
+        21,
+        21
+      ],
+      "critical": [
+        0,
+        0
+      ],
+      "sec009": [
+        0,
+        0
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "examples",
+      "repository": "kubernetes/examples",
+      "commit": "d6b8cd2",
+      "harnessFlags": "",
+      "fileCount": 400,
+      "findings": [
+        683,
+        683
+      ],
+      "critical": [
+        46,
+        46
+      ],
+      "sec009": [
+        0,
+        0
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "terraform-aws-vpc",
+      "repository": "terraform-aws-modules/terraform-aws-vpc",
+      "commit": "b3abd6d",
+      "harnessFlags": "",
+      "fileCount": 108,
+      "findings": [
+        0,
+        0
+      ],
+      "critical": [
+        0,
+        0
+      ],
+      "sec009": [
+        0,
+        0
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "self",
+      "repository": "unslopai/unslop",
+      "commit": "a7f1072",
+      "harnessFlags": "",
+      "fileCount": 343,
+      "findings": [
+        3,
+        3
+      ],
+      "critical": [
+        1,
+        1
+      ],
+      "sec009": [
+        0,
+        0
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "pip",
+      "repository": "pypa/pip",
+      "commit": "a7002c9",
+      "harnessFlags": "--max-files 2000",
+      "fileCount": 771,
+      "findings": [
+        1867,
+        1867
+      ],
+      "critical": [
+        386,
+        386
+      ],
+      "sec009": [
+        2,
+        2
+      ],
+      "added": [],
+      "removed": []
+    },
+    {
+      "label": "self-jsts",
+      "repository": "unslopai/unslop",
+      "commit": "a7f1072",
+      "harnessFlags": "--include-jsts --max-files 5000",
+      "fileCount": 774,
+      "findings": [
+        339,
+        331
+      ],
+      "critical": [
+        60,
+        52
+      ],
+      "sec009": [
+        8,
+        0
+      ],
+      "added": [],
+      "removed": [
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/prescan/src/engines/registry-engine.ts",
+          "line": 164,
+          "exactQuote": "HF_PRETRAINED_PATTERN.exec(lineText)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/prescan/src/engines/registry-engine.ts",
+          "line": 203,
+          "exactQuote": "RUST_USE_PATTERN.exec(lineText)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/prescan/src/engines/registry-engine.ts",
+          "line": 280,
+          "exactQuote": "REQUIREMENTS_PATTERN.exec(lineText.trim())"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/prescan/src/engines/registry-engine.ts",
+          "line": 284,
+          "exactQuote": "CARGO_DEPENDENCY_PATTERN.exec(lineText.trim())"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/shared/src/node/git.ts",
+          "line": 66,
+          "exactQuote": "/^git@[^:]+:(.+?)(?:\\.git)?$/.exec(originUrl)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/shared/src/node/git.ts",
+          "line": 69,
+          "exactQuote": "/^https?:\\/\\/[^/]+\\/(.+?)(?:\\.git)?\\/?$/.exec(originUrl)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vscode-extension/src/gitFacts.ts",
+          "line": 26,
+          "exactQuote": "/^git@[^:]+:(.+?)(?:\\.git)?$/.exec(originUrl)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vscode-extension/src/gitFacts.ts",
+          "line": 28,
+          "exactQuote": "/^https?:\\/\\/[^/]+\\/(.+?)(?:\\.git)?\\/?$/.exec(originUrl)"
+        }
+      ]
+    },
+    {
+      "label": "vite-jsts",
+      "repository": "vitejs/vite",
+      "commit": "cf5c028",
+      "harnessFlags": "--include-jsts --max-files 5000",
+      "fileCount": 2445,
+      "findings": [
+        607,
+        603
+      ],
+      "critical": [
+        102,
+        98
+      ],
+      "sec009": [
+        7,
+        3
+      ],
+      "added": [],
+      "removed": [
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vite/src/node/utils.ts",
+          "line": 356,
+          "exactQuote": "re.exec(remaining)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vite/src/node/utils.ts",
+          "line": 643,
+          "exactQuote": "splitFirstDirRE.exec(file)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vite/src/node/utils.ts",
+          "line": 774,
+          "exactQuote": "parseNetUseRE.exec(line)"
+        },
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "packages/vite/src/node/utils.ts",
+          "line": 2020,
+          "exactQuote": "hashbangRE.exec(code)"
+        }
+      ]
+    },
+    {
+      "label": "npmcli-jsts",
+      "repository": "npm/cli",
+      "commit": "c276cad",
+      "harnessFlags": "--include-jsts --max-files 5000",
+      "fileCount": 3802,
+      "findings": [
+        2247,
+        2241
+      ],
+      "critical": [
+        103,
+        97
+      ],
+      "sec009": [
+        2,
+        1
+      ],
+      "added": [],
+      "removed": [
+        {
+          "ruleId": "SEC-009",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/scripts/benchmark.js",
+          "line": 12,
+          "exactQuote": "execSync(shaCmd)"
+        },
+        {
+          "ruleId": "SEC-035",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/test/fixtures/root/package.json",
+          "line": 5,
+          "exactQuote": "\"@scope/x\": \"1\""
+        },
+        {
+          "ruleId": "SEC-035",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/test/fixtures/root/package.json",
+          "line": 8,
+          "exactQuote": "\"notinstalledhere\": \"\""
+        },
+        {
+          "ruleId": "SEC-035",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/test/fixtures/root/package.json",
+          "line": 14,
+          "exactQuote": "\"@scope/y\": \">0.99.0\""
+        },
+        {
+          "ruleId": "SEC-035",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/test/fixtures/selflink/package.json",
+          "line": 6,
+          "exactQuote": "\"@scope/x\": \"\","
+        },
+        {
+          "ruleId": "SEC-035",
+          "severity": "CRITICAL",
+          "path": "workspaces/arborist/test/fixtures/selflink/package.json",
+          "line": 7,
+          "exactQuote": "\"@scope/y\": \"\""
+        }
+      ]
+    }
+  ]
+}

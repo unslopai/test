@@ -1,5 +1,49 @@
 # Rule-Recall Benchmark
 
+## Pre-Scanner SEC-009 über Importe aufgelöst (2026-10-01): 13 Fehlalarme weg, 0 neue Findings auf 9 Korpora, Prescan-only 70 → 72/177
+
+Branch `fix/prescan-sec009-precision` auf `main` `a7f1072`, 0 Token (`--prescan-only`, Supabase-Variablen nur als Platzhalter gesetzt, damit die Module laden; der Aufräum-Schritt am Ende scheitert daran erwartungsgemäß mit `fetch failed`). Neues Modul `packages/prescan/src/rules/ast/process-bindings.ts`: JS/TS-`exec`/`execSync` zählen nur noch, wenn der Aufruf über die Importe der Datei auf `child_process` zurückgeht. Python-Aufrufe laufen über die Importe von `subprocess`/`os`/`shlex`/`asyncio`.
+
+| Messung | Wert |
+|---|---|
+| Prescan-only, Produktionspfad, `main` → Branch | **70/177 → 72/177**; neu gefangen r20 `bigpr/services/backup/backup-runner.ts` und r24 `xl/bigpr/services/backup/backup-runner.ts` (beide SEC-009, `const execAsync = promisify(exec)`), nichts verloren; nach Produktions-Lane: Modell + Pre-Scan 47/131 → 49/131, nur Pre-Scan 23/46 unverändert |
+| Prescan-only, Modell-Potenzial (`--bypass-filter`) | **70/177 → 72/177**, dieselben zwei Treffer |
+| Negativ-Kontrollen | 8 Fixtures, **0 CRITICAL, 0 WARNING** (vorher und nachher) |
+| Reports | `results/2026-10-01-prescan-sec009-precision-prescan-only-production.json`, vorher `-production-main.json`, `-prescan-only-bypass.json` |
+
+**Korpus-Gate** (`scripts/prescan-corpus.ts`, Repos und Commits wie im Abschnitt vom 2026-09-30; „dieses Repo“ jetzt `git archive a7f1072` für beide Läufe, daher etwas mehr Dateien als dort; npm/cli wählte mit `--include-jsts --max-files 5000` diesmal 3802 Dateien):
+
+| Korpus (Commit) | Dateien | Findings | CRITICAL | SEC-009 |
+|---|---|---|---|---|
+| `pallets/flask` (`d73fa1c`) | 130 | 295 → 295 | 22 → 22 | 0 → 0 |
+| `spf13/cobra` (`adbc881`) | 59 | 21 → 21 | 0 → 0 | 0 → 0 |
+| `kubernetes/examples` (`d6b8cd2`) | 400 | 683 → 683 | 46 → 46 | 0 → 0 |
+| `terraform-aws-modules/terraform-aws-vpc` (`b3abd6d`) | 108 | 0 → 0 | 0 → 0 | 0 → 0 |
+| dieses Repo ohne JS/TS (`a7f1072`) | 343 | 3 → 3 | 1 → 1 | 0 → 0 |
+| `pypa/pip` (`a7002c9`) | 771 | 1867 → 1867 | 386 → 386 | 2 → 2 |
+| dieses Repo mit JS/TS (`a7f1072`) | 774 | 339 → 331 | 60 → 52 | **8 → 0** |
+| `vitejs/vite` (`cf5c028`) mit JS/TS | 2445 | 607 → 603 | 102 → 98 | **7 → 3** |
+| `npm/cli` (`c276cad`) mit JS/TS | 3802 | 2247 → 2241 | 103 → 97 | 2 → 1 |
+
+**0 hinzugekommene Findings** auf allen 9 Korpora, also auch keine neue WARNING. Weggefallen sind die 8 `RegExp.prototype.exec` in diesem Repo (`registry-engine.ts:164/203/280/284`, `shared/src/node/git.ts:66/69`, `vscode-extension/src/gitFacts.ts:26/28`), die 4 in vite `utils.ts:356/643/774/2020` und `execSync(shaCmd)` in npm/cli `workspaces/arborist/scripts/benchmark.js:12`, wo `shaCmd` eine Modul-Konstante auf einem Literal ist. Die übrigen 3 SEC-009 in vite (`server/index.ts:1299`, `openBrowser.ts:140`, `windows83Filename.ts:6`) und der in npm/cli sind echte `child_process`-Aufrufe mit nicht-literalem Kommando und bleiben CRITICAL. Die 5 weiteren CRITICAL weniger in npm/cli sind SEC-035 auf Test-Fixtures (`arborist/test/fixtures/{root,selflink}/package.json`). SEC-035 schlägt live in der npm-Registry nach, das ist Netz-Rauschen: Der erste Nachher-Lauf vor den Review-Fixes hatte sie mit unverändertem SEC-035-Code noch. Beleg mit jeder Fundstelle: `results/2026-10-01-prescan-sec009-precision-corpus.json`.
+
+**Review-Runde vor dem PR** (Subagent, 70 Probe-Dateien gegen Branch und `main`). Behoben:
+- `asyncio.create_subprocess_shell(cmd='ls')`: das Keyword galt als Kommando, das gab ein falsches CRITICAL.
+- `execAsync(STATUS_COMMAND)` mit Modul-Konstante: falsches CRITICAL, das über die Alias-Auflösung neu hinzugekommen wäre. Der `exec`-Pfad nimmt jetzt wie `spawn` reinen Modul-Text aus.
+- Verlorene Treffer gegenüber `main`:
+  - `import cp = require('child_process')`;
+  - `import { default as cp }`;
+  - ein funktionslokales `from asyncio import subprocess`, das dateiweit das Modul-`subprocess` überdeckte. Python prüft deshalb den aufgelösten Namen und zusätzlich den Rohnamen.
+
+Alle Fälle stehen als Tests in `tree-sitter-engine.test.ts`. Die Zahlen oben stammen aus dem Lauf nach den Fixes.
+
+**Bewusst nicht umgesetzt:**
+- Aufrufe über Funktionsgrenzen, Objekt-Felder oder `.then(({ exec }) => …)` sind nicht statisch dateilokal auflösbar.
+- `let cp; cp = require(…)` ist eine Zuweisung, keine Deklaration.
+- Gültigkeitsbereiche: Alias- und Importtabellen gelten dateiweit, wie schon auf `main`. Ein Parameter `run` neben `const run = promisify(exec)` wird mitgemeldet; real selten, auf den Korpora 0×.
+
+Alle Formen aus dem To-Do sind umgesetzt; keine musste wegen Fehlalarm-Risiko entfallen.
+
 ## Volllauf Universum 129 auf dem Produktionspfad (2026-10-01): 104/129 combined, 0 FP — Modell-Lane 81/83, nur Pre-Scan 23/46
 
 `main` `a7f1072` (Stufe 2 gemergt: Modell-Review liest JS/TS und Python), Pfad **Produktion** (ohne `--bypass-filter`: `isReviewableFile` entscheidet, welche Datei das Modell sieht). Aufruf `--keep --only r0,r1,r20,r21,r22,r23,r25,r26,r27`. Sechs Fixtures scheiterten im ersten Durchgang an Infrastruktur (Vertex 429 auf r14, 503 auf r17, `fetch failed` auf r19/r22, Job-Anlage `fetch failed` auf r23/r25, ein kurzer Netzaussetzer) und liefen direkt danach mit `--only r14,r17,r19,r22,r23,r25` fehlerfrei nach; die Summen addieren beide Reports.

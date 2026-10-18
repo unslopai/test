@@ -2,24 +2,36 @@
  * AST-Regeln für Code- und Programmausführung aus Fremdeingabe, die über die
  * Shell-Formen in security-rules.ts hinausgehen:
  *
+ * - SEC-009 in JS/TS für alles aus `child_process`, über die Importe der Datei
+ *   aufgelöst (process-bindings.ts): `exec`/`execSync` laufen immer über die
+ *   Shell, jedes Kommando außer reinem Modul-Text ist CRITICAL; `spawn`/`spawnSync`/
+ *   `execFile`/`execFileSync` in der Argument-Form wie unten. Ein `.exec` auf
+ *   einem anderen Objekt (`RegExp.prototype.exec`, `db.exec`) ist kein Treffer.
  * - SEC-009 in der Argument-Form: Python `subprocess.*` ohne `shell=True`,
- *   JS/TS `spawn`/`spawnSync`/`execFile`/`execFileSync` aus `child_process`.
- *   Ohne Shell zählt nur die Programm-Position: ein nicht-literales Argument an
- *   späterer Stelle startet kein anderes Programm. Mit `shell` in den Optionen
- *   zählt wie bei `exec` jeder Wert, der in die Kommandozeile eingebaut wird.
+ *   `os.exec*`/`os.spawn*`, `asyncio.create_subprocess_exec`, JS/TS
+ *   `spawn`/`execFile`. Ohne Shell zählt nur die Programm-Position: ein
+ *   nicht-literales Argument an späterer Stelle startet kein anderes Programm.
+ *   Mit `shell` in den Optionen zählt wie bei `exec` jeder Wert, der in die
+ *   Kommandozeile eingebaut wird.
  * - SEC-011 für Python: `eval`/`exec` mit nicht-literalem Argument (die
  *   JS/TS-Seite liefert eslint-plugin-security, eslint-engine.ts).
  *
- * Schweregrad: CRITICAL nur, wenn der Wert sichtbar aus einer Request-Quelle
- * stammt (im Ausdruck selbst oder über eine Zuweisung in derselben Funktion).
- * Ohne sichtbare Quelle meldet die Regel nur, was schon im Code nach Injection
- * aussieht, und zwar als WARNING: `shlex.split(<nicht-literal>)`, Werte in
- * einer Shell-Kommandozeile, `eval`/`exec`. Ein nicht-literales Programm in
- * einer Liste oder als `spawn`-Argument bleibt ohne Quelle still — auf echtem
- * Code (pip, npm/cli, ffmpeg-Skripte dieses Repos) war das in allen gemessenen
- * Fällen ein Werkzeug- oder Editor-Pfad aus der Konfiguration.
+ * Schweregrad der Argument-Form: CRITICAL nur, wenn der Wert sichtbar aus einer
+ * Request-Quelle stammt (im Ausdruck selbst oder über eine Zuweisung in
+ * derselben Funktion). Ohne sichtbare Quelle meldet die Regel nur, was schon im
+ * Code nach Injection aussieht, und zwar als WARNING: `shlex.split(<nicht-literal>)`,
+ * Werte in einer Shell-Kommandozeile, `eval`/`exec`. Ein nicht-literales
+ * Programm in einer Liste oder als `spawn`-Argument bleibt ohne Quelle still —
+ * auf echtem Code (pip, npm/cli, ffmpeg-Skripte dieses Repos) war das in allen
+ * gemessenen Fällen ein Werkzeug- oder Editor-Pfad aus der Konfiguration.
  */
 import { addAstFinding, enclosingNodeOfTypes, functionNodeTypesFor, nodesOfType } from './ast-shared';
+import {
+    collectChildProcessBindings,
+    collectPythonImportAliases,
+    pythonCalleeNames,
+    resolveChildProcessFunction,
+} from './process-bindings';
 import {
     PYTHON_SUBPROCESS_PATTERN,
     collectModuleTextConstantNames,
@@ -28,6 +40,7 @@ import {
 } from './security-rules';
 import type { Node as TsNode } from 'web-tree-sitter';
 import type { AstRuleContext } from './ast-shared';
+import type { ChildProcessBindings, PythonImportAliases } from './process-bindings';
 import type { PrescanSeverity } from '../../types';
 
 export function collectCodeExecutionFindings(context: AstRuleContext): void {
@@ -39,7 +52,7 @@ export function collectCodeExecutionFindings(context: AstRuleContext): void {
         case 'typescript':
         case 'tsx':
         case 'javascript':
-            collectJsArgvCommandInjection(context);
+            collectJsProcessCommandInjection(context);
             break;
         default:
             break;
@@ -51,13 +64,14 @@ export function collectCodeExecutionFindings(context: AstRuleContext): void {
 // =============================================================================
 
 /**
- * `request.args`, `req.query`, `flask.request.form`, `self.request.GET`.
+ * `request.args`, `req.query`, `req?.body`, `flask.request.form`,
+ * `self.request.GET`, Koa `ctx.request.body`.
  * Kein Treffer auf `urllib.request.urlopen` (Punkt davor), `requests.get` und
  * die Attribute des pytest-Fixtures `request` (`request.param`,
  * `request.config`, `request.getfixturevalue(...)`): die liefern Testwerte,
  * keine Nutzereingabe.
  */
-const REQUEST_SOURCE_PATTERN = /(?<![\w.])(?:(?:self|flask)\.)?(?:request|req)\.(?!(?:param|config|node|getfixturevalue|fixturename|addfinalizer|applymarker|cls|module|function|instance|keywords|scope|session|fspath|path)\b)[A-Za-z_]/;
+const REQUEST_SOURCE_PATTERN = /(?<![\w.])(?:(?:self|flask|ctx)\??\.)?(?:request|req)\??\.(?!(?:param|config|node|getfixturevalue|fixturename|addfinalizer|applymarker|cls|module|function|instance|keywords|scope|session|fspath|path)\b)[A-Za-z_]/;
 
 const ASSIGNMENT_NODE_TYPES: readonly string[] = ['assignment', 'variable_declarator', 'assignment_expression'];
 /** Text-Anteile von String-Literalen: dort ist `req.json` ein Dateiname, keine Quelle. */
@@ -152,16 +166,58 @@ function boundNamesOfProperty(propertyPattern: TsNode): string[] {
 
 const PROGRAM_POSITION_DETAIL = 'The program itself is not a literal: whoever controls this value chooses which executable runs, even without a shell. Resolve the executable from a fixed allow-list.';
 
+/** `os.execvp(file, args)` und Verwandte: das Programm steht vorn. */
+const PYTHON_EXEC_FAMILY_PATTERN = /^(?:os\.exec[lv]p?e?|asyncio\.(?:subprocess\.)?create_subprocess_exec)$/;
+/** `os.spawnv(mode, path, args)` und Verwandte: das Programm folgt auf den Modus. */
+const PYTHON_SPAWN_FAMILY_PATTERN = /^os\.spawn[lv]p?e?$/;
+
 function collectPythonArgvCommandInjection(context: AstRuleContext): void {
+    let importAliases: PythonImportAliases | null = null;
     for (const call of nodesOfType(context, 'call')) {
-        const calleeText = call.childForFieldName('function')?.text ?? '';
-        if (!PYTHON_SUBPROCESS_PATTERN.test(calleeText)) continue;
+        importAliases ??= collectPythonImportAliases(call.tree.rootNode);
+        const calleeNames = pythonCalleeNames(call.childForFieldName('function'), importAliases);
+        if (!calleeNames.some((calleeName) => PYTHON_SUBPROCESS_PATTERN.test(calleeName))) {
+            reportPythonProgramArgument(context, call, calleeNames, importAliases);
+            continue;
+        }
         // shell=True deckt collectPythonCommandInjection (security-rules.ts) ab.
         if (/shell\s*=\s*True/.test(call.childForFieldName('arguments')?.text ?? '')) continue;
 
         const commandArgument = pythonCommandArgument(call);
-        if (commandArgument) reportPythonProgramPosition(context, call, commandArgument);
+        if (commandArgument) reportPythonProgramPosition(context, call, commandArgument, importAliases);
     }
+}
+
+/**
+ * `os.exec*`, `os.spawn*` und `asyncio.create_subprocess_exec` nehmen das
+ * Programm als eigenes Argument: wie das erste Listenelement bei `subprocess`
+ * zählt es nur mit sichtbarer Request-Quelle. Ein entpacktes
+ * `*shlex.split(...)` oder `*[tool, ...]` prüft die Listen-Regel.
+ */
+function reportPythonProgramArgument(
+    context: AstRuleContext,
+    call: TsNode,
+    calleeNames: readonly string[],
+    importAliases: PythonImportAliases,
+): void {
+    const programIndex = calleeNames.map(pythonProgramIndex).find((calleeIndex) => calleeIndex !== null) ?? null;
+    if (programIndex === null) return;
+    const positionalArguments = pythonCallArguments(call).filter((callArgument) => callArgument.type !== 'keyword_argument');
+    const programArgument = positionalArguments[programIndex] ?? null;
+    if (!programArgument) return;
+
+    if (programArgument.type === 'list_splat') {
+        const unpackedCommand = programArgument.namedChildren[0] ?? null;
+        if (unpackedCommand) reportPythonProgramPosition(context, call, unpackedCommand, importAliases);
+    } else if (!isFixedPythonProgram(programArgument) && isVisiblyRequestSourced(context, programArgument)) {
+        addAstFinding(context, 'SEC-009', call, PROGRAM_POSITION_DETAIL, 'CRITICAL');
+    }
+}
+
+function pythonProgramIndex(calleeName: string): number | null {
+    if (PYTHON_EXEC_FAMILY_PATTERN.test(calleeName)) return 0;
+    if (PYTHON_SPAWN_FAMILY_PATTERN.test(calleeName)) return 1;
+    return null;
 }
 
 /**
@@ -171,8 +227,15 @@ function collectPythonArgvCommandInjection(context: AstRuleContext): void {
  * Request-Quelle. Eine nackte Variable (`run(cmd)`) bleibt still — ob sie eine
  * sicher gebaute Liste ist, ist nicht entscheidbar.
  */
-function reportPythonProgramPosition(context: AstRuleContext, call: TsNode, commandArgument: TsNode): void {
-    if (commandArgument.type === 'call' && commandArgument.childForFieldName('function')?.text === 'shlex.split') {
+function reportPythonProgramPosition(
+    context: AstRuleContext,
+    call: TsNode,
+    commandArgument: TsNode,
+    importAliases: PythonImportAliases,
+): void {
+    const isShlexSplit = commandArgument.type === 'call'
+        && pythonCalleeNames(commandArgument.childForFieldName('function'), importAliases).includes('shlex.split');
+    if (isShlexSplit) {
         const splitSource = commandArgument.childForFieldName('arguments')?.namedChildren[0] ?? null;
         if (splitSource && !startsWithLiteralProgram(splitSource)) {
             addAstFinding(context, 'SEC-009', call, PROGRAM_POSITION_DETAIL, severityForSources(context, [splitSource]));
@@ -304,21 +367,15 @@ function collectPythonDynamicEvaluation(context: AstRuleContext): void {
 }
 
 // =============================================================================
-// SEC-009 — JS/TS spawn/execFile aus child_process
+// SEC-009 — JS/TS, alles aus child_process
 // =============================================================================
 
-const CHILD_PROCESS_MODULES: ReadonlySet<string> = new Set(['child_process', 'node:child_process']);
+/** Laufen immer über die Shell: das erste Argument ist eine Kommandozeile. */
+const SHELL_PROCESS_FUNCTIONS: ReadonlySet<string> = new Set(['exec', 'execSync']);
 const ARGV_PROCESS_FUNCTIONS: ReadonlySet<string> = new Set(['spawn', 'spawnSync', 'execFile', 'execFileSync']);
 const FIXED_JS_PROGRAMS: ReadonlySet<string> = new Set(['process.execPath', 'process.argv0']);
 
-interface ChildProcessBindings {
-    /** Lokaler Name → importierter Funktionsname (`{ spawn: run }` ⇒ run → spawn). */
-    readonly functionNames: ReadonlyMap<string, string>;
-    /** Lokale Namen des ganzen Moduls (`import * as cp`, `const cp = require(...)`). */
-    readonly namespaceNames: ReadonlySet<string>;
-}
-
-function collectJsArgvCommandInjection(context: AstRuleContext): void {
+function collectJsProcessCommandInjection(context: AstRuleContext): void {
     if (!context.source.includes('child_process')) return;
     let bindings: ChildProcessBindings | null = null;
     let moduleTextConstants: ReadonlySet<string> | null = null;
@@ -326,10 +383,28 @@ function collectJsArgvCommandInjection(context: AstRuleContext): void {
     for (const call of nodesOfType(context, 'call_expression')) {
         bindings ??= collectChildProcessBindings(call.tree.rootNode);
         const processFunction = resolveChildProcessFunction(call.childForFieldName('function'), bindings);
-        if (!processFunction || !ARGV_PROCESS_FUNCTIONS.has(processFunction)) continue;
+        if (!processFunction) continue;
+
+        if (!SHELL_PROCESS_FUNCTIONS.has(processFunction) && !ARGV_PROCESS_FUNCTIONS.has(processFunction)) continue;
 
         moduleTextConstants ??= collectModuleTextConstantNames(call.tree.rootNode);
-        reportJsProcessCall(context, call, moduleTextConstants);
+        if (SHELL_PROCESS_FUNCTIONS.has(processFunction)) {
+            reportJsShellCommand(context, call, moduleTextConstants);
+        } else {
+            reportJsProcessCall(context, call, moduleTextConstants);
+        }
+    }
+}
+
+/**
+ * Jedes Kommando ist CRITICAL, außer reinem Modul-Text: Literal, Template ohne
+ * fremde Platzhalter, Modul-Konstante (`execAsync(STATUS_COMMAND)`).
+ */
+function reportJsShellCommand(context: AstRuleContext, call: TsNode, moduleTextConstants: ReadonlySet<string>): void {
+    const commandArgument = call.childForFieldName('arguments')?.namedChildren
+        .find((callArgument) => callArgument !== null && callArgument.type !== 'comment') ?? null;
+    if (commandArgument && !isModuleOwnedText(commandArgument, moduleTextConstants)) {
+        addAstFinding(context, 'SEC-009', call);
     }
 }
 
@@ -353,82 +428,6 @@ function reportJsProcessCall(context: AstRuleContext, call: TsNode, moduleTextCo
     } else if (!isFixedJsProgram(programArgument, moduleTextConstants) && isVisiblyRequestSourced(context, programArgument)) {
         addAstFinding(context, 'SEC-009', call, PROGRAM_POSITION_DETAIL, 'CRITICAL');
     }
-}
-
-function collectChildProcessBindings(rootNode: TsNode): ChildProcessBindings {
-    const functionNames = new Map<string, string>();
-    const namespaceNames = new Set<string>();
-
-    for (const importStatement of rootNode.descendantsOfType('import_statement')) {
-        const moduleName = stripQuotes(importStatement?.childForFieldName('source')?.text ?? '');
-        if (!importStatement || !CHILD_PROCESS_MODULES.has(moduleName)) continue;
-        for (const namespaceImport of importStatement.descendantsOfType('namespace_import')) {
-            const namespaceName = namespaceImport?.namedChildren[0]?.text;
-            if (namespaceName) namespaceNames.add(namespaceName);
-        }
-        const defaultImport = importStatement.descendantsOfType('import_clause')[0]?.namedChildren
-            .find((clauseChild) => clauseChild?.type === 'identifier');
-        if (defaultImport) namespaceNames.add(defaultImport.text);
-        for (const importSpecifier of importStatement.descendantsOfType('import_specifier')) {
-            const importedName = importSpecifier?.childForFieldName('name')?.text;
-            const localName = importSpecifier?.childForFieldName('alias')?.text ?? importedName;
-            if (importedName && localName) functionNames.set(localName, importedName);
-        }
-    }
-    for (const declarator of rootNode.descendantsOfType('variable_declarator')) {
-        const bindingPattern = declarator?.childForFieldName('name') ?? null;
-        const boundValue = declarator?.childForFieldName('value') ?? null;
-        if (bindingPattern && boundValue) addRequireBinding(bindingPattern, boundValue, functionNames, namespaceNames);
-    }
-    return { functionNames, namespaceNames };
-}
-
-/** `const cp = require(...)`, `const { spawn } = require(...)`, `const spawn = require(...).spawn`. */
-function addRequireBinding(
-    bindingPattern: TsNode,
-    boundValue: TsNode,
-    functionNames: Map<string, string>,
-    namespaceNames: Set<string>,
-): void {
-    const requiredMember = boundValue.type === 'member_expression' && isChildProcessRequire(boundValue.childForFieldName('object'))
-        ? boundValue.childForFieldName('property')?.text
-        : undefined;
-    if (requiredMember && bindingPattern.type === 'identifier') {
-        functionNames.set(bindingPattern.text, requiredMember);
-        return;
-    }
-    if (!isChildProcessRequire(boundValue)) return;
-    if (bindingPattern.type === 'identifier') {
-        namespaceNames.add(bindingPattern.text);
-        return;
-    }
-    for (const shorthandName of bindingPattern.descendantsOfType('shorthand_property_identifier_pattern')) {
-        if (shorthandName) functionNames.set(shorthandName.text, shorthandName.text);
-    }
-    for (const renamedProperty of bindingPattern.descendantsOfType('pair_pattern')) {
-        const importedName = renamedProperty?.childForFieldName('key')?.text;
-        const localName = renamedProperty?.childForFieldName('value')?.text;
-        if (importedName && localName) functionNames.set(localName, importedName);
-    }
-}
-
-function isChildProcessRequire(expression: TsNode | null): boolean {
-    if (!expression || expression.type !== 'call_expression') return false;
-    if (expression.childForFieldName('function')?.text !== 'require') return false;
-    const requiredModule = expression.childForFieldName('arguments')?.namedChildren[0]?.text ?? '';
-    return CHILD_PROCESS_MODULES.has(stripQuotes(requiredModule));
-}
-
-/** `spawn(...)`, `cp.spawn(...)`, `require('child_process').spawn(...)` → Funktionsname, sonst null. */
-function resolveChildProcessFunction(callee: TsNode | null, bindings: ChildProcessBindings): string | null {
-    if (!callee) return null;
-    if (callee.type === 'identifier') return bindings.functionNames.get(callee.text) ?? null;
-    if (callee.type !== 'member_expression') return null;
-
-    const receiver = callee.childForFieldName('object');
-    const isChildProcessReceiver = receiver !== null
-        && ((receiver.type === 'identifier' && bindings.namespaceNames.has(receiver.text)) || isChildProcessRequire(receiver));
-    return isChildProcessReceiver ? callee.childForFieldName('property')?.text ?? null : null;
 }
 
 const SHELL_OFF_VALUES: ReadonlySet<string> = new Set(['false', 'undefined', 'null', '0', "''", '""']);
@@ -479,8 +478,4 @@ function isFixedJsProgram(programArgument: TsNode, moduleTextConstants: Readonly
     const alternative = programArgument.childForFieldName('alternative');
     return consequence !== null && alternative !== null
         && isFixedJsProgram(consequence, moduleTextConstants) && isFixedJsProgram(alternative, moduleTextConstants);
-}
-
-function stripQuotes(quotedText: string): string {
-    return quotedText.replace(/^['"`]|['"`]$/g, '');
 }
