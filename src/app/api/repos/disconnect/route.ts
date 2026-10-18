@@ -15,6 +15,7 @@ import { supabase as supabaseAdmin } from '@/lib/supabase';
 import { deleteWebhook } from '@/lib/github';
 import { decryptToken } from '@/lib/crypto';
 import { extractErrorMessage } from '@/lib/errors';
+import { deactivateRepositoryChunks } from '@/lib/chunk-retention';
 
 
 interface DisconnectRequestBody {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
         // Repository-Eintrag aus DB laden (für Webhook ID)
         const { data: repoEntry, error: fetchError } = await supabaseAdmin
             .from('repositories')
-            .select('id, webhook_id')
+            .select('id, webhook_id, status')
             .eq('user_id', user.id)
             .eq('github_repo_id', body.repoId)
             .single();
@@ -62,6 +63,23 @@ export async function POST(request: Request) {
                 { status: 404 },
             );
         }
+
+        // Schon getrennt: nichts anfassen. Ein zweites Trennen setzte sonst
+        // updated_at neu und finge die 30-Tage-Löschfrist von vorn an.
+        if (repoEntry.status === 'deactivated') {
+            return NextResponse.json({
+                success: true,
+                message: `Repository ${body.fullName} war bereits getrennt.`,
+            });
+        }
+
+        // Code-Chunks zuerst soft-deleten (Vektoren bleiben 30 Tage als Cache).
+        // Wirft bei einem Fehler (500, Repo bleibt unverändert verbunden): ein
+        // als getrennt gemeldetes Repo mit aktiven Skeletten widerspräche der
+        // Datenschutzerklärung. Vor dem Webhook-Delete, damit ein Fehler hier
+        // kein aktives Repo ohne Webhook hinterlässt.
+        const nowIso = new Date().toISOString();
+        await deactivateRepositoryChunks([repoEntry.id], nowIso);
 
         // Nur der OAuth-Pfad hat einen Repo-Webhook, den wir löschen müssten —
         // und nur dafür brauchen wir das User-Token. Ein App-Repo hier am
@@ -97,18 +115,6 @@ export async function POST(request: Request) {
                 // Webhook könnte schon manuell gelöscht worden sein — wir loggen es und fahren fort
                 console.warn('[Disconnect] Webhook konnte nicht gelöscht werden (evtl. bereits entfernt):', webhookError);
             }
-        }
-
-        // Code-Chunks soft-deleten (Caching: Vektoren bleiben 30 Tage erhalten)
-        const nowIso = new Date().toISOString();
-        const { error: chunkUpdateError } = await supabaseAdmin
-            .from('code_chunks')
-            .update({ deactivated_at: nowIso })
-            .eq('repository_id', repoEntry.id)
-            .is('deactivated_at', null);
-
-        if (chunkUpdateError) {
-            console.error('[Disconnect] Fehler beim Soft-Delete der Chunks:', chunkUpdateError);
         }
 
         // Repository-Eintrag soft-deleten (KEIN DELETE, sonst CASCADE löscht die Chunks).

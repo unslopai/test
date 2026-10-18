@@ -8,6 +8,7 @@
  */
 import { supabase } from '@/lib/supabase';
 import { extractErrorMessage } from '@/lib/errors';
+import { isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { FAILED_CHECK_RUN_COPY, buildJobErrorMessage, classifyJobFailure } from '@/lib/job-failure';
 import { resolveRepoAccessToken } from '@/lib/repo-auth';
 import { getInstallationToken } from '@/lib/github-app';
@@ -15,6 +16,7 @@ import {
     completeGatekeeperCheckRun,
     deriveDeterministicOnlyConclusion,
     deriveReviewConclusion,
+    markCheckRunAiGenerated,
 } from '@/lib/check-run';
 import { runPipelineUnderWatchdog } from '@/lib/job-watchdog';
 import { buildJobClock, resolveJobBudgetMs } from '@/lib/pipeline/deadline';
@@ -508,13 +510,17 @@ function resolveCheckRunResult(finalContext: PipelineContext): CheckRunResult {
             buildDeterministicOnlySummary(finalContext, reportableIssues),
         );
     }
-    return appendDegradationNotices(
+    const reviewedResult = appendDegradationNotices(
         deriveReviewConclusion(reportableIssues, {
             integrityScore: finalContext.cascade.integrityScore,
             minIntegrityScore: finalContext.cascadeConfig.minIntegrityScore,
         }),
         finalContext.cascade,
     );
+    // Short-Circuit des Pre-Scanners: Outcome 'reviewed', aber kein Modell lief (LEGAL_PAGES_SPEC §4a.3).
+    return isAiGeneratedRun(reviewOutcome, finalContext.llmSkipped)
+        ? markCheckRunAiGenerated(reviewedResult)
+        : reviewedResult;
 }
 
 /**

@@ -44,7 +44,7 @@ Fassung vom [DATUM DES INKRAFTTRETENS]. Frühere Fassungen stellen wir auf Anfra
 
 ## 5. KI-generierte Ausgaben
 
-5.1 Ausgaben erzeugen wir mit KI-Systemen. Wir kennzeichnen sie als KI-generiert, sichtbar und, wo das Format es zulässt, maschinenlesbar. [VORBEDINGUNG: Kennzeichnung in Review-Kommentaren, Check Runs und Tool-Ausgaben umgesetzt]
+5.1 Ausgaben erzeugen wir mit KI-Systemen. Wir kennzeichnen sie als KI-generiert, sichtbar und, wo das Format es zulässt, maschinenlesbar. [VORBEDINGUNG V11: Kennzeichnung auch in der VS-Code-Erweiterung und in der Scan-Historie des Dashboards sichtbar]
 
 5.2 Wenn Sie Ausgaben weiterverbreiten, entfernen Sie diese Kennzeichnung bitte nicht. Wer Ausgaben als Text veröffentlicht, um die Öffentlichkeit über Angelegenheiten von öffentlichem Interesse zu informieren, kann eigene Offenlegungspflichten nach Art. 50 Abs. 4 der KI-Verordnung (EU) 2024/1689 haben.
 

@@ -6,6 +6,7 @@
  */
 import { createHash } from 'node:crypto';
 import { formatOccurrenceLineRefs } from '@unslop/shared/occurrence-format';
+import { AI_GENERATED_MARKER, AI_GENERATED_NOTICE, isAiGeneratedFinding } from '@/lib/ai-disclosure';
 import { extractErrorMessage } from '@/lib/errors';
 import { buildHunkRangesByFile, isLineWithinHunks } from '@/lib/pipeline/diff-utils';
 import { normalizeBareRuleId, subtractPrescanOverlaps } from '@/lib/pipeline/finding-aggregation';
@@ -507,6 +508,11 @@ function mapIssueToPrComment(issue: PipelineIssue): PullRequestReviewComment {
             issue.fixedCodeSnippet,
             '```',
         );
+    }
+
+    // Nur Findings des Modells; ein Pre-Scan-Finding ist nicht KI-generiert (LEGAL_PAGES_SPEC §4a.3).
+    if (isAiGeneratedFinding(issue)) {
+        commentBodyParts.push('', AI_GENERATED_NOTICE, AI_GENERATED_MARKER);
     }
 
     if (issue.id) {

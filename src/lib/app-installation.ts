@@ -10,7 +10,9 @@
  *    als 'pending_activation'; die Embedding-Kosten fallen erst bei der
  *    expliziten, entitlement-geprüften Aktivierung an (D5).
  *  - Deinstallation löscht keine code_chunks. Sie sind ein teuer bezahlter
- *    Embedding-Cache, den eine Re-Installation wiederverwendet (D8).
+ *    Embedding-Cache, den eine Re-Installation wiederverwendet (D8). Sie
+ *    werden aber deaktiviert, und nach 30 Tagen löscht der Cron das Repo samt
+ *    Chunks (LEGAL_PAGES_SPEC §4a.2).
  */
 import { supabase } from '@/lib/supabase';
 import { GitHubApiError, deleteWebhook, fetchInstallationRepositories } from '@/lib/github';
@@ -22,6 +24,7 @@ import {
 import { isReauthenticationNeeded, proveInstallationOwnership } from '@/lib/installation-ownership';
 import { resolveGithubToken } from '@/lib/repo-auth';
 import { extractErrorMessage } from '@/lib/errors';
+import { deactivateRepositoryChunks } from '@/lib/chunk-retention';
 import type { OwnershipVerdict } from '@/lib/installation-ownership';
 import type { InstallationAccount } from '@/lib/github-app';
 import type {
@@ -403,9 +406,12 @@ async function adoptKnownRepositories(
         return;
     }
 
+    // Kein updated_at: die Adoption trifft auch deaktivierte Repos, und an
+    // deren updated_at hängt die 30-Tage-Löschfrist des Crons (Migration 052).
+    // Jeder Sync der Installation finge sie sonst von vorn an.
     const { error: adoptError } = await supabase
         .from('repositories')
-        .update({ installation_id: installationId, updated_at: new Date().toISOString() })
+        .update({ installation_id: installationId })
         .eq('user_id', userId)
         .in('id', knownRepos.map((knownRepo) => knownRepo.id));
 
@@ -505,7 +511,13 @@ async function setInstallationStatus(
 
 /**
  * Repos von der Installation lösen: deaktivieren und installation_id nullen,
- * damit keine toten Referenzen bleiben. code_chunks bleiben erhalten (D8).
+ * damit keine toten Referenzen bleiben. Die code_chunks werden nicht gelöscht
+ * (D8), aber deaktiviert: ab hier läuft ihre 30-Tage-Frist wie beim Trennen im
+ * Dashboard (LEGAL_PAGES_SPEC §4a.2).
+ *
+ * Chunks ZUERST: scheitert ihre Deaktivierung, hängen die Repos noch an der
+ * Installation und die Wiederholung des Webhooks findet sie wieder. Umgekehrt
+ * wären sie gelöst und ihre Skelette blieben für immer aktiv.
  *
  * @param githubRepoIds - null = alle Repos der Installation (Deinstallation)
  */
@@ -517,21 +529,77 @@ async function detachRepositories(
         return;
     }
 
-    const detachQuery = supabase
+    const detachedAtIso = new Date().toISOString();
+    const attachedRepositoryIds = await loadAttachedRepositoryIds(installationId, githubRepoIds);
+    await deactivateRepositoryChunks(attachedRepositoryIds, detachedAtIso);
+    await deactivateAttachedRepositories(installationId, githubRepoIds, detachedAtIso);
+    await releaseDeactivatedRepositories(installationId, githubRepoIds);
+}
+
+async function loadAttachedRepositoryIds(
+    installationId: number,
+    githubRepoIds: readonly number[] | null,
+): Promise<string[]> {
+    const attachedQuery = supabase
         .from('repositories')
-        .update({
-            status: 'deactivated',
-            installation_id: null,
-            updated_at: new Date().toISOString(),
-        })
+        .select('id')
         .eq('installation_id', installationId);
 
+    const { data: attachedRows, error: lookupError } = githubRepoIds === null
+        ? await attachedQuery
+        : await attachedQuery.in('github_repo_id', githubRepoIds);
+
+    if (lookupError) {
+        console.error(`[AppInstall] Repos von Installation ${installationId} nicht ladbar:`, lookupError);
+        throw new Error(`Repos der Installation konnten nicht geladen werden: ${lookupError.message}`);
+    }
+
+    return (attachedRows ?? []).map((attachedRow) => attachedRow.id);
+}
+
+/** Noch nicht deaktivierte Repos: Status, Zeitstempel (Start der 30-Tage-Frist) und Referenz. */
+async function deactivateAttachedRepositories(
+    installationId: number,
+    githubRepoIds: readonly number[] | null,
+    detachedAtIso: string,
+): Promise<void> {
+    const deactivateQuery = supabase
+        .from('repositories')
+        .update({ status: 'deactivated', installation_id: null, updated_at: detachedAtIso })
+        .eq('installation_id', installationId)
+        // status ist nullable; ein bloßes neq ließe eine NULL-Zeile aus.
+        .or('status.is.null,status.neq.deactivated');
+
     const { error: detachError } = githubRepoIds === null
-        ? await detachQuery
-        : await detachQuery.in('github_repo_id', githubRepoIds);
+        ? await deactivateQuery
+        : await deactivateQuery.in('github_repo_id', githubRepoIds);
 
     if (detachError) {
         console.error(`[AppInstall] Repos von Installation ${installationId} nicht lösbar:`, detachError);
         throw new Error(`Repos konnten nicht deaktiviert werden: ${detachError.message}`);
+    }
+}
+
+/**
+ * Was jetzt noch an der Installation hängt, war schon vorher im Dashboard
+ * getrennt. Dort wird nur die Referenz genullt: `updated_at` bleibt stehen,
+ * sonst finge die 30-Tage-Löschfrist des Crons von vorn an.
+ */
+async function releaseDeactivatedRepositories(
+    installationId: number,
+    githubRepoIds: readonly number[] | null,
+): Promise<void> {
+    const releaseQuery = supabase
+        .from('repositories')
+        .update({ installation_id: null })
+        .eq('installation_id', installationId);
+
+    const { error: releaseError } = githubRepoIds === null
+        ? await releaseQuery
+        : await releaseQuery.in('github_repo_id', githubRepoIds);
+
+    if (releaseError) {
+        console.error(`[AppInstall] Getrennte Repos von Installation ${installationId} nicht lösbar:`, releaseError);
+        throw new Error(`Getrennte Repos konnten nicht gelöst werden: ${releaseError.message}`);
     }
 }

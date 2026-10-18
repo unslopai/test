@@ -159,6 +159,57 @@ describe('unslop_get_result', () => {
         expect((safePayload.findings as unknown[]).length).toBe(1);
     });
 
+    it('passes the aiGenerated marker through for a model review and defaults to false without one', async () => {
+        const modelReviewDeps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'done',
+            phase: 'complete',
+            result: { ...COMPLETE_RESULT_FIXTURE, aiGenerated: true },
+        } satisfies ScanPollResponse));
+        const deterministicOnlyDeps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'done',
+            phase: 'complete',
+            result: {
+                ...COMPLETE_RESULT_FIXTURE,
+                issues: [],
+                summary: '',
+                outcome: 'deterministic_only',
+                aiGenerated: false,
+            },
+        } satisfies ScanPollResponse));
+        const pendingDeps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'processing',
+            phase: 'submitted',
+        } satisfies ScanPollResponse));
+
+        const modelReviewPayload = parseSafeSection(
+            (await runGetResultTool(modelReviewDeps, { jobId: 'job-under-test' })).content[0].text,
+        );
+        const deterministicOnlyPayload = parseSafeSection(
+            (await runGetResultTool(deterministicOnlyDeps, { jobId: 'job-under-test' })).content[0].text,
+        );
+        const pendingPayload = parseSafeSection(
+            (await runGetResultTool(pendingDeps, { jobId: 'job-under-test' })).content[0].text,
+        );
+
+        expect(modelReviewPayload.aiGenerated).toBe(true);
+        expect(deterministicOnlyPayload.aiGenerated).toBe(false);
+        expect(pendingPayload.aiGenerated).toBe(false);
+    });
+
+    it('labels a finished model review from a server that predates the aiGenerated field', async () => {
+        const legacyServerDeps = buildDeps(vi.fn().mockResolvedValue({
+            status: 'done',
+            phase: 'complete',
+            result: COMPLETE_RESULT_FIXTURE,
+        } satisfies ScanPollResponse));
+
+        const legacyServerPayload = parseSafeSection(
+            (await runGetResultTool(legacyServerDeps, { jobId: 'job-under-test' })).content[0].text,
+        );
+
+        expect(legacyServerPayload.aiGenerated).toBe(true);
+    });
+
     it('maps a 401 on the poll to not_authenticated', async () => {
         const deps = buildDeps(vi.fn().mockRejectedValue(new ApiError('invalid_api_key', 401)));
 
