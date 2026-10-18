@@ -32,11 +32,7 @@ export function getVertexClient() {
         aiClient = new GoogleGenAI({
             project: projectId,
             location: 'europe-west3',
-            // @ts-expect-error: Bekannter SDK-Typisierungsbug (erwartet boolean, erfordert aber Objekt für Vertex)
-            vertexai: {
-                project: projectId,
-                location: 'europe-west3',
-            }
+            vertexai: true,
         });
 
         return aiClient;

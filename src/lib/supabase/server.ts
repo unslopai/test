@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { extractErrorMessage } from '@/lib/errors';
 
 
 export async function createClient() {
@@ -18,7 +19,11 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             );
-          } catch {}
+          } catch (error: unknown) {
+            throw new Error(
+              `Supabase-Cookies konnten im Server-Kontext nicht gesetzt werden: ${extractErrorMessage(error)}`,
+            );
+          }
         },
       },
     },

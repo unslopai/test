@@ -10,7 +10,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        scopes: 'repo',
+        scopes: 'repo admin:repo_hook',
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -52,8 +52,9 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-6 text-center text-xs text-gray-500">
-          Wir fordern den <code className="text-gray-400">repo</code>-Scope an,
-          um deine Repositories lesen zu können.
+          Wir fordern die Scopes <code className="text-gray-400">repo</code> und{' '}
+          <code className="text-gray-400">admin:repo_hook</code> an,
+          um deine Repositories zu lesen und Webhooks zu verwalten.
         </p>
       </div>
     </div>
