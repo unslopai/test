@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabase as supabaseAdmin } from '@/lib/supabase';
 import { isOperatorUser } from '@/lib/operator';
-import { DEFAULT_PIPELINE_CONFIG } from '@/lib/pipeline/defaults';
+import { DEFAULT_PIPELINE_CONFIG, GATED_LLM_EXTENSIONS } from '@/lib/pipeline/defaults';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
 import type { PipelineConfig } from '@/lib/pipeline/types';
 
@@ -187,6 +187,25 @@ function validatePipelineConfig(rawInput: unknown): PipelineConfig | null {
         // stillschweigend löschen — dieselbe Falle, die der cascade-Block
         // oben bereits dokumentiert.
         ...(candidate.prescan !== undefined ? { prescan: candidate.prescan } : {}),
+        ...validateReviewScope(candidate.reviewScope),
+    };
+}
+
+/**
+ * Review-Umfang (LANGUAGE_COVERAGE_SPEC §6.3). Nur Endungen, die ihre Gates
+ * gefahren haben, werden gespeichert; die leere Liste ist gültig und heißt
+ * „nur JS/TS“. Fehlt der Block, bleibt er weg und der Code-Default gilt.
+ */
+function validateReviewScope(rawReviewScope: unknown): Pick<PipelineConfig, 'reviewScope'> {
+    if (!rawReviewScope || typeof rawReviewScope !== 'object') return {};
+    const requestedExtensions = 'llmExtensions' in rawReviewScope ? rawReviewScope.llmExtensions : undefined;
+    if (!Array.isArray(requestedExtensions)) return {};
+    return {
+        reviewScope: {
+            llmExtensions: GATED_LLM_EXTENSIONS.filter(
+                (gatedExtension) => requestedExtensions.includes(gatedExtension),
+            ),
+        },
     };
 }
 

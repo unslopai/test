@@ -6,7 +6,13 @@
  * JSON.parse riss damit den kompletten pro-direct-Review in den Job-Fehler.
  */
 import { describe, expect, it } from 'vitest';
-import { buildInlineComments, extractTokenUsage, formatReviewSummary, parseModelJson } from '@/lib/pipeline/helpers';
+import {
+    buildInlineComments,
+    extractTokenUsage,
+    formatReviewSummary,
+    isReviewableFile,
+    parseModelJson,
+} from '@/lib/pipeline/helpers';
 import { buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
 
 interface ReviewShape {
@@ -207,5 +213,38 @@ describe('extractTokenUsage — abrechnungstreue Output-Zählung', () => {
 
     it('fehlende usageMetadata liefert Nullen statt NaN', () => {
         expect(extractTokenUsage(undefined, 'gemini-3.6-flash').outputTokens).toBe(0);
+    });
+});
+
+describe('isReviewableFile — Review-Umfang (LANGUAGE_COVERAGE_SPEC §6.3)', () => {
+    it('reads JS/TS always and further extensions only when the review scope lists them', () => {
+        expect(isReviewableFile('src/lib/worker.ts', [])).toBe(true);
+        expect(isReviewableFile('services/report_job.py', [])).toBe(false);
+        expect(isReviewableFile('services/report_job.py', ['.py', '.java'])).toBe(true);
+        expect(isReviewableFile('billing/src/main/java/Ledger.java', ['.py', '.java'])).toBe(true);
+        expect(isReviewableFile('cmd/server/main.go', ['.py', '.java'])).toBe(false);
+    });
+
+    it('keeps ignored paths out even when their extension is in scope', () => {
+        expect(isReviewableFile('build/generated/report_job.py', ['.py'])).toBe(false);
+    });
+
+    it('matches ignored paths by path segment, not by substring', () => {
+        const excludedPaths = [
+            '.env', 'apps/web/.env.local', 'node_modules/left-pad/index.js', 'packages/cli/dist/index.js',
+            'build/server.js', 'apps/web/.next/server/page.js', 'public/vendor.min.js',
+        ];
+        for (const excludedPath of excludedPaths) {
+            expect(isReviewableFile(excludedPath, []), excludedPath).toBe(false);
+        }
+        expect(isReviewableFile('src/rebuild/cache.ts', [])).toBe(true);
+        expect(isReviewableFile('src/config/app.env.ts', [])).toBe(true);
+        expect(isReviewableFile('src/distribution/channels.ts', [])).toBe(true);
+    });
+
+    it('compares extensions without case', () => {
+        expect(isReviewableFile('services/Report.PY', ['.py'])).toBe(true);
+        expect(isReviewableFile('src/Legacy.TS', [])).toBe(true);
+        expect(isReviewableFile('billing/Ledger.java', ['.JAVA'])).toBe(true);
     });
 });

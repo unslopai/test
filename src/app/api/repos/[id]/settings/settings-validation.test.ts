@@ -114,6 +114,17 @@ describe('PUT /api/repos/[id]/settings — validator allowlist', () => {
         expect(persistedConfig().enabledStepIds).toEqual(['diff-loader']);
     });
 
+    it('keeps the reviewScope block across a save and drops extensions that have not passed their gates', async () => {
+        await PUT(buildPutRequest({
+            enabledStepIds: ['diff-loader'],
+            activeConditionIds: [],
+            overrideSmartDetection: false,
+            reviewScope: { llmExtensions: ['.py', '.go', '.java'] },
+        }), ROUTE_PARAMS);
+
+        expect(persistedConfig().reviewScope).toEqual({ llmExtensions: ['.py', '.java'] });
+    });
+
     it('omits prescan entirely when the client sends none (no empty-object noise)', async () => {
         await PUT(buildPutRequest({
             enabledStepIds: ['diff-loader'],

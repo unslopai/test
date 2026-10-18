@@ -5,10 +5,12 @@
  * das alte Verhalten wieder her.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isReviewableFile } from '@/lib/pipeline/helpers';
 import {
     buildCascadeState, buildPipelineContext, buildPrescanStats, buildPullRequestFile,
 } from '@/lib/pipeline/testing/context-fixture';
 import {
+    describeFilesWithoutModelReview,
     describeNothingReviewed,
     hasIncompleteCoverage,
     isPrescanScannable,
@@ -145,7 +147,7 @@ describe('resolveReviewOutcome', () => {
     });
 });
 
-describe('isPrescanScannable — lockfiles (LANGUAGE_COVERAGE_SPEC §6.2)', () => {
+describe('isPrescanScannable — lockfiles and generated paths (LANGUAGE_COVERAGE_SPEC §6.2)', () => {
     const LOCKFILE_PATHS = [
         'package-lock.json', 'npm-shrinkwrap.json', 'apps/web/pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb',
         'poetry.lock', 'Pipfile.lock', 'crates/core/Cargo.lock', 'go.sum', 'composer.lock', 'Gemfile.lock',
@@ -156,6 +158,13 @@ describe('isPrescanScannable — lockfiles (LANGUAGE_COVERAGE_SPEC §6.2)', () =
             expect(isPrescanScannable(buildPullRequestFile({ filename: lockfilePath })), lockfilePath).toBe(false);
         }
         expect(isPrescanScannable(buildPullRequestFile({ filename: 'config/lock-settings.yaml' }))).toBe(true);
+    });
+
+    it('shares the segment-matched generated paths with the model review, but keeps scanning .env for secrets', () => {
+        expect(isPrescanScannable(buildPullRequestFile({ filename: 'build/generated/report_job.py' }))).toBe(false);
+        expect(isPrescanScannable(buildPullRequestFile({ filename: 'public/VENDOR.MIN.JS' }))).toBe(false);
+        expect(isPrescanScannable(buildPullRequestFile({ filename: 'src/rebuild/report_job.py' }))).toBe(true);
+        expect(isPrescanScannable(buildPullRequestFile({ filename: 'apps/web/.env.local' }))).toBe(true);
     });
 
     it('keeps a lockfile-only pull request (Renovate) at "Nothing to review"', () => {
@@ -201,7 +210,7 @@ describe('describeNothingReviewed', () => {
 
         expect(nothingReviewedNotice).toEqual({
             kind: 'nothing_to_review',
-            reason: 'Nothing to review: this change has no TypeScript or JavaScript file for the model review, '
+            reason: 'Nothing to review: this change has no file of a type the model review reads, '
                 + 'and the pre-scanner checked no file (skipped: services/huge_report.py, exceeds the size cap).',
         });
     });
@@ -214,6 +223,78 @@ describe('describeNothingReviewed', () => {
             kind: 'nothing_to_review',
             reason: 'No reviewable code files in this pull request.',
         });
+    });
+});
+
+describe('describeFilesWithoutModelReview — gemischter PR (LANGUAGE_COVERAGE_SPEC §6.2, Stufe 2)', () => {
+    const typescriptFile = buildPullRequestFile({ filename: 'src/lib/worker.ts' });
+    const goFile = buildPullRequestFile({ filename: 'cmd/server/main.go' });
+    const dockerfile = buildPullRequestFile({ filename: 'deploy/Dockerfile' });
+    const configFiles = [
+        'package.json', 'tsconfig.json', 'src/app/globals.css', '.github/workflows/ci.yml', 'pyproject.toml',
+        'infra/prod.tfvars', 'public/index.html', 'assets/logo.png',
+    ].map((configPath) => buildPullRequestFile({ filename: configPath }));
+
+    it('names the changed file types no model read, without prose, lockfiles, removed and size-capped files', () => {
+        const unreadFilesNotice = describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [
+                typescriptFile, goFile, dockerfile, markdownFile,
+                buildPullRequestFile({ filename: 'cmd/server/router.go' }),
+                buildPullRequestFile({ filename: 'package-lock.json' }),
+                buildPullRequestFile({ filename: 'cmd/legacy/old.go', status: 'removed' }),
+                buildPullRequestFile({ filename: 'src/lib/huge.ts' }),
+            ],
+            reviewableFiles: [typescriptFile],
+            omittedFiles: ['src/lib/huge.ts'],
+        }));
+
+        expect(unreadFilesNotice).toBe('No model read 2 changed files of this type: .go.');
+    });
+
+    it('stays silent on a TypeScript pull request that also changes package.json and a stylesheet', () => {
+        expect(describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [typescriptFile, ...configFiles],
+            reviewableFiles: [typescriptFile],
+        }))).toBeNull();
+    });
+
+    it('names source code only: Go, Rust, C++, PowerShell and Terraform, never config, data, styles or markup', () => {
+        const sourceCodeFiles = ['cmd/server/main.go', 'crates/core/lib.rs', 'native/codec.cpp', 'scripts/Deploy.ps1', 'infra/main.tf']
+            .map((sourcePath) => buildPullRequestFile({ filename: sourcePath }));
+
+        const unreadFilesNotice = describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [typescriptFile, ...configFiles, ...sourceCodeFiles],
+            reviewableFiles: [typescriptFile],
+        }));
+
+        expect(unreadFilesNotice).toBe('No model read 5 changed files of these types: .cpp, .go, .ps1, .rs, .tf.');
+    });
+
+    it('does not name files the model review read: segment-matched ignore paths and upper-case extensions', () => {
+        const changedFiles = ['src/rebuild/cache.ts', 'src/config/app.env.ts', 'services/Report.PY', 'dist/bundle.js']
+            .map((changedPath) => buildPullRequestFile({ filename: changedPath }));
+        const reviewableFiles = changedFiles.filter((changedFile) => isReviewableFile(changedFile.filename, ['.py']));
+
+        expect(reviewableFiles.map((reviewableFile) => reviewableFile.filename))
+            .toEqual(['src/rebuild/cache.ts', 'src/config/app.env.ts', 'services/Report.PY']);
+        expect(describeFilesWithoutModelReview(buildPipelineContext({ prFiles: changedFiles, reviewableFiles }))).toBeNull();
+    });
+
+    it('does not name a file without a hunk (binary or mode change), whatever its extension', () => {
+        expect(describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [typescriptFile, buildPullRequestFile({ filename: 'cmd/server/main.go', patch: undefined })],
+            reviewableFiles: [typescriptFile],
+        }))).toBeNull();
+    });
+
+    it('stays silent when every changed code file was in the review scope or no model read anything', () => {
+        expect(describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [typescriptFile, pythonFile, markdownFile],
+            reviewableFiles: [typescriptFile, pythonFile],
+        }))).toBeNull();
+        expect(describeFilesWithoutModelReview(buildPipelineContext({
+            prFiles: [goFile], reviewableFiles: [],
+        }))).toBeNull();
     });
 });
 

@@ -45,11 +45,11 @@ export function formatDraftPartialNotice(unreviewedFiles: readonly string[] | un
 export type DeterministicOnlySurface = 'pull_request' | 'local_diff';
 
 const DETERMINISTIC_ONLY_NOTICES: Readonly<Record<DeterministicOnlySurface, string>> = {
-    pull_request: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, '
-        + 'so no model reviewed it.',
+    pull_request: 'Deterministic checks only: this pull request changes no file of a type the model review '
+        + 'reads, so no model reviewed it.',
     // CLI, Extension und MCP laden nur den Diff hoch: ohne Dateiinhalt laufen
     // keine AST- und Config-Regeln (LANGUAGE_COVERAGE_SPEC §4.2: 7 statt 27 von 69).
-    local_diff: 'Deterministic checks only: this diff changes no TypeScript or JavaScript file, '
+    local_diff: 'Deterministic checks only: this diff changes no file of a type the model review reads, '
         + 'so no model reviewed it. Without file contents only the regex and registry rules ran; '
         + 'the AST and config rules need a pull request.',
 };
@@ -70,7 +70,8 @@ export function formatDeterministicOnlyNotice(surface: DeterministicOnlySurface)
  */
 export function formatPrescanFailedNotice(): string {
     return 'Not reviewed: the deterministic pre-scanner failed on this change, and no model reviews it '
-        + 'because it changes no TypeScript or JavaScript file. Nothing was checked; re-run the review to try again.';
+        + 'because it changes no file of a type the model review reads. Nothing was checked; re-run the review '
+        + 'to try again.';
 }
 
 /**

@@ -6,6 +6,7 @@
  * Merge-Blocker macht, wird vom Team abgeschaltet, und dann schützt er nichts mehr.
  */
 import { describe, expect, it } from 'vitest';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import {
     deriveDeterministicOnlyConclusion, deriveReviewConclusion, markCheckRunAiGenerated, markIncompleteCoverage,
 } from '@/lib/check-run';
@@ -128,8 +129,8 @@ describe('deriveReviewConclusion — Slop Score Gating (Upcoming §6)', () => {
 });
 
 describe('deriveDeterministicOnlyConclusion (LANGUAGE_COVERAGE_SPEC §6.2, E2)', () => {
-    const deterministicOnlySummary = 'Deterministic checks only: this pull request changes no TypeScript or '
-        + 'JavaScript file, so no model reviewed it. The pre-scanner checked 2 files and found nothing.';
+    const deterministicOnlySummary = `${formatDeterministicOnlyNotice('pull_request')} `
+        + 'The pre-scanner checked 2 files and found nothing.';
 
     it('is neutral with the title "Deterministic checks only" when nothing was found — never success', () => {
         expect(deriveDeterministicOnlyConclusion([], deterministicOnlySummary)).toEqual({

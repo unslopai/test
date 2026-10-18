@@ -33,7 +33,7 @@
     "copyFailed": "Kopieren fehlgeschlagen — bitte kopiere den Befehl manuell.",
     "copyCommand": "Befehl kopieren",
     "guideLink": "Ausführliche Anleitung →",
-    "honestyFileTypes": "Das Modell-Review liest nur .ts-, .tsx-, .js-, .jsx-, .mjs- und .cjs-Dateien. Ein Pull Request ohne solche Dateien bekommt nur deterministische Prüfungen, und das Ergebnis sagt das.",
+    "honestyFileTypes": "Das Modell-Review liest nur TypeScript-, JavaScript- und Python-Dateien (.ts, .tsx, .js, .jsx, .mjs, .cjs, .py). Ein Pull Request ohne solche Dateien bekommt nur deterministische Prüfungen, und das Ergebnis sagt das.",
     "honestyMergeBase": "Geprüft werden deine Änderungen gegen die Merge-Base — bereits committeter und gepushter Code ist nicht Teil des Diff-Scans.",
     "tabs": {
       "github": "PR-Reviews auf GitHub",
@@ -348,7 +348,7 @@
         "result": "<strong>125 von 126</strong> absichtlich eingebauten Regelverstößen gefunden, <strong>0</strong> Fehlalarme auf 4 sauberen Kontroll-Fixtures.",
         "method": "Methode: unser Rule-Recall-Benchmark. Wir bauen bekannte Verstöße in Test-Fixtures ein und zählen einen als gefunden, wenn der Pre-Scan oder das Modell-Review die erwartete Regel in der erwarteten Datei meldet.",
         "run": "Lauf: 16.09.2026, ein Volllauf. Modelle: Gemini 3.8 Flash für das Review, Gemini 3.6 Flash für die blinde Gegenprüfung.",
-        "limits": "Grenzen: Die Fixtures haben wir selbst geschrieben; es sind keine Kunden-Repositorys. Es ist ein einzelner Lauf, und Ergebnisse schwanken zwischen Läufen. Der Benchmark läuft ohne Zeitbudget und ohne Repository-Kontext, und er gibt jede Fixture-Datei an das Modell-Review. In Produktion liest das Modell-Review nur TypeScript- und JavaScript-Dateien. 69 der 126 Verstöße liegen in anderen Dateitypen, die das Modell im echten Pull Request nicht sieht. Auf einer größeren Fixture mit 48 eingebauten Verstößen (29.09.2026, zwei Läufe) lag das Ergebnis beide Male bei 46 von 48. Das Modell für den dritten Durchgang wurde seit diesem Lauf gewechselt."
+        "limits": "Grenzen: Die Fixtures haben wir selbst geschrieben; es sind keine Kunden-Repositorys. Es ist ein einzelner Lauf, und Ergebnisse schwanken zwischen Läufen. Der Benchmark läuft ohne Zeitbudget und ohne Repository-Kontext, und er gibt jede Fixture-Datei an das Modell-Review. In Produktion liest das Modell-Review nur TypeScript-, JavaScript- und Python-Dateien. 46 der 126 Verstöße liegen in anderen Dateitypen, die das Modell im echten Pull Request nicht sieht. Auf einer größeren Fixture mit 48 eingebauten Verstößen (29.09.2026, zwei Läufe) lag das Ergebnis beide Male bei 46 von 48. Das Modell für den dritten Durchgang wurde seit diesem Lauf gewechselt."
       }
     },
     "pillarDeterministic": {
@@ -392,7 +392,7 @@
         "files": {
           "check": "Dateien",
           "prescan": "TypeScript, JavaScript, Python, Java, Go, Rust, C und C++, dazu Config-Dateien wie YAML, JSON, Terraform und TOML",
-          "model": "Nur TypeScript und JavaScript"
+          "model": "Nur TypeScript, JavaScript und Python"
         },
         "gate": {
           "check": "Kann es den Check scheitern lassen?",
@@ -467,7 +467,7 @@
         },
         "limits": {
           "term": "Ehrliche Grenzen",
-          "definition": "Nichts findet jeden Fehler in KI-geschriebenem Code, auch wir nicht. Das Modell-Review liest nur TypeScript und JavaScript, und seine Ergebnisse schwanken zwischen Läufen."
+          "definition": "Nichts findet jeden Fehler in KI-geschriebenem Code, auch wir nicht. Das Modell-Review liest nur TypeScript, JavaScript und Python, und seine Ergebnisse schwanken zwischen Läufen."
         }
       }
     },
@@ -493,7 +493,7 @@
         },
         "languages": {
           "question": "Welche Sprachen werden abgedeckt?",
-          "answer": "Das Modell-Review liest TypeScript- und JavaScript-Dateien. Der deterministische Pre-Scan deckt zusätzlich Python, Java, Go, Rust, C und C++ sowie gängige Config-Dateien ab. Ein Pull Request ohne TypeScript- oder JavaScript-Datei bekommt nur deterministische Prüfungen, wenn er Python-, Java-, Go-, C-, C++-, PowerShell-, Terraform-, YAML- oder JSON-Dateien ändert. Dann liest kein Modell mit: Der Check heißt „Deterministic checks only“ und bleibt neutral, solange kein kritisches Finding ihn scheitern lässt. Alles andere, etwa ein reiner Doku-Pull-Request, endet weiter als neutral mit „Nothing to review“."
+          "answer": "Das Modell-Review liest TypeScript-, JavaScript- und Python-Dateien. Der deterministische Pre-Scan deckt zusätzlich Java, Go, Rust, C und C++ sowie gängige Config-Dateien ab. Ein Pull Request ohne TypeScript-, JavaScript- oder Python-Datei bekommt nur deterministische Prüfungen, wenn er Java-, Go-, C-, C++-, PowerShell-, Terraform-, YAML- oder JSON-Dateien ändert. Dann liest kein Modell mit: Der Check heißt „Deterministic checks only“ und bleibt neutral, solange kein kritisches Finding ihn scheitern lässt. Mischt ein Pull Request beides, nennt die Zusammenfassung die Dateitypen, die kein Modell gelesen hat. Alles andere, etwa ein reiner Doku-Pull-Request, endet weiter als neutral mit „Nothing to review“."
         },
         "outage": {
           "question": "Was passiert, wenn ein Review scheitert?",

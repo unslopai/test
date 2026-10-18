@@ -106,6 +106,21 @@ export function isDeterministicLaneFile(filePath: string): boolean {
     return DETERMINISTIC_LANE_MANIFESTS.has(fileName) || DETERMINISTIC_LANE_LANGUAGES.has(detectLanguage(filePath));
 }
 
+/**
+ * Quellcode, den ein Leser von einer Code-Review erwartet (LANGUAGE_COVERAGE_SPEC
+ * §6.2): nur diese Sprachen nennt der Hinweis „No model read …“ in einem
+ * gemischten PR. Config, Daten, Styles, Markup, YAML, JSON, TOML, Workflows und
+ * Binärdateien lösen ihn nicht aus — sonst trüge fast jeder JS/TS-PR mit
+ * `package.json` den Hinweis. Terraform (`.tf`, `hcl`) ist Code.
+ */
+const SOURCE_CODE_LANGUAGES: ReadonlySet<PrescanLanguage> = new Set([
+    'typescript', 'tsx', 'javascript', 'python', 'java', 'go', 'rust', 'c', 'cpp', 'powershell', 'hcl',
+]);
+
+export function isSourceCodeFile(filePath: string): boolean {
+    return SOURCE_CODE_LANGUAGES.has(detectLanguage(filePath));
+}
+
 /** Test-Datei-Muster (TEST-010, pre_scanner_design.md §2). */
 const TEST_FILE_PATTERN = /\.(test|spec)\.[jt]sx?$|_test\.(go|py)$|(^|\/)test_[^/]*\.py$|Test\.java$/;
 

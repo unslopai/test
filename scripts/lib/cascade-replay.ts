@@ -33,7 +33,11 @@ import * as path from 'path';
 
 import { supabase } from '@/lib/supabase';
 import { ALL_CONDITION_IDS } from '@/lib/pipeline/conditions';
-import { DEFAULT_CASCADE_CONFIG, INITIAL_CASCADE_STATE } from '@/lib/pipeline/defaults';
+import {
+    DEFAULT_CASCADE_CONFIG,
+    DEFAULT_REVIEW_SCOPE_CONFIG,
+    INITIAL_CASCADE_STATE,
+} from '@/lib/pipeline/defaults';
 import { DEFAULT_PRESCAN_CONFIG } from '@unslop/prescan';
 import { MODEL_DRAFT, MODEL_ESCALATION, MODEL_VERIFIER } from '@/lib/pipeline/models';
 import { complexityRouterStep } from '@/lib/pipeline/steps/complexity-router-step';
@@ -211,6 +215,8 @@ function buildReplayContext(
         prFiles: fixtureFiles,
         reviewableFiles: fixtureFiles,
         combinedDiff,
+        // Das Replay-Rig umgeht den Dateifilter; der Umfang steht nur der Form halber im Kontext.
+        reviewScopeConfig: DEFAULT_REVIEW_SCOPE_CONFIG,
         omittedFiles: [],
         issues: [],
         reviewSummary: '',

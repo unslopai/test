@@ -164,9 +164,9 @@ function buildScanResponse(
 const COMPLETE_NEXT_STEPS: Readonly<Record<ScanOutcome, string>> = {
     reviewed: 'The review is complete; no deeper analysis is pending.',
     nothing_reviewed: 'The scan finished, but nothing was reviewed. This is NOT a clean verdict.',
-    deterministic_only: 'The scan finished with deterministic checks only: the diff changes no TypeScript or '
-        + 'JavaScript file, so no model reviewed it, and without file contents only the regex and registry '
-        + 'rules ran. Zero findings is NOT a clean verdict.',
+    deterministic_only: 'The scan finished with deterministic checks only: the diff changes no file of a type '
+        + 'the model review reads, so no model reviewed it, and without file contents only the regex and '
+        + 'registry rules ran. Zero findings is NOT a clean verdict.',
 };
 
 function describeNextStep(phase: ScanPhase, scanResult: ScanResult | null): string {

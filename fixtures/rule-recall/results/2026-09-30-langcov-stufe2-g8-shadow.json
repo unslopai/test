@@ -1,0 +1,401 @@
+{
+  "capturedAt": "2026-09-30T12:18:35.492Z",
+  "llmExtensions": [
+    ".py",
+    ".java"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "language": "python",
+      "repo": "pallets/flask",
+      "pr": 5928,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "af1e3da769b080a8eca9bee551fffe88d0de4b6fdd7d71e0d96fdebb76fe2212",
+      "changedFileCount": 10,
+      "reviewableFileCount": 8,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 4118,
+      "status": "reviewed",
+      "jobId": "f8cfd624-3fcb-4f8c-bee3-a0731b0bcaba",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "pallets/flask",
+      "pr": 5917,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "2eb4cdf320e923b7b2dc166af22ed329179d07c938ea413242c23c1444661675",
+      "changedFileCount": 7,
+      "reviewableFileCount": 5,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2518,
+      "status": "reviewed",
+      "jobId": "63cac8c8-f073-4fba-beca-e82ec413eb1a",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "pallets/flask",
+      "pr": 5818,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "e53f28ee3ec17399c425391492e8a387325f1a5a20aa0ca4b06c0530a7a2c80a",
+      "changedFileCount": 6,
+      "reviewableFileCount": 5,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 5505,
+      "status": "reviewed",
+      "jobId": "d4faae48-1dc4-4856-87d0-4045314420ea",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "pallets/flask",
+      "pr": 5736,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "2d8e255d7393086b4fba445c22ed23641b837bfec8285d8100d92e4f2cf48705",
+      "changedFileCount": 6,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 6550,
+      "status": "reviewed",
+      "jobId": "7889c2d1-8122-42c4-842d-7d85aeef9d45",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "psf/requests",
+      "pr": 7505,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "690567f3a3eda4961e650daa811e0513d3a3cffdde9b97b7b35a1be0ebe1bb68",
+      "changedFileCount": 3,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 782,
+      "status": "reviewed",
+      "jobId": "21fac984-11fc-43a1-adab-ec810ad4373a",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "psf/requests",
+      "pr": 7502,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "dcfe943874846f1eae4220380bb7f8fe79e102373e8143079d65d8b8b511c407",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 314,
+      "status": "reviewed",
+      "jobId": "5b5e134b-e447-4450-a864-48e3c2591610",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "psf/requests",
+      "pr": 7496,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "6242490a0eabc3383d8607cc7ee62ff180601753eb1cbc5110b11bd573f5e7a3",
+      "changedFileCount": 5,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 981,
+      "status": "reviewed",
+      "jobId": "95e50f6c-90fa-46f3-ab0a-6b58dd62d126",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "encode/httpx",
+      "pr": 3690,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "2305c7d114891be70399406e15b74e5c80b6b3ad249bb387ed1f077d67ee4085",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1335,
+      "status": "reviewed",
+      "jobId": "ea012298-8fad-4b57-afbe-623d0e7ca1ee",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "encode/httpx",
+      "pr": 3673,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "8d15b2ef99422d1fdf0a4324b8bb17c6cfe2fd3e1d4ca3d3f29dc5a722b0c037",
+      "changedFileCount": 8,
+      "reviewableFileCount": 8,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2608,
+      "status": "reviewed",
+      "jobId": "ed4977ff-e4de-4008-ac7c-d6c691f27f6e",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "python",
+      "repo": "encode/httpx",
+      "pr": 3571,
+      "detectedEcosystems": [
+        "python"
+      ],
+      "diffSha256": "5ee76e5d7a9e5cd27828ac77456ab5ef061cc23b23c0ba7898f2852e990e9f23",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 111,
+      "status": "reviewed",
+      "jobId": "27f0b2e1-b607-4fae-a281-929275c95abd",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2672,
+      "detectedEcosystems": [
+        "java-spring"
+      ],
+      "diffSha256": "81f0f052f47a7da0404e6795458cdabf16433e4216e25741be771bbedc9d19f9",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1169,
+      "status": "reviewed",
+      "jobId": "0a93272a-2db4-4e24-af43-199902388dad",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2611,
+      "detectedEcosystems": [
+        "java-spring"
+      ],
+      "diffSha256": "941f573dc26fe3608af7cff3679c5590ba1f79b5f68e64d6cf6a898224578d51",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 813,
+      "status": "reviewed",
+      "jobId": "6b9f3bed-d5c3-4011-bd98-370321c5a2ee",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2573,
+      "detectedEcosystems": [
+        "java-spring"
+      ],
+      "diffSha256": "e7252eab445a65ec7fee2a9d496474508b696cad19b6abde8934ae2f73c0a5ff",
+      "changedFileCount": 7,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2965,
+      "status": "reviewed",
+      "jobId": "9f8dccf4-f30d-44d5-8a7e-bbd6e34cec27",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": [
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "src/test/java/org/springframework/samples/petclinic/PetClinicConcurrencyTests.java",
+          "line": 17,
+          "exactQuote": "import org.springframework.boot.restclient.RestTemplateBuilder;",
+          "critique": "The import references a non-existent package 'org.springframework.boot.restclient'. In Spring Boot, RestTemplateBuilder is located in 'org.springframework.boot.web.client'. This hallucinated import causes compilation failure.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2490,
+      "detectedEcosystems": [
+        "java-spring"
+      ],
+      "diffSha256": "c01d48912d795392d637b485e28f19f040159e0c489e9502ff63e457644e635a",
+      "changedFileCount": 12,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 766,
+      "status": "reviewed",
+      "jobId": "5ec7ef39-297d-4026-bfb5-acbe8ee22616",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8704,
+      "detectedEcosystems": [],
+      "diffSha256": "82b13be238bb188fd9e3f080b59e7c3a87955231699ca7685b9889917792dae0",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1118,
+      "status": "reviewed",
+      "jobId": "3f5b270d-0428-4903-b880-e8d7a1cd159d",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8703,
+      "detectedEcosystems": [],
+      "diffSha256": "758665fb344f93de69ea3739a4fa938013c3bd9805278130338da48e0bde1cb7",
+      "changedFileCount": 12,
+      "reviewableFileCount": 12,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 3520,
+      "status": "reviewed",
+      "jobId": "84974678-2d1d-44a9-aaac-56db7f9f16ab",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8685,
+      "detectedEcosystems": [],
+      "diffSha256": "a104758b74cd4133b18215ee42c25026f900b650fac89244681a1ce20d102e45",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1628,
+      "status": "reviewed",
+      "jobId": "4c3801f1-7f04-4e74-bebf-b7c102db478a",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51870,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring"
+      ],
+      "diffSha256": "71ee609fb86c4f28b57d936ac22f59f584629e98db25d278fc785c3938510c43",
+      "changedFileCount": 8,
+      "reviewableFileCount": 6,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1945,
+      "status": "reviewed",
+      "jobId": "e29ccb4b-67af-46f7-9d2b-ee306952c887",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51855,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring"
+      ],
+      "diffSha256": "b5ffcc5afba84d2a9ded3de64f77a59bec05dc5fc6046529e63cd409faa53963",
+      "changedFileCount": 6,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1482,
+      "status": "reviewed",
+      "jobId": "9ffe8eb9-7be8-4014-b685-fe4acb81817f",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51841,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring"
+      ],
+      "diffSha256": "84e49a8f47c5e1fd52a93a6ec6f8588a029ba69485df506a5dd4c4a89ecd0713",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1528,
+      "status": "reviewed",
+      "jobId": "4533a2c7-9df6-4cee-86c4-a3f3c8a39e74",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    }
+  ]
+}

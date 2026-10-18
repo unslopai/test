@@ -15,7 +15,7 @@ const pythonFile = buildPullRequestFile({ filename: 'agent/tools/code_runner.py'
 
 describe('planProductionPath', () => {
     it('gives the model only reviewable files and the pre-scanner every file of a mixed fixture', () => {
-        const mixedPlan = planProductionPath([typescriptFile, pythonFile]);
+        const mixedPlan = planProductionPath([typescriptFile, pythonFile], []);
 
         expect(mixedPlan.aborted).toBe(false);
         expect(mixedPlan.reviewableFiles).toEqual([typescriptFile]);
@@ -24,7 +24,7 @@ describe('planProductionPath', () => {
     });
 
     it('gives a fixture without a reviewable file to the pre-scanner only (stage 1)', () => {
-        const pythonOnlyPlan = planProductionPath([pythonFile]);
+        const pythonOnlyPlan = planProductionPath([pythonFile], []);
 
         expect(pythonOnlyPlan.aborted).toBe(false);
         expect(pythonOnlyPlan.reviewableFiles).toEqual([]);
@@ -33,7 +33,7 @@ describe('planProductionPath', () => {
 
     it('aborts a docs-only fixture: no lane scans it', () => {
         const markdownFile = buildPullRequestFile({ filename: 'docs/CHANGELOG.md' });
-        const docsOnlyPlan = planProductionPath([markdownFile]);
+        const docsOnlyPlan = planProductionPath([markdownFile], []);
 
         expect(docsOnlyPlan.aborted).toBe(true);
         expect(docsOnlyPlan.prescanFiles).toEqual([]);

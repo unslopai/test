@@ -54,7 +54,7 @@ export interface IntegrityNotice {
 export interface NothingReviewedNotice {
     /**
      * 'none' = zero files reviewed at all; 'deterministic_only' = no model read
-     * the diff (no TypeScript or JavaScript file), only the deterministic
+     * the diff (no file of a type the model review reads), only the deterministic
      * pre-scanner ran (LANGUAGE_COVERAGE_SPEC §6.2). Neither is a clean verdict.
      */
     readonly coverage: 'none' | 'deterministic_only';

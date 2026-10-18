@@ -4,6 +4,7 @@
  * ein sauberer Lauf resettet, Lookup-Fehler degradieren fail-soft.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatDeterministicOnlyNotice } from '@unslop/shared/degradation-notice';
 import {
     buildCascadeState,
     buildPipelineContext,
@@ -189,7 +190,7 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
             prFiles: [buildPullRequestFile({ filename: 'services/report_job.py' })],
             prescanIssues: [buildReviewIssue({ rule: 'SEC-005 (Hardcoded secret)', source: 'pre-scanner' })],
             llmSkipped: true,
-            deterministicOnlyReason: 'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model reviewed it.',
+            deterministicOnlyReason: formatDeterministicOnlyNotice('pull_request'),
             prescanStats: {
                 degraded: false,
                 degradedReason: null,
@@ -212,8 +213,8 @@ describe('resultPersisterStep — re-roll bookkeeping (MCP_SPEC §4.5)', () => {
         expect(persistedResult.files_reviewed).toBe(0);
         expect(persistedResult.review.issues).toHaveLength(1);
         expect(persistedResult.review.summary).toBe(
-            'Deterministic checks only: this pull request changes no TypeScript or JavaScript file, so no model '
-            + 'reviewed it. The deterministic pre-scanner found 1 critical and 0 warning findings.',
+            `${formatDeterministicOnlyNotice('pull_request')} `
+            + 'The deterministic pre-scanner found 1 critical and 0 warning findings.',
         );
     });
 
@@ -311,6 +312,20 @@ describe('resultPersisterStep — Summary aus den tatsächlichen Findings (LANGU
         expect(capturedUpdatePayload().result.review.summary).toBe(
             'The deterministic pre-scanner found 1 critical and 0 warning findings. '
             + 'The model review reported no further findings.',
+        );
+    });
+
+    it('nennt im gemischten PR die Dateitypen, die kein Modell gelesen hat — auch neben dem Clean-Satz', async () => {
+        const typescriptFile = buildPullRequestFile({ filename: 'src/lib/user-lookup.ts' });
+
+        await resultPersisterStep.execute(buildPipelineContext({
+            prFiles: [typescriptFile, buildPullRequestFile({ filename: 'cmd/server/main.go' })],
+            reviewableFiles: [typescriptFile],
+            reviewSummary: '',
+        }));
+
+        expect(capturedUpdatePayload().result.review.summary).toBe(
+            'No AI slop found. No model read 1 changed file of this type: .go.',
         );
     });
 

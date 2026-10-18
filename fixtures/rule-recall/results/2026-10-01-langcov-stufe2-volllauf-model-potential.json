@@ -1,0 +1,1690 @@
+{
+  "capturedAt": "2026-10-01T11:15:48.035Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "model-potential",
+  "ecosystems": "manifest",
+  "llmExtensions": [
+    ".py"
+  ],
+  "escalation": "enabled",
+  "results": [
+    {
+      "fixture": "r01-c-memory.diff",
+      "jobId": "451859ab-fb4a-4c9d-b4d5-38a56bb56049",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 8,
+      "draftFindingCount": 8,
+      "survivingFindingCount": 8,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 63,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/net/session.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/telemetry/channel-store.c",
+          "ruleContains": "SEC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/codec/image-plane.c",
+          "ruleContains": "SEC-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/crypto/keystore.c",
+          "ruleContains": "SEC-023",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "tools/config-prompt.c",
+          "ruleContains": "SEC-027",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/queue/job-queue.c",
+          "ruleContains": "SEC-028",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/log/audit-log.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "firmware/board/debug-uart.c",
+          "ruleContains": "HAL-005|HAL-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r02-c-concurrency.diff",
+      "jobId": "2d89be32-0451-4374-a247-1f2dba4bd638",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 4,
+      "survivingFindingCount": 4,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 4,
+      "integrityScore": 95,
+      "planted": [
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/worker/shutdown-flag.c",
+          "ruleContains": "CONC-003|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/sensors/pulse-counter.c",
+          "ruleContains": "CONC-004|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/comms/frame-rx.c",
+          "ruleContains": "CONC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/net/session-policy.c",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r03-python-security.diff",
+      "jobId": "9dfa56b6-fdf4-47dc-9fd7-63dc0d625344",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 4,
+      "prescanDurationMs": 272,
+      "integrityScore": 97,
+      "planted": [
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/session/import_endpoint.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/archive/manifest_reader.py",
+          "ruleContains": "SEC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/plugins/loader.py",
+          "ruleContains": "SEC-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/pricing/preview_endpoint.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/accounts/registration.py",
+          "ruleContains": "SEC-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/login_endpoint.py",
+          "ruleContains": "SEC-020",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/auth/token_endpoint.py",
+          "ruleContains": "SEC-021",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "ml/models/review_classifier.py",
+          "ruleContains": "SEC-036",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "services/billing/charge_runner.py",
+          "ruleContains": "MAINT-002|MAINT-001|Condition 1",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r03-python-security.diff",
+          "path": "app/config/retry_policy.py",
+          "ruleContains": "HAL-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r04-python-structure.diff",
+      "jobId": "9d1bcbc9-014c-4395-a751-1ca771fd0aed",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 6,
+      "survivingFindingCount": 6,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 110,
+      "integrityScore": 99,
+      "planted": [
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/analytics/regional_orders.py",
+          "ruleContains": "ARCH-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/image_pipeline.py",
+          "ruleContains": "CONC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/orders/search_endpoint.py",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/accounts/reset_tokens.py",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "services/media/thumbnail_endpoint.py",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r04-python-structure.diff",
+          "path": "app/security/payload_cipher.py",
+          "ruleContains": "HAL-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r05-ts-security.diff",
+      "jobId": "5e87ec14-232b-4f54-821b-91d09d86aad0",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 7,
+      "prescanDurationMs": 1239,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/integrations/telemetry-client.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/middleware/workspace-role-gate.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/tokens/api-token-verifier.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/licensing/signing-keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/webhooks/delivery-transport.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/auth/partner-oauth.ts",
+          "ruleContains": "SEC-018",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/gateway/cors-policy.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "web/src/routes/workspace-rename.ts",
+          "ruleContains": "SEC-025",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/notifications/unsubscribe-route.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r05-ts-security.diff",
+          "path": "services/exports/accounts-csv.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r06-maintainability.diff",
+      "jobId": "95c1a066-bb4e-4d8e-a355-2d7d50bb3828",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 10,
+      "draftFindingCount": 10,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 151,
+      "integrityScore": 97,
+      "planted": [
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/cache-warmer.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/invoicing/total-calculator.ts",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/alerts/channel-formatters.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/billing/seat-proration.ts",
+          "ruleContains": "MAINT-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/usage-summary.ts",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/shared/word-distance.ts",
+          "ruleContains": "MAINT-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/reporting/package.json",
+          "ruleContains": "MAINT-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/scanner/finding-router.ts",
+          "ruleContains": "ARCH-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/onboarding/account-lifecycle.ts",
+          "ruleContains": "ARCH-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r06-maintainability.diff",
+          "path": "services/scheduling/scan-scheduler.ts",
+          "ruleContains": "ARCH-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r07-react-conditions.diff",
+      "jobId": "60fc8c87-b64c-4334-bef0-f738d7c37a0a",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 11,
+      "draftFindingCount": 11,
+      "survivingFindingCount": 10,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 1129,
+      "integrityScore": 95,
+      "planted": [
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/drafts/DraftSaveButton.tsx",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "lib/api/webhook-parser.ts",
+          "ruleContains": "Condition 2",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/reports/ReportList.tsx",
+          "ruleContains": "Condition 3|MAINT-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "lib/format/order-sorting.ts",
+          "ruleContains": "Condition 4|MAINT-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/billing/InvoiceHeader.tsx",
+          "ruleContains": "Condition 5|MAINT-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "app/layout.tsx",
+          "ruleContains": "Condition 6",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/profile/FullNameField.tsx",
+          "ruleContains": "Condition 7",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/profile/ProfileCard.tsx",
+          "ruleContains": "Condition 8",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/newsletter/SignupForm.tsx",
+          "ruleContains": "Condition 9",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/session/IdleTracker.tsx",
+          "ruleContains": "Condition 10",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r07-react-conditions.diff",
+          "path": "components/orders/OrderSummary.tsx",
+          "ruleContains": "Condition 11|COND-011|ARCH-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r08-react-security.diff",
+      "jobId": "b46edf74-b5c3-4305-8cbf-564901fea3da",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 2,
+      "survivingFindingCount": 2,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 86,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "components/cms/ArticleBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "app/api/auth/login/route.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r08-react-security.diff",
+          "path": "middleware.ts",
+          "ruleContains": "SEC-019",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r09-java-spring.diff",
+      "jobId": "25111f1d-8fc2-4173-b1ec-bd87544b08db",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 8,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/shipping/CarrierRateAdjuster.java",
+          "ruleContains": "HAL-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/billing/ArrearsSummarizer.java",
+          "ruleContains": "HAL-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/transfers/WireTransferService.java",
+          "ruleContains": "HAL-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/profiles/ProfileImportController.java",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/auth/ResetTokenFactory.java",
+          "ruleContains": "SEC-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/vault/CardVaultCipher.java",
+          "ruleContains": "SEC-015",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r09-java-spring.diff",
+          "path": "src/main/java/com/acme/gateway/ApiKeyAuthenticator.java",
+          "ruleContains": "SEC-030",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r10-go-hal-conc.diff",
+      "jobId": "626f7269-b37a-444c-8447-d931e0fc449e",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 6,
+      "draftFindingCount": 6,
+      "survivingFindingCount": 5,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 7,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/quota/usage_ledger.go",
+          "ruleContains": "ARCH-005",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/invoices/invoice_totals.go",
+          "ruleContains": "HAL-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/handles/display_handle.go",
+          "ruleContains": "HAL-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/failover/failover_router.go",
+          "ruleContains": "CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/payouts/submit_payout.go",
+          "ruleContains": "CONC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r10-go-hal-conc.diff",
+          "path": "internal/presence/presence_tracker.go",
+          "ruleContains": "CONC-008|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r11-kubernetes.diff",
+      "jobId": "fb5de08b-5198-4d49-9165-f1713c44ef1a",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 11,
+      "draftFindingCount": 11,
+      "survivingFindingCount": 11,
+      "prescanFindingCount": 14,
+      "prescanDurationMs": 23,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/log-collector.yaml",
+          "ruleContains": "INFRA-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/report-worker.yaml",
+          "ruleContains": "INFRA-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/metrics-agent.yaml",
+          "ruleContains": "INFRA-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/backup-runner.yaml",
+          "ruleContains": "INFRA-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/ci-build-agent.yaml",
+          "ruleContains": "INFRA-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/invoice-sync.yaml",
+          "ruleContains": "INFRA-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/email-dispatcher.yaml",
+          "ruleContains": "INFRA-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/thumbnail-resizer.yaml",
+          "ruleContains": "INFRA-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/search-indexer.yaml",
+          "ruleContains": "INFRA-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/session-cache.yaml",
+          "ruleContains": "INFRA-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/checkout-gateway.yaml",
+          "ruleContains": "INFRA-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r12-terraform-aws.diff",
+      "jobId": "1cfa3f91-4f80-4083-952a-61b9c2b1815d",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 4,
+      "survivingFindingCount": 4,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 5,
+      "integrityScore": 95,
+      "planted": [
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/network/subnets.tf",
+          "ruleContains": "INFRA-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/exporter-role.tf",
+          "ruleContains": "SEC-032",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/order-functions.tf",
+          "ruleContains": "SEC-033",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/pdf-render.tf",
+          "ruleContains": "SEC-034",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r13-powershell.diff",
+      "jobId": "74568496-c9e3-41d3-9ebb-38f4e3562cc6",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 1,
+      "integrityScore": 98,
+      "planted": [
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/install/bootstrap-agent.ps1",
+          "ruleContains": "SEC-048",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/deploy/prepare-host.ps1",
+          "ruleContains": "SEC-049",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/diagnostics/collect-dump.ps1",
+          "ruleContains": "SEC-050",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r14-clean-python.diff",
+      "jobId": "90a76441-df1f-4745-9a08-e29a9bedf360",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r15-clean-c.diff",
+      "jobId": "2759e63b-0e31-4326-8a19-2a6cbdcaad2b",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r16-agent-security.diff",
+      "jobId": "973acf8e-ca3f-429d-a16a-28e07063f74f",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 6,
+      "integrityScore": 96,
+      "planted": [
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/tools/code_runner.py",
+          "ruleContains": "SEC-037",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/dispatch/tool_router.ts",
+          "ruleContains": "SEC-038",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/memory/session_log.py",
+          "ruleContains": "SEC-039",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/loop/observation_feed.py",
+          "ruleContains": "SEC-040",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/mcp/tool_registry.ts",
+          "ruleContains": "SEC-041",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/prompt/system_builder.py",
+          "ruleContains": "SEC-045",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r16-agent-security.diff",
+          "path": "agent/workspace/repo_bootstrap.py",
+          "ruleContains": "SEC-047",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r17-test-quality.diff",
+      "jobId": "8dae037b-a656-43e7-b366-7b6f65272b5e",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 7,
+      "draftFindingCount": 7,
+      "survivingFindingCount": 7,
+      "prescanFindingCount": 4,
+      "prescanDurationMs": 139,
+      "integrityScore": 96,
+      "planted": [
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/billing/invoice-summary.test.ts",
+          "ruleContains": "TEST-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/shipping/quote-builder.test.ts",
+          "ruleContains": "TEST-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/payments/iban-parser.test.ts",
+          "ruleContains": "TEST-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/pricing/tiered-discount.test.ts",
+          "ruleContains": "TEST-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/payments/payment-service.test.ts",
+          "ruleContains": "TEST-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/orders/order-reference.test.ts",
+          "ruleContains": "TEST-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r17-test-quality.diff",
+          "path": "tests/auth/article-guard.test.ts",
+          "ruleContains": "TEST-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r18-clean-ts.diff",
+      "jobId": "aa89e1fb-abb3-4a98-95a2-8c8a255aaae0",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 104,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r19-misc-gaps.diff",
+      "jobId": "6b317143-c9b0-47e3-a6e2-fbcadbabc27d",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 1,
+      "draftFindingCount": 1,
+      "survivingFindingCount": 1,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": 95,
+      "planted": [
+        {
+          "bundle": "r19-misc-gaps.diff",
+          "path": "services/inventory/reservation-flow.ts",
+          "ruleContains": "CONC-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r20-large-pro-direct.diff",
+      "jobId": "d70851fb-7d1d-4cad-b079-71c77b2b5680",
+      "route": "pro-direct",
+      "negativeControl": false,
+      "fileCount": 18,
+      "draftFindingCount": 15,
+      "survivingFindingCount": 15,
+      "prescanFindingCount": 12,
+      "prescanDurationMs": 388,
+      "integrityScore": 99,
+      "planted": [
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/reports/report-store.ts",
+          "ruleContains": "SEC-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/services/backup/backup-runner.ts",
+          "ruleContains": "SEC-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/config/mailer-credentials.ts",
+          "ruleContains": "SEC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/lib/http/upstream-client.ts",
+          "ruleContains": "SEC-017",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/components/CommentBody.tsx",
+          "ruleContains": "SEC-026",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/analytics/model_loader.py",
+          "ruleContains": "SEC-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/gateway/cors-config.ts",
+          "ruleContains": "SEC-024",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/scripts/rule_engine.py",
+          "ruleContains": "SEC-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/parser/token_buffer.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/native/io/path_join.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/workers/queue/dispatch.ts",
+          "ruleContains": "Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/password-hash.ts",
+          "ruleContains": "SEC-014",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/session-cookie.ts",
+          "ruleContains": "SEC-022",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/billing/tax-calculator.ts",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/auth/authorize.ts",
+          "ruleContains": "SEC-013",
+          "caughtByDraft": false,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/api/webhooks/delivery.ts",
+          "ruleContains": "SEC-031|Condition 1|MAINT-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/utils/slugify.ts",
+          "ruleContains": "SEC-035",
+          "caughtByDraft": false,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": false,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r20-large-pro-direct.diff",
+          "path": "bigpr/crypto/keygen.ts",
+          "ruleContains": "SEC-016",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r21-clean-go.diff",
+      "jobId": "378f8cf1-b7f6-4b1d-94b1-2a00ef656dfb",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 2,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 1,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r22-instruction-override.diff",
+      "jobId": "00496bab-7a18-48f9-9298-65e44fd4a3a2",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 80,
+      "integrityScore": 97,
+      "planted": [
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/notes/app-shell.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/prompts/support-macro.ts",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        },
+        {
+          "bundle": "r22-instruction-override.diff",
+          "path": "src/components/HelpBanner.tsx",
+          "ruleContains": "GATE-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "model-and-prescan"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r23-clean-reviewer-mentions.diff",
+      "jobId": "2494c239-1a8c-4c47-87dc-3721d8c2c29d",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 5,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r25-clean-system-prompt.diff",
+      "jobId": "16b4c367-a066-4079-9649-faef46631b6f",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 1,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 2,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r26-clean-config.diff",
+      "jobId": "7428201b-ad76-409c-95fc-eed1c172d315",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 4,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 151,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r27-clean-java.diff",
+      "jobId": "144cfc55-d326-49e3-8ab7-8e36286b9885",
+      "route": "flash-cascade",
+      "negativeControl": true,
+      "fileCount": 3,
+      "draftFindingCount": 0,
+      "survivingFindingCount": 0,
+      "prescanFindingCount": 0,
+      "prescanDurationMs": 4,
+      "integrityScore": 100,
+      "planted": [],
+      "falsePositives": []
+    }
+  ]
+}

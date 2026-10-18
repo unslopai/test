@@ -282,6 +282,8 @@ interface PipelineContext {
     readonly cascadeConfig: CascadeConfig;
     /** Prescan-Konfiguration aus pipeline_config.prescan (mit Code-Defaults gemerged). */
     readonly prescanConfig: PrescanConfig;
+    /** Review-Umfang aus pipeline_config.reviewScope (Default, Repo-Config und Env-Rollback aufgelöst). */
+    readonly reviewScopeConfig: ReviewScopeConfig;
     /** Ob die Pipeline nach diesem Step abbrechen soll. */
     readonly shouldAbort: boolean;
     readonly abortReason?: string;
@@ -333,9 +335,24 @@ interface PipelineConfig {
      * Validierung macht resolvePrescanConfig (identisch zum cascade-Muster).
      */
     readonly prescan?: unknown;
+    /**
+     * Review-Umfang (LANGUAGE_COVERAGE_SPEC §6.3) — strukturell durchgereicht,
+     * die Feld-Validierung macht resolveReviewScopeConfig.
+     */
+    readonly reviewScope?: unknown;
+}
+
+/** Welche Dateien die Modell-Review liest (LANGUAGE_COVERAGE_SPEC §6.3). */
+interface ReviewScopeConfig {
+    /**
+     * Endungen, die die Modell-Review ZUSÄTZLICH zu JS/TS liest, z. B. `.py`.
+     * Leer heißt: nur JS/TS.
+     */
+    readonly llmExtensions: readonly string[];
 }
 
 export type {
+    ReviewScopeConfig,
     IssueSeverity,
     RepoAuthMode,
     TokenUsage,
