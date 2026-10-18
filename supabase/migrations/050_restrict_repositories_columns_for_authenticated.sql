@@ -1,0 +1,41 @@
+-- 050_restrict_repositories_columns_for_authenticated (SERVER_AUDIT_2026-09.md L9 / §5a)
+-- Bis hierher hatte `authenticated` auf repositories ein Tabellen-Grant SELECT
+-- (Migration 011, von 038 bewusst belassen fuers Realtime-Abo des Dashboards).
+-- Ein Tabellen-Grant erlaubt jede Spalte: der eingeloggte Owner konnte per
+-- PostgREST (`/rest/v1/repositories?select=webhook_secret,pipeline_config`)
+-- und in jedem Realtime-UPDATE-Payload sein eigenes Hook-Secret und die
+-- operator-only pipeline_config lesen (Live-Nachweis 2026-09-29, Audit §5).
+-- Kein Cross-Tenant (Policy `auth.uid() = user_id`), aber ein Widerspruch zu
+-- OPERATOR_SETTINGS_SPEC D4 und ein Secret im Browser.
+--
+-- Warum keine View: Realtime `postgres_changes` haengt an der logischen
+-- Replikation, Views erzeugen keine WAL-Eintraege. Warum kein Spalten-REVOKE:
+-- neben einem Tabellen-Grant wirkt er in Postgres nicht. Deshalb den
+-- Tabellen-Grant ganz entziehen und spaltenweise neu erteilen — genau die
+-- vier Spalten, die das Dashboard-Abo liest (useDashboardSync.ts:
+-- parseRepoStatusRow liest id, github_repo_id, status). `id` ist Pflicht:
+-- ohne lesbaren Primaerschluessel antwortet Realtime mit "Error 401".
+-- `user_id` braucht es nicht: die Policy-Pruefung laeuft ueber `id`, und
+-- Policy-Ausdruecke brauchen kein Spaltenrecht des Aufrufers (Trockenlauf).
+--
+-- Nebenwirkung, gewollt: REVOKE ALL nimmt auch MAINTAIN mit, das 038 in
+-- seiner festen Liste (INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER)
+-- vergessen hatte (Postgres 17, ueber PostgREST/Realtime nicht ausloesbar).
+--
+-- Datenpfad-Nachweis (warum das nichts bricht, Stand 2026-09-29): jeder
+-- `.from('repositories')` in src/ laeuft ueber den Service-Role-Client
+-- (src/lib/supabase.ts); die Cookie-/Browser-Clients (src/lib/supabase/
+-- {client,server,middleware}.ts) rufen nur auth.getUser() bzw. das Realtime-
+-- Abo auf. Liste mit Datei:Zeile im Audit §5a. Realtime `apply_rls` laesst
+-- nicht lesbare Spalten aus `record`/`old_record` weg, statt das Event zu
+-- verwerfen. Braucht das Dashboard spaeter eine weitere Spalte per Realtime,
+-- muss sie HIER ins Grant, sonst fehlt sie ohne Fehlermeldung im Payload.
+--
+-- Trockenlauf (zurueckgerollt, 2026-09-29, als authenticated mit Owner-Claims):
+-- visible_rows=1 status_readable=t secret_denied=t config_denied=t
+-- star_denied=t has_column_privilege(webhook_secret)=f maintain=f.
+-- Angewendet via Supabase MCP apply_migration am 2026-09-29; lokaler Spiegel.
+-- Regressions-Guard: src/lib/supabase/private-grants.integration.test.ts.
+
+REVOKE ALL ON TABLE public.repositories FROM authenticated;
+GRANT SELECT (id, github_repo_id, status, updated_at) ON TABLE public.repositories TO authenticated;
