@@ -1,6 +1,6 @@
 # Sprachabdeckung: wie unslop Nicht-JS/TS-Code prüft
 
-**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“). Stufe 2 ist für Python und Java gebaut (2026-09-30, §6.2 „Stand nach Stufe 2“, Gate-Ergebnisse in §6.5): Python ist Default, Java nur je Repo-Config, Go bleibt draußen (E7).** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
+**Status: FREIGEGEBEN 2026-09-30 (Luca), Entscheidungen in §8.** E1–E6 wie vorgeschlagen, E7 abweichend: Stufe 0 und 1 sofort, Stufe 2 für Python und Java vor dem Launch, Go erst nach geklärter Latenz. **Stufe 0 ist gebaut (2026-09-30, §4.4 „Stand nach Stufe 0“, §5, §7.1), Stufe 1 ebenfalls (§6.2 „Stand nach Stufe 1“). Stufe 2 ist für Python und Java gebaut (2026-09-30, §6.2 „Stand nach Stufe 2“, Gate-Ergebnisse in §6.5): Python ist Default, Java nur je Repo-Config, Go bleibt draußen (E7). Stufe 3 ist gebaut (2026-10-03, Gate-Ergebnisse in §6.6): der Law-Filter erkennt Sprachen am Pfad; Default der Modell-Review sind JS/TS, Python, Go und PowerShell; Java, C/C++ und Terraform sind nur je Repo-Config an.** Die Abschnitte §2 bis §4 beschreiben den Stand vor dem Bau.
 
 Code-Stand aller Belege und Messungen: `main` bei `17ee7ec` (2026-09-30). Rohdaten: `fixtures/rule-recall/results/2026-09-30-langcov-*.json`. Die Benchmark-Jobs liegen mit `--keep` in `review_jobs` und `review_job_llm_calls`. Modelle laut `src/lib/pipeline/models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`, Eskalation `gemini-3.8-flash` (in keiner Messung gerufen).
 
@@ -375,13 +375,15 @@ Stand nach den Messungen dieser Session, alle auf dem Benchmark-Pfad: Python und
 - Erst die Repo-Erkennung um Pfadsignale erweitern (`.tf`, `.c/.h/.cpp`, `.ps1`, Kubernetes-Manifeste). Der Cache-Contract bleibt, weil der Filter weiter nur vom Repo abhängt (`law.ts:65-66`).
 - Dann dieselben Gates wie Stufe 2.
 
+**Stand nach Stufe 3 (2026-10-03):** gebaut, Ergebnisse und Bau-Entscheidungen in §6.6. Die Repo-Erkennung liest Pfadsignale für jede Sprache mit getaggten Regeln; Go und PowerShell sind Default, Java, C/C++ und Terraform je Repo einschaltbar; HAL-002 auf Import-Zeilen endet als WARNING.
+
 ### 6.3 Kill-Switch
 
 | Stufe | Schalter | Wirkung |
 |---|---|---|
 | 1 | Env `UNSLOP_PRESCAN_ONLY_REVIEW=off` | Diff-Loader setzt wieder `shouldAbort` wie heute. Gebaut: `isPrescanOnlyReviewEnabled`, zur Laufzeit gelesen, greift mit dem nächsten Job |
 | 1, je Repo | `pipeline_config.enabledStepIds` ohne `pre-scanner` | besteht schon (`worker.ts:100-107`) |
-| 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS. Gebaut: `resolveReviewScopeConfig`, Default `['.py']` |
+| 2 und 3 | Config-Wert `reviewScope.llmExtensions` mit Default in `defaults.ts`, je Repo über die Operator-Allowlist | Liste leer ⇒ nur JS/TS. Gebaut: `resolveReviewScopeConfig`, Default seit Stufe 3 `['.py', '.go', '.ps1', '.psm1']` |
 | 2 und 3, global | Env `UNSLOP_LLM_LANE_JSTS_ONLY=1` | übersteuert die Config, Rollback ohne Deploy. Gebaut: `isLlmLaneRestrictedToJsTs`, zur Laufzeit gelesen |
 
 Die Env-Schalter folgen dem Muster von `UNSLOP_ESCALATION_LEGACY_PRO`.
@@ -462,6 +464,193 @@ Code-Stand: Branch `feat/langcov-stufe2` auf `main` `b9f01b2`. Modelle laut `mod
 
 **Nebenwirkung der Läufe.** G7 lief noch mit `PROMPT_CACHE_SCHEMA_VERSION = 2` und legte die Caches der Keys `python`, `java-spring` und `unfiltered` mit dem neuen Kern neu an (`explicit_created` um 12:00 bis 12:04 UTC, vorher abgelaufen). Ein Produktions-Job mit einem dieser drei Keys hätte bis zum TTL-Ablauf den neuen Kern gelesen. Die Produktions-Repos laufen unter anderen Keys (`unslopai/test`: `nodejs,react,typescript`).
 
+### 6.6 Gate-Ergebnisse Stufe 3 (2026-10-03)
+
+Code-Stand: Branch `feat/langcov-stufe3` auf `main` `94a7b37`. Modelle laut `models.ts`: Draft `gemini-3.8-flash`, Verifier `gemini-3.6-flash`. Alle Läufe ohne RAG, ohne Reference Practices, ohne Job-Budget, **ohne Eskalation** (`--no-escalation`). Kandidaten in dieser Reihenfolge: Go, Java als Default, C/C++, Terraform (`.tf`), PowerShell. Kubernetes-YAML bleibt deterministisch (§1).
+
+**Law-Filter-Fix (Voraussetzung, zuerst gebaut).** `detectRepoEcosystems` liest jetzt Pfadsignale, und `KNOWN_ECOSYSTEMS` kennt dreizehn weitere Keys, die wie die `applies_to`-Tags heißen: `java`, `c`, `cpp`, `terraform`, `powershell`, `kubernetes`, `solidity`, `rust`, `kotlin`, `scala`, `haskell`, `elixir`, `cobol`. Damit hat jedes Tag der Tabelle außer `aws` ein Signal (`aws` steht nur neben `terraform`).
+
+| Signal | Key |
+|---|---|
+| `.go` (auch ohne `go.mod`) | `go` |
+| `.py` (auch ohne `pyproject.toml`, `requirements.txt`, `setup.py`) | `python` |
+| `.java` (auch ohne Spring im Manifest) | `java` |
+| `.c`, `.h` | `c` |
+| `.cpp`, `.cc`, `.cxx`, `.hpp` | `cpp` |
+| `.tf` | `terraform` |
+| `.ps1`, `.psm1` | `powershell` |
+| `.sol` | `solidity` |
+| `.rs`, `Cargo.toml` | `rust` |
+| `.kt`, `.kts` / `.scala` / `.hs` / `.ex`, `.exs` / `.cbl`, `.cob` | `kotlin` / `scala` / `haskell` / `elixir` / `cobol` |
+| `.js`, `.jsx`, `.mjs`, `.cjs` (auch ohne `package.json`) | `nodejs` |
+| `Chart.yaml`, `kustomization.yaml`/`.yml`, YAML unter `k8s/`, `kubernetes/`, `manifests/`, `helm/`, `charts/`, `kustomize/` | `kubernetes` |
+
+Entscheidungen beim Bau:
+
+- **Eine Datei genügt**, wie schon bei `.ts`. Ein falsches Signal kostet nur zusätzliche Regeln im Prompt; ein fehlendes nimmt der Sprache ihre Regeln.
+- **Java ohne Spring.** Die sieben Java-Regeln der Tabelle (HAL-004, HAL-006, HAL-007, SEC-006, SEC-008, SEC-015, SEC-030) tragen das Tag `java-spring`, ihr Text gilt für jedes Java. Der Filter behandelt den Key `java` deshalb so, als trüge er auch `java-spring` (`law.ts: IMPLIED_LAW_TAGS`). Die Tags in der Tabelle bleiben unverändert. `java-spring` selbst entsteht weiter nur mit Spring im Build-Manifest und bleibt der Key der Spring-Practices; ein Spring-Repo hat beide Keys.
+- **Reines Java-, C- oder Terraform-Repo.** Bisher `[]`, also ungefilterter Block mit allen 119 Regeln. Jetzt bekommt es einen gefilterten Block: die 72 universellen Regeln plus die der erkannten Sprachen.
+- **Kein Repo verliert Regeln durch ein Nebensignal.** Ein Rust-Repo mit einem `.ps1`-Skript hatte bisher `[]` (ungefilterter Block). Bekäme es nur `powershell`, fielen seine Rust-Regeln weg. Deshalb die Signale für alle Tags, auch für Sprachen, die die Modell-Review nicht liest (Review-Befund, Test „keeps the Rust rules …“).
+- **Diff-Ebene.** `detectDiffEcosystems` liest dieselbe Endungs-Tabelle und das Kubernetes-Pfadmuster, aber keine Manifest-Namen (ein Diff nur mit `package.json` bleibt `[]` wie bisher). Für die neuen Keys gibt es keine Reference Practices; die Schnittmenge bleibt dort leer.
+- **Bekannte Unschärfen.** YAML unter `charts/` oder `manifests/`, das kein Kubernetes ist, vendorter C-Code unter `third_party/` und Objective-C-Header setzen ein Signal und kosten zusätzliche Regeln im Prompt. `deploy/*.yaml`, `.tfvars`, `.tf.json`, `.hh` und `.psd1` setzen keins.
+- **Cache-Contract.** Der Filter hängt weiter nur vom Repo ab (`law.ts`, `fetchRenderedLawBlock`). `PROMPT_CACHE_SCHEMA_VERSION` bleibt 3: der Cache-Key enthält die sortierte Ökosystem-Liste und den Hash des gerenderten Law-Blocks (`context-cache.ts: computeCacheKey`), ein anderer Block hat also immer einen anderen Key. Folge: ein Repo, dessen Erkennung sich durch die neuen Signale ändert, bekommt beim ersten Job nach dem nächsten Ingest einen neuen Key je Modell (`explicit_created` statt `explicit_hit`, einmal der Prefix zum vollen Input-Preis, unter einem Cent). Repos ohne neue Signale behalten Key und Cache.
+- **Bestehende Repos.** `repositories.detected_ecosystems` entsteht beim Ingest. Bis zum nächsten Ingest oder einem Lauf von `scripts/backfill-ecosystems.ts` gilt der alte Wert (ROADMAP).
+
+Beleg G6: `src/lib/law.test.ts` „Gate G6“. Ein TypeScript-Host bekommt je Endung aus `GATED_LLM_EXTENSIONS` eine einzelne Datei ohne Manifest; der gefilterte Block enthält jede Regel der Sprache. Die erwarteten Regel-IDs je Endung sind im Test fest verdrahtet (Stand der Live-Tabelle, SQL vom 2026-10-03). Ein zweiter Fall prüft die 31 Regeln aus §2.5 an einem Host mit Kubernetes-Manifest, C, Terraform, PowerShell und Solidity, ein dritter die Manifest-Werte `polyglotEcosystems` gegen die Erkennung.
+
+Law-Filter-Referenzlauf `--bypass-filter --ecosystems polyglot --only r01,r02,r11,r12,r13 --no-escalation --keep`:
+
+| Fixture | vorher (`main`, `polyglotEcosystems: typescript, nodejs`) | nachher (Host plus erkannte Sprache) | Jobs vorher / nachher |
+|---|---|---|---|
+| r01 C | Draft 1/8 | Draft 8/8 | `5e9bdf25` / `26382b10` |
+| r02 C | Draft 3/4 | Draft 4/4 | `12600605` / `85c5a3fb` |
+| r11 Kubernetes | Draft 0/11 | Draft 11/11 | `a0b5590e` / `36b864b8` |
+| r12 Terraform | Draft 0/4 | Draft 4/4 | `fef1196a` / `9d683ca1` |
+| r13 PowerShell | Draft 0/3 | Draft 3/3 | `a8a2797f` / `ba05b1d1` |
+| **Summe** | **Draft 4/30**, auf r01, r11, r12, r13 **1/26** wie in §4.3; Combined 21/30 | **Draft 30/30**, Combined 30/30, nach Verifier 30/30 | `results/2026-10-03-langcov-stufe3-lawfilter-before.json`, `-after.json` |
+
+r02 lag schon vorher bei 3/4, weil drei seiner vier Regeln auch ohne C-Tag im Prompt stehen (`CONC-001` als Alternative, MAINT-003). Auf r13 lieferte der Draft in beiden Läufen zuerst eine leere Antwort; der eingebaute Sofort-Retry heilte sie (`parse_error` plus `ok` in `review_job_llm_calls`).
+
+**Go-Latenz (E7).** Frage: Warum brauchte der Draft auf r10 (3,3 KB) am 2026-09-30 83, 85 und 161 s? Messung ohne parallele Last, dreimal r10 nacheinander, je Vertex-Call mit `usageMetadata` (Scratch-Skript, nicht eingecheckt):
+
+| Lauf | Job | Draft-Latenz | Antwort-Tokens | Thinking-Tokens | Tokens je Sekunde | `finishReason` | Draft plus Verify |
+|---|---|---|---|---|---|---|---|
+| 1 | `e41a96a3` | 64,5 s | 1.258 | 9.609 | 168 | STOP | 75,5 s |
+| 2 | `29f6e73c` | 34,6 s | 1.267 | 4.631 | 170 | STOP | 46,3 s |
+| 3 | `a4ad9337` | 38,6 s | 1.114 | 5.436 | 170 | STOP | 49,6 s |
+| 2026-09-30, unter Last | `2de60b44` | 83,0 s | zusammen 11.652 | | 140 | | 91,8 s |
+| 2026-09-30, unter Last | `9bdc06e5` | 84,7 s | zusammen 8.381 | | 99 | | 94,8 s |
+| 2026-09-30, unter Last | `8054133a` | 160,6 s | zusammen 13.739 | | 86 | | 170,0 s |
+
+**Ursache:** das Thinking des Draft-Modells, nicht die Antwort. Die sichtbare Antwort ist in allen drei Läufen gleich lang (1,1 bis 1,3k Tokens, 3,4 bis 4,0k Zeichen, fünf Findings, `finishReason` STOP), es gibt also keine Wiederholungsschleife und keine überlange Ausgabe. 79 bis 88 % der abgerechneten Output-Tokens sind Thinking, und dessen Menge schwankt bei Temperatur 0 und identischem Prompt zwischen 4,6k und 9,6k. Die Latenz folgt der Token-Menge fast linear: ohne Last 168 bis 170 Tokens je Sekunde. Am 2026-09-30 liefen bis zu fünf Benchmark-Prozesse parallel; der Durchsatz lag dort bei 86 bis 140 Tokens je Sekunde, und das Thinking war mit 8 bis 14k Tokens am oberen Rand. Beides zusammen ergab die 161 s.
+
+**Folge:** Es gibt nichts Go-Spezifisches zu beheben. Dieselbe Streuung zeigen andere Sprachen (Referenzlauf oben: r13 PowerShell 11.284 Output-Tokens in 58,7 s für eine leere Antwort, r01 C 7.510 in 33,9 s). Das Thinking-Level des Drafts bleibt unverändert, weil es alle Sprachen träfe. Go läuft deshalb durch dieselben Gates wie die anderen Kandidaten; G9 entscheidet über die Latenz.
+
+**HAL-002 auf Import-Zeilen (Variante a aus §6.5, gebaut).** `downgradeImportExistenceClaim` (`src/lib/pipeline/import-existence-claims.ts`) läuft in jedem Reviewer-Pass (Draft, `pro-direct`, Zweitmeinung) hinter der Manifest-Validierung: ein HAL-002-Finding, dessen Zitat nur aus Import-Zeilen besteht, wird WARNING und bekommt den Satz „Reported as a warning: whether an import or package exists depends on the dependency version, which this review cannot see.“ Das gilt für alle Sprachen. Jedes Muster verlangt die ganze Zeile oder, bei mehrzeiligen Imports, das ganze Zitat; `import('x').then(…)` oder ein Einzeiler mit Aufruf bleiben CRITICAL. Import-Claims werden getrennt gebündelt, damit ein HAL-002 auf einem Aufruf derselben Datei sie nicht wieder auf CRITICAL zieht. Kein Prompt-Text ändert sich, also auch kein Cache-Key. Beleg: `import-existence-claims.test.ts`, und im Schattenlauf unten endet derselbe Import-Claim wie am 2026-09-30 als WARNING (Job `b2100cf3`).
+
+**Gates.**
+
+| Gate | Go | Java | C/C++ | Terraform | PowerShell | Beleg |
+|---|---|---|---|---|---|---|
+| G6 Law-Filter | grün, 1 Regel (ARCH-005) | grün, 7 Regeln, auch ohne Spring | grün, 11 Regeln | grün, 4 Regeln | grün, 4 Regeln | `src/lib/law.test.ts` „Gate G6“ |
+| G7 Recall, 3 Läufe | r10 6/6 combined je Lauf (Draft 5/6, ARCH-005 nur vom Pre-Scan, wie in §4.2); r21 0 Findings ×3 | r09 7/7 je Lauf; r27 0 Findings ×3 | r01 8/8, r02 4/4 je Lauf; r15 0 Findings ×3 | r12 4/4 je Lauf; r28 0 Findings ×3 (und ×3 im Nachlauf) | r13 3/3 je Lauf; r29 0 Findings ×3 | `results/2026-10-03-langcov-stufe3-g7-production.json`: Draft 93/96, Combined 96/96, nach Verifier 96/96, 0 CRITICAL und 0 WARNING auf 15 Kontroll-Läufen |
+| G8 Schattenlauf | **grün**: 10 PRs, 0 CRITICAL, 1 WARNING | **gerissen**: 1 falsches CRITICAL | **gerissen**: 1 falsches CRITICAL | **gerissen**: 5 falsche CRITICALs in 2 PRs | **grün**: 10 PRs, 0 CRITICAL, 2 WARNINGs | `results/2026-10-03-langcov-stufe3-g8-shadow.json`, Sichtung unten |
+| G9 Latenz, Maximum Draft plus Verify | 77,8 s (r10, Job `26c2829d`) | 61,7 s (r09, `fbc05af6`) | 62,7 s (r01, `0cdccc54`) | 47,0 s (r12, `5fea3da5`) | 26,7 s (r13, `948d7a6f`) | SQL auf `review_job_llm_calls` der 33 G7-Jobs, Grenze 210 s. Im Schattenlauf lag das Maximum je Sprache zwischen 28,1 s und 52,0 s |
+
+**G7, Methode.** Ein Lauf, sequenziell, ohne parallele Last: `--only r01,r02,r09,r10,r12,r13,r15,r21,r27,r28,r29 --llm-extensions .java,.go,.c,.h,.cpp,.cc,.cxx,.hpp,.tf,.ps1,.psm1 --ecosystems polyglot --runs 3 --no-escalation --keep`. Produktionspfad: das Modell bekommt nur, was `isReviewableFile` mit diesem Umfang durchlässt. Die C-, Terraform- und PowerShell-Fixtures laufen mit dem Law-Filter eines TypeScript-Hosts plus erkannter Sprache (`polyglotEcosystems`), r09/r27 mit `java-spring`, r10/r21 mit `go`. Neue Negativ-Kontrollen, weil es keine gab: `r28-clean-terraform.diff` (VPC mit zwei Subnetzen, verschlüsselter Bucket, Lambda mit eigener Rolle und eng gefasster Policy) und `r29-clean-powershell.diff` (Log-Archivierung, Plattenplatz-Prüfung, Dienst-Neustart). r28 lag im G7-Lauf noch in drei Verzeichnissen, also in drei Terraform-Modulen mit einer Referenz über die Modulgrenze (Review-Befund); die Dateien liegen jetzt in einem Modul, Nachlauf ×3 mit 0 Findings (`results/2026-10-03-langcov-stufe3-g7-r28-rerun.json`). Eine Eskalation wäre in einem der 33 Läufe gelaufen (r10 Lauf 3, `targeted`). Für C++ gibt es keine Fixture: G7 misst C.
+
+**G8, Methode.** Wie §6.5: `scripts/shadow-run.ts`, je Sprache drei bekannte öffentliche Repos, 10 gemergte PRs, 4/3/3 verteilt. Kandidaten waren je Repo die 15 zuletzt aktualisierten gemergten PRs (GitHub-API, 2026-10-03). Aus ihnen kamen je Repo die größten Diffs, die mindestens eine Datei der Sprache enthalten und unter der Router-Heuristik bleiben (`--plan`, 0 Token). Die Liste `fixtures/shadow-run/langcov-stufe3-prs.json` stand vor dem ersten Modell-Call. Für Java sind es dieselben zehn PRs wie am 2026-09-30. Der Law-Filter bekommt, was die neue Erkennung am 2026-10-03 auf dem Default-Branch liefert (`--detect`). Review-Umfang des Laufs: die elf Endungen aus G7.
+
+| Sprache | PR | erkannte Ökosysteme | Dateien im Modell / im PR | geschätzte Tokens | Job | CRITICAL / WARNING | unterdrückt |
+|---|---|---|---|---|---|---|---|
+| Java | spring-projects/spring-petclinic#2672 | `java-spring, java, kubernetes` | 4 / 4 | 1.169 | `fbb34592` | 0 / 0 | Zweitmeinung |
+| Java | spring-projects/spring-petclinic#2611 | wie oben | 4 / 4 | 813 | `682af506` | 0 / 0 | Zweitmeinung |
+| Java | spring-projects/spring-petclinic#2573 | wie oben | 4 / 7 | 2.965 | `b2100cf3` | **1** / 1 | Zweitmeinung |
+| Java | spring-projects/spring-petclinic#2490 | wie oben | 3 / 12 | 766 | `9de0b59e` | 0 / 0 | nein |
+| Java | google/guava#8704 | `nodejs, java, kotlin` | 4 / 4 | 1.118 | `8ea76a2e` | 0 / 0 | Zweitmeinung |
+| Java | google/guava#8703 | wie oben | 12 / 12 | 3.520 | `f7d506a4` | 0 / 0 | Zweitmeinung |
+| Java | google/guava#8685 | wie oben | 2 / 2 | 1.628 | `02af0d2c` | 0 / 0 | Zweitmeinung |
+| Java | spring-projects/spring-boot#51870 | `nodejs, java-spring, java, kotlin` | 6 / 8 | 1.945 | `7a9ec0a2` | 0 / 0 | nein |
+| Java | spring-projects/spring-boot#51855 | wie oben | 2 / 6 | 1.482 | `0e108c07` | 0 / 0 | Zweitmeinung |
+| Java | spring-projects/spring-boot#51841 | wie oben | 2 / 2 | 1.528 | `2f790a95` | 0 / 0 | Zweitmeinung |
+| Go | spf13/cobra#2356 | `go` | 2 / 2 | 679 | `28190bbd` | 0 / 0 | Zweitmeinung |
+| Go | spf13/cobra#2397 | `go` | 2 / 3 | 518 | `2619d96e` | 0 / 0 | Zweitmeinung |
+| Go | spf13/cobra#2285 | `go` | 1 / 1 | 201 | `6f8933c5` | 0 / 0 | nein |
+| Go | spf13/cobra#2333 | `go` | 1 / 1 | 196 | `14c99ddb` | 0 / 0 | nein |
+| Go | gin-gonic/gin#4806 | `go` | 5 / 6 | 1.680 | `a58a0787` | 0 / 1 | gezielte Eskalation, Zweitmeinung |
+| Go | gin-gonic/gin#4814 | `go` | 6 / 6 | 1.581 | `8fceb82a` | 0 / 0 | Zweitmeinung |
+| Go | gin-gonic/gin#4800 | `go` | 2 / 2 | 1.241 | `11d4aec6` | 0 / 0 | Zweitmeinung |
+| Go | go-chi/chi#700 | `go` | 7 / 7 | 1.738 | `86d4ecd6` | 0 / 0 | Zweitmeinung |
+| Go | go-chi/chi#1185 | `go` | 2 / 2 | 1.210 | `eb509479` | 0 / 0 | Zweitmeinung |
+| Go | go-chi/chi#1167 | `go` | 8 / 8 | 1.179 | `c87efecd` | 0 / 0 | nein |
+| C/C++ | redis/redis#15743 | `nodejs, python, c, cpp` | 9 / 9 | 4.419 | `e2dc2723` | 0 / 0 | nein |
+| C/C++ | redis/redis#13900 | wie oben | 4 / 7 | 3.326 | `e71f122a` | **1** / 0 | nein |
+| C/C++ | redis/redis#15662 | wie oben | 7 / 17 | 3.282 | `c74fa41f` | 0 / 0 | nein |
+| C/C++ | redis/redis#15853 | wie oben | 1 / 1 | 1.836 | `88b9e450` | 0 / 0 | nein |
+| C/C++ | jqlang/jq#3620 | `nodejs, python, c, cpp` | 1 / 7 | 1.210 | `955f7154` | 0 / 0 | nein |
+| C/C++ | jqlang/jq#3607 | wie oben | 2 / 2 | 1.003 | `a7a4d351` | 0 / 0 | nein |
+| C/C++ | jqlang/jq#3266 | wie oben | 1 / 2 | 900 | `a6a7f060` | 0 / 0 | nein |
+| C/C++ | fmtlib/fmt#4921 | `nodejs, python, c, cpp` | 2 / 2 | 2.313 | `44cb23cc` | 0 / 0 | Zweitmeinung |
+| C/C++ | fmtlib/fmt#4942 | wie oben | 2 / 2 | 1.397 | `8164ada2` | 0 / 0 | Zweitmeinung |
+| C/C++ | fmtlib/fmt#4959 | wie oben | 3 / 3 | 586 | `949a685f` | 0 / 0 | Zweitmeinung |
+| Terraform | terraform-aws-modules/terraform-aws-vpc#1225 | `terraform` | 5 / 10 | 8.440 | `88b8f1a1` | **3** / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-vpc#1305 | `terraform` | 3 / 4 | 2.782 | `fd2a7208` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-vpc#1301 | `terraform` | 1 / 1 | 1.896 | `02ef72d5` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-vpc#1302 | `terraform` | 4 / 26 | 588 | `64e33fc7` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-eks#3737 | `terraform, powershell` | 2 / 2 | 1.084 | `0463780e` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-eks#3746 | wie oben | 2 / 3 | 400 | `a787bece` | 0 / 1 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-eks#3690 | wie oben | 2 / 2 | 289 | `da51eb65` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-s3-bucket#392 | `terraform` | 11 / 16 | 3.562 | `25545a02` | **2** / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-s3-bucket#292 | `terraform` | 3 / 3 | 740 | `3f2d87f6` | 0 / 0 | nein |
+| Terraform | terraform-aws-modules/terraform-aws-s3-bucket#401 | `terraform` | 1 / 1 | 537 | `344ccd9e` | 0 / 0 | nein |
+| PowerShell | pester/Pester#3023 | `powershell` | 2 / 2 | 1.723 | `d17023b7` | 0 / 0 | nein |
+| PowerShell | pester/Pester#3022 | `powershell` | 2 / 6 | 1.711 | `4df9f022` | 0 / 0 | nein |
+| PowerShell | pester/Pester#3032 | `powershell` | 4 / 4 | 912 | `e13a25ca` | 0 / 0 | nein |
+| PowerShell | pester/Pester#3028 | `powershell` | 2 / 4 | 859 | `1912edb6` | 0 / 0 | nein |
+| PowerShell | ScoopInstaller/Scoop#6741 | `powershell` | 5 / 6 | 657 | `c7e038f2` | 0 / 0 | nein |
+| PowerShell | ScoopInstaller/Scoop#6744 | `powershell` | 2 / 4 | 474 | `0e740f01` | 0 / 0 | nein |
+| PowerShell | ScoopInstaller/Scoop#6756 | `powershell` | 1 / 2 | 273 | `03dc2fc3` | 0 / 0 | Zweitmeinung |
+| PowerShell | dahlbyk/posh-git#779 | `powershell` | 3 / 3 | 5.662 | `da15d856` | 0 / 0 | nein |
+| PowerShell | dahlbyk/posh-git#877 | `powershell` | 3 / 4 | 1.839 | `3fb159c0` | 0 / 1 | nein |
+| PowerShell | dahlbyk/posh-git#885 | `powershell` | 2 / 2 | 724 | `b6788705` | 0 / 1 | nein |
+
+**G8, Sichtung.** Sieben CRITICALs in 50 PRs, alle sieben Fehlalarme. Quellen abgerufen am 2026-10-03.
+
+| PR | Finding | Urteil | Beleg |
+|---|---|---|---|
+| spring-petclinic#2573 | HAL-002 auf `restTemplateBuilder.baseUri("http://localhost:" + port)`: „RestTemplateBuilder does not have a 'baseUri(String)' method“ | **Fehlalarm** | `public RestTemplateBuilder baseUri(String baseUri)` in `module/spring-boot-restclient/…/RestTemplateBuilder.java` auf `main` von spring-boot. Der Import-Claim derselben Datei endet jetzt als WARNING; dieser Claim zitiert einen Aufruf und bleibt nach Variante (a) CRITICAL |
+| redis#13900 | CONC-004 auf `ClientsPeakMemInput[CurrentPeakMemUsageSlot] = in_usage` (`src/server.c:964`): mehrere IO-Threads und der Main-Thread schrieben ohne Synchronisation | **Fehlalarm** | `processClientsFromIOThread` läuft im Main-Thread (Kommentar über der Funktion in `src/iothread.c`: „The main thread processes the clients from IO threads“), `clientsCron` ebenfalls. Der Diff zeigt das nicht; der Verifier bestätigte trotzdem |
+| terraform-aws-vpc#1225 (3×) | HAL-002 auf `region = var.region` in `aws_vpc`, `aws_vpc_endpoint` und der Data Source `aws_region`: das Argument gebe es nicht | **Fehlalarm** (3) | Provider-Doku auf `main` von `hashicorp/terraform-provider-aws`: `region` ist dokumentiertes Argument in `r/vpc`, `r/vpc_endpoint` und `d/region` |
+| terraform-aws-s3-bucket#392 | HAL-002 auf `resource "aws_s3vectors_vector_bucket"`: Ressource und Dienst seien erfunden | **Fehlalarm** | `website/docs/r/s3vectors_vector_bucket.html.markdown` im Provider-Repo |
+| terraform-aws-s3-bucket#392 | HAL-002 auf `version = ">= 6.42"`: die Provider-Version gebe es nicht | **Fehlalarm** | Terraform-Registry führt `hashicorp/aws` 6.42.0 |
+
+Die fünf WARNINGs: der abgestufte Import-Claim (petclinic), TEST-004 auf einem `require.NoError` in gin#4806 (Verifier unsicher, ohne Eskalation abgestuft), MAINT-006 auf je einem TODO ohne Ticket (eks#3746, posh-git#885) und Condition 5 auf einer ungenutzten Variablen (posh-git#877). Die beiden MAINT-006 und Condition 5 sind nach Regeltext richtig; TEST-004 ist nicht gesichtet.
+
+| | Go | Java | C/C++ | Terraform | PowerShell |
+|---|---|---|---|---|---|
+| PRs mit falschem CRITICAL | 0 von 10 | **1 von 10** | **1 von 10** | **2 von 10** | 0 von 10 |
+| falsche CRITICALs / alle CRITICALs | 0 / 0 | 1 / 1 | 1 / 1 | 5 / 5 | 0 / 0 |
+| WARNINGs | 1 | 1 | 0 | 1 | 2 |
+| Latenz Draft plus Verify, Mittel / Max | 13,0 / 39,7 s | 14,5 / 40,3 s | 13,6 / 28,1 s | 15,1 / 52,0 s | 12,3 / 33,6 s |
+
+**Lesart und Grenzen:**
+
+- Sechs der sieben Fehlalarme sind HAL-002 auf einer API, die jünger ist als das Wissen der Modelle: Spring Boot 4, das `region`-Argument und S3 Vectors im AWS-Provider. Variante (a) deckt davon nur Import-Zeilen. Für Terraform gibt es keine Import-Zeile, auf die sie greifen könnte: dort ist jede Ressource und jedes Argument ein „Aufruf“. Der Verifier hilft nicht, er hat dasselbe Wissen.
+- Der siebte (Redis) ist ein Nebenläufigkeits-Urteil über Code, dessen Thread-Modell der Diff nicht zeigt.
+- Null falsche CRITICALs auf Go und PowerShell heißt auch: der Lauf belegt dort keine richtigen CRITICALs auf echtem Code. Die PRs stammen aus gepflegten Projekten.
+- **Die Zweitmeinung ist nicht gemessen.** 19 der 50 PRs hätten in Produktion den Trigger `test-gap` ausgelöst, davon 7 der 10 Go-PRs und 1 der 10 PowerShell-PRs. Go-PRs mit Tests verbrauchen damit künftig Eskalations-Kontingent, und die Fehlalarmquote dieses Passes auf Go ist offen.
+- PowerShell: in beiden Referenzläufen oben kam auf r13 zuerst eine leere Draft-Antwort (Retry heilte sie), im G7-Lauf und im Schattenlauf nicht. N = 2, Ursache nicht untersucht.
+- C++ ist nur im Schattenlauf gemessen (fmtlib/fmt, 3 PRs, 0 Findings), nicht in G7.
+- N = 10 je Sprache, Temperatur 0, ein Lauf. Der Pre-Scanner lief im Schattenlauf nicht.
+
+**Entscheidung nach der Gate-Regel.**
+
+| Sprache | G6 | G7 | G8 | G9 | Ergebnis |
+|---|---|---|---|---|---|
+| Go (`.go`) | grün | grün | grün | grün | **Default** |
+| PowerShell (`.ps1`, `.psm1`) | grün | grün | grün | grün | **Default** |
+| Java (`.java`) | grün | grün | gerissen | grün | je Repo |
+| C/C++ (`.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`) | grün | grün | gerissen | grün | je Repo |
+| Terraform (`.tf`) | grün | grün | gerissen | grün | je Repo |
+
+`DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions = ['.py', '.go', '.ps1', '.psm1']`. Alle elf Endungen stehen in `GATED_LLM_EXTENSIONS` und sind über `reviewScope.llmExtensions` je Repo einschaltbar. Was Java, C/C++ und Terraform für den Default bräuchten, danach denselben Schattenlauf mit 0 falschen CRITICALs: für HAL-002 die Versionen aus dem Build-Manifest als Draft-Kontext (§6.5 Variante b; für Terraform die Provider-Constraints aus `versions.tf`), oder HAL-002 aus der Modell-Lane generell als WARNING; für C/C++ zusätzlich eine Antwort auf Nebenläufigkeits-Claims ohne sichtbares Thread-Modell.
+
+**Vertex-Verbrauch.** Budget $3,00. Schätzung vorher aus §4.2 und §6.5, gemessen mit `scripts/benchmark-cost.ts`:
+
+| Lauf | geschätzt | gemessen | Jobs / Calls |
+|---|---|---|---|
+| Law-Filter-Referenz vorher | $0,08 | $0,23 | 5 / 10 |
+| Law-Filter-Referenz nachher | $0,17 | $0,16 | 5 / 11 |
+| Go-Latenz, 3× r10 | $0,18 | $0,14 | 3 / 6 |
+| G7, 11 Fixtures × 3 | $0,76 | $0,71 | 33 / 51 |
+| G7-Nachlauf r28 × 3 | $0,02 | $0,02 | 3 / 3 |
+| G8, 50 PRs | $0,60 | $0,60 | 50 / 58 |
+| **Summe** | $1,81 | **$1,85 von $3,00** | 99 / 139 |
+
+Der Referenzlauf „vorher“ kostete das Dreifache der Schätzung: ohne die Regeln im Prompt schrieb der Draft 44.940 Output-Tokens, fast alles Thinking, um wenig zu melden. Eskalationen: 0 Calls (alle 139 Calls dieser Session sind `draft` oder `verify`), `billing_accounts.escalation_month_count` 3 vorher und 3 nachher.
+
+**Abweichung beim Arbeitsort.** Die Läufe liefen im Clone `C:\dev\unslop-f4`, nicht in `C:\dev\unslop-bench`: dort blockierten zwei untracked Ergebnisdateien den Branch-Wechsel. Die Umgebungsvariablen las Node mit `--env-file` direkt aus der `.env.local` des Bench-Clones; die Datei wurde nicht kopiert.
+
 ## 7. Folgen für Benchmark und Marketing
 
 ### 7.1 Benchmark
@@ -491,6 +680,17 @@ Die fehlende Grenze bei 125/126 besteht heute schon. Sie ist als eigenes To-Do i
 
 **Mit Stufe 2 geändert (EN und DE, 2026-09-30):** Der Umfang heißt überall „TypeScript, JavaScript and Python“, weil nur Python Default ist (§6.5): FAQ-Antwort zu den Sprachen (samt neuem Satz zum gemischten PR), Tabelle „Files“, die Definition im Glossar-Block, `honestyFileTypes` und die Extension-README. Die Grenze der Messung nennt jetzt 46 statt 69 Verstöße in Dateitypen, die das Modell in Produktion nicht liest (69 minus 23 in `.py`). Java steht in keinem Text als Modell-Sprache. Die Distribution-Entwürfe sind nicht nachgezogen (ROADMAP To-Do).
 
+**Nach Stufe 3 (2026-10-03):** Richtig ist jetzt „TypeScript, JavaScript, Python, Go and PowerShell“. Java, C/C++ und Terraform dürfen in keinem Text als Modell-Sprache stehen; sie sind nur je Repo-Config an.
+
+| Stelle | Stand | Was stimmt |
+|---|---|---|
+| Prompt-Kern (`prompt-builder.ts: SHARED_GATEKEEPER_CORE`) | sprachneutral seit Stufe 2 | unverändert richtig |
+| `describeFilesWithoutModelReview` | rechnet aus dem aufgelösten Review-Umfang | unverändert richtig: nennt `.go` und `.ps1` nicht mehr, `.java`, `.c`, `.tf` weiter |
+| `SOURCE_CODE_LANGUAGES` (`packages/prescan/src/language.ts`) | enthält alle Kandidaten | unverändert richtig |
+| Hinweise „no file of a type the model review reads“ | ohne Sprachliste | unverändert richtig |
+| FAQ, Tabelle „Files“, Glossar, `honestyFileTypes` (`messages/en.json`, `messages/de.json`), Extension-README | „TypeScript, JavaScript and Python“ | **zu eng**: Go und PowerShell fehlen. In dieser PR nicht geändert (Auftrag: Landing, README und Distribution bleiben), ROADMAP To-Do |
+| Grenze der Messung 125/126 auf der Landing: „46 … in Dateitypen, die das Modell in Produktion nicht liest“ | Stand Stufe 2 | **zu hoch**: 46 minus 6 in `.go` (r10) minus 3 in `.ps1` (r13) ergibt 37. In dieser PR nicht geändert, ROADMAP To-Do |
+
 ## 8. Offene Entscheidungen für Luca
 
 | Nr. | Frage | Vorschlag | Entscheidung 2026-09-30 |
@@ -509,11 +709,14 @@ Die fehlende Grenze bei 125/126 besteht heute schon. Sie ist als eigenes To-Do i
 |---|---|
 | Anteil der Kunden-PRs ohne JS/TS oder mit Nicht-JS/TS-Anteil | keine externen Nutzer vor dem Launch, `review_jobs` speichert für Webhook-Jobs keine Dateiliste |
 | Recall auf dem echten Produktionspfad (59/126 ist gerechnet) | Runner umgeht den Filter, Umbau ist Produktions-naher Code und nicht Teil dieser Session |
-| Fehlalarmquote der LLM-Lane auf echtem Python/Go/Java-Code | Python und Java gemessen in §6.5 (je 10 PRs, ohne Zweitmeinung). Offen: Go, die Zweitmeinung, KI-geschriebene Diffs statt gepflegter Projekte |
+| Fehlalarmquote der LLM-Lane auf echtem Code | Python und Java gemessen in §6.5, Go, Java, C/C++, Terraform und PowerShell in §6.6 (je 10 PRs, ohne Zweitmeinung). Offen: die Zweitmeinung (in §6.6 hätte sie auf 7 von 10 Go-PRs gefeuert), KI-geschriebene Diffs statt gepflegter Projekte |
+| HAL-002 auf APIs, die jünger sind als das Wissen der Modelle | 6 falsche CRITICALs in §6.6 (Spring Boot 4, AWS-Provider). Ungemessen: wie oft dasselbe auf JS/TS, Python, Go und PowerShell passiert, und ob Manifest-Versionen als Draft-Kontext (§6.5 Variante b) es beheben |
+| C++ in G7 | keine C++-Fixture; r01, r02, r15 sind C. C++ ist nur im Schattenlauf gemessen (3 PRs) |
+| Leere Draft-Antwort auf r13 (PowerShell) | zweimal im Law-Filter-Referenzlauf, nie in G7 und G8; Ursache nicht untersucht |
+| Volllauf Universum auf dem Produktionspfad mit dem Default nach Stufe 3 | die 104/129 vom 2026-10-01 gelten für den Default `.py`; mit Go und PowerShell erreichen r10, r13 und r21 das Modell. Nicht gefahren, die Gates messen diese Fixtures einzeln |
 | Wirkung von RAG und Reference Practices auf Nicht-JS/TS | Runner fährt beides aus. Der Skeleton-Index enthält nur JS/TS |
 | LLM-Lane auf großen Nicht-JS/TS-Diffs (Batching ab 20k, `pro-direct`) | keine große Fixture in diesen Sprachen. r20 hätte Eskalationsbudget verbraucht |
-| Ursache der Go-Latenz (83 bis 161 s) | N=3, unter paralleler Last gemessen |
-| Rust, Kotlin, C#, Ruby, PHP, Shell, Dockerfile | keine Fixtures, keine getaggten Regeln außer `rust` in zwei Tags |
+| Rust, Kotlin, C#, Ruby, PHP, Shell, Dockerfile | keine Fixtures, keine getaggten Regeln außer `rust` in zwei Tags und `kotlin` in einem. Der Law-Filter erkennt Rust und Kotlin seit Stufe 3 am Pfad, die Modell-Review liest sie nicht |
 | Latenz des Content-Fetchs für Pre-Scan-only-PRs | nur im Webhook-Pfad messbar, Test-PRs waren nicht im Umfang |
 
-Nichts war durch Tooling blockiert. Der Supabase-MCP antwortete auf alle Abfragen.
+Nichts war durch Tooling blockiert. Der Supabase-MCP antwortete auf alle Abfragen. Stufe 3 (2026-10-03): ebenso; die einzige Abweichung war der Arbeitsort der Läufe (§6.6).

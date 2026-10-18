@@ -80,9 +80,13 @@ Rules:
 - `detectedEcosystems` mirrors `repositories.detected_ecosystems` and drives
   Dynamic Law Filtering exactly like production. Use a realistic value from
   `KNOWN_ECOSYSTEMS` (`nextjs, react, typescript, nodejs, python, go,
-  java-spring`) — or `null` for ecosystems production cannot detect
-  (kubernetes, terraform, powershell, c/cpp), which fail open to the
-  unfiltered Law block, again exactly like production.
+  java-spring, java, c, cpp, terraform, powershell, kubernetes, solidity`) —
+  or `null` for a repository whose detection never ran, which fails open to
+  the unfiltered Law block, again exactly like production.
+- `polyglotEcosystems` (optional) is what the detection yields for a
+  TypeScript host repository that also contains the fixture files;
+  `--ecosystems polyglot` uses it. `src/lib/law.test.ts` checks the value
+  against `detectRepoEcosystems`.
 - `ruleContains` may list `|`-separated alternatives when detection layers
   legitimately overlap (e.g. `"Condition 1|MAINT-001"`). Keep it strict
   otherwise — loose alternatives fake per-rule recall.

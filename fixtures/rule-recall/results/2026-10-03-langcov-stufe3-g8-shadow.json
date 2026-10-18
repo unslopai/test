@@ -1,0 +1,1130 @@
+{
+  "capturedAt": "2026-10-03T10:03:25.084Z",
+  "llmExtensions": [
+    ".java",
+    ".go",
+    ".c",
+    ".h",
+    ".cpp",
+    ".cc",
+    ".cxx",
+    ".hpp",
+    ".tf",
+    ".ps1",
+    ".psm1"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2672,
+      "detectedEcosystems": [
+        "java-spring",
+        "java",
+        "kubernetes"
+      ],
+      "diffSha256": "81f0f052f47a7da0404e6795458cdabf16433e4216e25741be771bbedc9d19f9",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1169,
+      "status": "reviewed",
+      "jobId": "fbb34592-4f75-4605-897b-c74fb6cd1854",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2611,
+      "detectedEcosystems": [
+        "java-spring",
+        "java",
+        "kubernetes"
+      ],
+      "diffSha256": "941f573dc26fe3608af7cff3679c5590ba1f79b5f68e64d6cf6a898224578d51",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 813,
+      "status": "reviewed",
+      "jobId": "682af506-7d77-44e9-86a6-be68ad117bb6",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2573,
+      "detectedEcosystems": [
+        "java-spring",
+        "java",
+        "kubernetes"
+      ],
+      "diffSha256": "e7252eab445a65ec7fee2a9d496474508b696cad19b6abde8934ae2f73c0a5ff",
+      "changedFileCount": 7,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2965,
+      "status": "reviewed",
+      "jobId": "b2100cf3-08f1-489c-9e8d-d40ddecc519d",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": [
+        {
+          "rule": "HAL-002 (anti_pattern)",
+          "severity": "CRITICAL",
+          "path": "src/test/java/org/springframework/samples/petclinic/PetClinicConcurrencyTests.java",
+          "line": 53,
+          "exactQuote": "\t\tRestTemplate template = restTemplateBuilder.baseUri(\"http://localhost:\" + port).build();",
+          "critique": "RestTemplateBuilder does not have a 'baseUri(String)' method. The Spring Boot API method to configure the base URL is 'rootUri(String)'. Calling non-existent methods results in a compilation failure.",
+          "source": "draft-reviewer"
+        },
+        {
+          "rule": "HAL-002 (anti_pattern)",
+          "severity": "WARNING",
+          "path": "src/test/java/org/springframework/samples/petclinic/PetClinicConcurrencyTests.java",
+          "line": 17,
+          "exactQuote": "import org.springframework.boot.restclient.RestTemplateBuilder;",
+          "critique": "The package 'org.springframework.boot.restclient' does not exist in Spring Boot. The correct import for RestTemplateBuilder is 'org.springframework.boot.web.client.RestTemplateBuilder'. Referencing hallucinated packages causes a compilation error.\n\nReported as a warning: whether an import or package exists depends on the dependency version, which this review cannot see.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-petclinic",
+      "pr": 2490,
+      "detectedEcosystems": [
+        "java-spring",
+        "java",
+        "kubernetes"
+      ],
+      "diffSha256": "c01d48912d795392d637b485e28f19f040159e0c489e9502ff63e457644e635a",
+      "changedFileCount": 12,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 766,
+      "status": "reviewed",
+      "jobId": "9de0b59e-43b2-4eb6-b3a2-4c5f0efd5591",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8704,
+      "detectedEcosystems": [
+        "nodejs",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "82b13be238bb188fd9e3f080b59e7c3a87955231699ca7685b9889917792dae0",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1118,
+      "status": "reviewed",
+      "jobId": "8ea76a2e-de5a-4917-9886-49f2394e1a9e",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8703,
+      "detectedEcosystems": [
+        "nodejs",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "758665fb344f93de69ea3739a4fa938013c3bd9805278130338da48e0bde1cb7",
+      "changedFileCount": 12,
+      "reviewableFileCount": 12,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 3520,
+      "status": "reviewed",
+      "jobId": "f7d506a4-1cdf-43d2-ae46-8b3ff35d0b30",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "google/guava",
+      "pr": 8685,
+      "detectedEcosystems": [
+        "nodejs",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "a104758b74cd4133b18215ee42c25026f900b650fac89244681a1ce20d102e45",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1628,
+      "status": "reviewed",
+      "jobId": "02af0d2c-78d4-4a8c-a3dc-d73e9a79feb7",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51870,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "71ee609fb86c4f28b57d936ac22f59f584629e98db25d278fc785c3938510c43",
+      "changedFileCount": 8,
+      "reviewableFileCount": 6,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1945,
+      "status": "reviewed",
+      "jobId": "7a9ec0a2-52de-4b39-bbbc-fb4a2d21b5eb",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51855,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "b5ffcc5afba84d2a9ded3de64f77a59bec05dc5fc6046529e63cd409faa53963",
+      "changedFileCount": 6,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1482,
+      "status": "reviewed",
+      "jobId": "0e108c07-def7-41fd-afb0-c9b9a332a2d1",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "java",
+      "repo": "spring-projects/spring-boot",
+      "pr": 51841,
+      "detectedEcosystems": [
+        "nodejs",
+        "java-spring",
+        "java",
+        "kotlin"
+      ],
+      "diffSha256": "84e49a8f47c5e1fd52a93a6ec6f8588a029ba69485df506a5dd4c4a89ecd0713",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1528,
+      "status": "reviewed",
+      "jobId": "2f790a95-fa79-4c0f-943c-a5a384ed9650",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "spf13/cobra",
+      "pr": 2356,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "2b9e9bd2eb886a2d65e4ff089191450069420c02d33c1df604c4ad72bebcbcd7",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 679,
+      "status": "reviewed",
+      "jobId": "28190bbd-72ef-45e9-bee2-60a0672e1573",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "spf13/cobra",
+      "pr": 2397,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "284bc25b050f92caef8dbc78d34be03803226271ef37121be412d026b12d4ae0",
+      "changedFileCount": 3,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 518,
+      "status": "reviewed",
+      "jobId": "2619d96e-2c41-479d-b07c-9d3a068d1feb",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "spf13/cobra",
+      "pr": 2285,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "03cc894064e54ea07aec26913031e1fae15d5eb6d8bef0a39deb0861e2f4af70",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 201,
+      "status": "reviewed",
+      "jobId": "6f8933c5-9f6e-4c98-9ad1-a7b64c104dc4",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "spf13/cobra",
+      "pr": 2333,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "ed2ed3afb35cbb3994bf7ebb73b80285a9e3373cc8add1df25c50d959a4e0cf4",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 196,
+      "status": "reviewed",
+      "jobId": "14c99ddb-342b-46a6-8258-813fa541a08f",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "gin-gonic/gin",
+      "pr": 4806,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "fca25043b7e545efa7ef596bc7dac5c94df7045b189497740f27bf972a77f575",
+      "changedFileCount": 6,
+      "reviewableFileCount": 5,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1680,
+      "status": "reviewed",
+      "jobId": "a58a0787-13c0-4337-87e5-8622138291aa",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "targeted",
+        "second_opinion"
+      ],
+      "findings": [
+        {
+          "rule": "TEST-004",
+          "severity": "WARNING",
+          "path": "routes_test.go",
+          "line": 100,
+          "exactQuote": "\t\trequire.NoError(t, c.ShouldBindJSON(&body))",
+          "critique": "The test references the 'require' package from testify, but 'github.com/stretchr/testify/require' is not imported in this file, preventing the test suite from compiling. Use 'assert.NoError' which is already imported.\n\n⚠️ Downgraded to WARNING — this finding was flagged for Pro escalation, but the escalation was skipped (budget, API or time-limit degradation), so it could not be conclusively verified.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "go",
+      "repo": "gin-gonic/gin",
+      "pr": 4814,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "97df22dc3ac0369470ebdac05583c4a62eeb16e9b37692e96f8902e7ab2ce4d6",
+      "changedFileCount": 6,
+      "reviewableFileCount": 6,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1581,
+      "status": "reviewed",
+      "jobId": "8fceb82a-3b6d-42cc-9531-ad849b3349e4",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "gin-gonic/gin",
+      "pr": 4800,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "0465479b1a57347f821b478a85b8e4d6198526aafe32adcc6166594f50690fcf",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1241,
+      "status": "reviewed",
+      "jobId": "11d4aec6-e6bc-4867-8e85-c59eaea8cf87",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "go-chi/chi",
+      "pr": 700,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "90d12398ecbdcf6842a2697aec69a81d7a5260cc42941590a39c7872e4969f5f",
+      "changedFileCount": 7,
+      "reviewableFileCount": 7,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1738,
+      "status": "reviewed",
+      "jobId": "86d4ecd6-4f76-449d-bae6-e6c2e948e6c9",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "go-chi/chi",
+      "pr": 1185,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "19f8b72d8921eb965b398a9899ec2efa66125c1937aa972b0ee78d0909044de0",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1210,
+      "status": "reviewed",
+      "jobId": "eb509479-35a9-4719-89db-e7e89b0591b5",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "go",
+      "repo": "go-chi/chi",
+      "pr": 1167,
+      "detectedEcosystems": [
+        "go"
+      ],
+      "diffSha256": "dde7d9d02a46884f48ff4d7c3a4a40ba71f12df173682a41b1ca0ff5fe59c5a2",
+      "changedFileCount": 8,
+      "reviewableFileCount": 8,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1179,
+      "status": "reviewed",
+      "jobId": "c87efecd-a2c5-4158-b926-051c9e887251",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "redis/redis",
+      "pr": 15743,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "4133ebdd73a98c64c8285e763abcb22a823561908db5d94c0ed836d73218e95c",
+      "changedFileCount": 9,
+      "reviewableFileCount": 9,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 4419,
+      "status": "reviewed",
+      "jobId": "e2dc2723-ef4b-4122-bb43-be404d9cfd54",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "redis/redis",
+      "pr": 13900,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "1794b9d6babe33a87b88d45f4a26660ee9ae0825c13da825fa548efdb367d10a",
+      "changedFileCount": 7,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 3326,
+      "status": "reviewed",
+      "jobId": "e71f122a-d212-466a-9035-bf393e9744f5",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "CONC-004",
+          "severity": "CRITICAL",
+          "path": "src/server.c",
+          "line": 964,
+          "exactQuote": "    if (in_usage > ClientsPeakMemInput[CurrentPeakMemUsageSlot])\n        ClientsPeakMemInput[CurrentPeakMemUsageSlot] = in_usage;",
+          "critique": "The global arrays ClientsPeakMemInput and ClientsPeakMemOutput, along with the global variable CurrentPeakMemUsageSlot, are accessed and modified concurrently by multiple IO threads running processClientsFromIOThread() and the main thread in clientsCron() without synchronization or locks, resulting in data races and memory corruption.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "c-cpp",
+      "repo": "redis/redis",
+      "pr": 15662,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "97bb22cb7b955ce7e642be9a24b4af911cff05d9efcae52f1165b699f28a9cef",
+      "changedFileCount": 17,
+      "reviewableFileCount": 7,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 3282,
+      "status": "reviewed",
+      "jobId": "c74fa41f-348f-4b7d-a173-83125bd19e0f",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "redis/redis",
+      "pr": 15853,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "bab215fbbcbe951c29a2f63b83ee9e95c89ccc90bfe6f91c85c435594688db8a",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1836,
+      "status": "reviewed",
+      "jobId": "88b9e450-64fa-4e7a-b33e-1b8b8f842060",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "jqlang/jq",
+      "pr": 3620,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "61e12215803bc336d78d1edcbee8acdbb3de40e104d6e8e72486dfed3ab56c2a",
+      "changedFileCount": 7,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1210,
+      "status": "reviewed",
+      "jobId": "955f7154-2eea-49af-9125-ff1fa93fa60a",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "jqlang/jq",
+      "pr": 3607,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "9377f78e776feaf3a8a11140a2b0225e5b10175280340aef7d40a818763db5c8",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1003,
+      "status": "reviewed",
+      "jobId": "a7a4d351-3b68-4442-bc4b-ba08d60b8e45",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "jqlang/jq",
+      "pr": 3266,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "d4ed215bbcdf0607f51027b161ac04f5dca9423268d8df0de369158cea850f3d",
+      "changedFileCount": 2,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 900,
+      "status": "reviewed",
+      "jobId": "a6a7f060-e2db-4b5c-b020-41fb26d3f04a",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "fmtlib/fmt",
+      "pr": 4921,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "a2c0a95131e1aaea7fbe84698396807a964df247dc19033bf580b6a886d6eae9",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2313,
+      "status": "reviewed",
+      "jobId": "44cb23cc-da44-4fda-b1e5-6a8fc1c70812",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "fmtlib/fmt",
+      "pr": 4942,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "5fa3c6e3879e985f78a8c724968208d851f628db7b765f52f3903db5eecd2058",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1397,
+      "status": "reviewed",
+      "jobId": "8164ada2-89df-449b-9c42-613eb50179ca",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "c-cpp",
+      "repo": "fmtlib/fmt",
+      "pr": 4959,
+      "detectedEcosystems": [
+        "nodejs",
+        "python",
+        "c",
+        "cpp"
+      ],
+      "diffSha256": "f9ed5b763fd31419c85ed88c6b03356bb96d427beb05483b23eef3372d1f0363",
+      "changedFileCount": 3,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 586,
+      "status": "reviewed",
+      "jobId": "949a685f-71b7-48a7-ba65-c7d6b25c8f01",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-vpc",
+      "pr": 1225,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "677cbd8d5136b11ca78e67fbc6882ca64254cd651019e7c02876cbe0db4e6f0e",
+      "changedFileCount": 10,
+      "reviewableFileCount": 5,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 8440,
+      "status": "reviewed",
+      "jobId": "88b8f1a1-2736-4ee2-a36c-540cbf8498a4",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "main.tf",
+          "line": 31,
+          "exactQuote": "  region = var.region",
+          "critique": "The Terraform AWS Provider does not support a 'region' argument on 'aws_vpc' or other AWS resources. Multi-region resource targeting in Terraform AWS must be configured via provider configurations and provider aliases (e.g., 'provider = aws.alias'). Adding 'region' directly to resource blocks causes Terraform schema validation to fail with an unsupported argument error.",
+          "source": "draft-reviewer"
+        },
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "modules/vpc-endpoints/main.tf",
+          "line": 30,
+          "exactQuote": "  region = var.region",
+          "critique": "'region' is not a valid attribute for the 'aws_vpc_endpoint' resource in the Terraform AWS Provider. Region scoping must be handled through provider blocks or aliases.",
+          "source": "draft-reviewer"
+        },
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "vpc-flow-logs.tf",
+          "line": 4,
+          "exactQuote": "  region = var.region",
+          "critique": "The 'aws_region' data source does not have a 'region' argument; the argument to look up a specific region is 'name'. Supplying 'region' will trigger an unsupported argument validation error.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-vpc",
+      "pr": 1305,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "0422160149e20065a106ae99e329e343a6e9cf0557082257b0f4535466e1ab81",
+      "changedFileCount": 4,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 2782,
+      "status": "reviewed",
+      "jobId": "fd2a7208-5dfd-46a4-825a-7d80aaf07563",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-vpc",
+      "pr": 1301,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "da79fe638441ed09aa9fb45623370ef77421760b0bd4d26a00e8d3d8f6029ee5",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1896,
+      "status": "reviewed",
+      "jobId": "02ef72d5-8c55-44bb-ba05-08a5e95d0cb3",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-vpc",
+      "pr": 1302,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "4ea5dcdb7ff23c02bd7de4d9ab0ecee76f4c7f41c2a501bd65ec501fe134bb1a",
+      "changedFileCount": 26,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 588,
+      "status": "reviewed",
+      "jobId": "64e33fc7-583d-4553-9f63-85d0d5437eec",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-eks",
+      "pr": 3737,
+      "detectedEcosystems": [
+        "terraform",
+        "powershell"
+      ],
+      "diffSha256": "4def2153cd427f2853083ae1adcc758fcec5748b097f9f2643c7a232eef21a6e",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1084,
+      "status": "reviewed",
+      "jobId": "0463780e-7942-419a-a5d9-a6600265c737",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-eks",
+      "pr": 3746,
+      "detectedEcosystems": [
+        "terraform",
+        "powershell"
+      ],
+      "diffSha256": "3971b890dba0e68c122c67c449279d610e037ac2a130c2ecd122f73fad612316",
+      "changedFileCount": 3,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 400,
+      "status": "reviewed",
+      "jobId": "a787bece-28eb-4240-a619-c20f5c49074b",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "MAINT-006",
+          "severity": "WARNING",
+          "path": "variables.tf",
+          "line": 644,
+          "exactQuote": "# TODO: Make AmazonEKSBlockStoragePolicyV2 the default and remove this variable at the next breaking release.",
+          "critique": "A TODO comment was introduced without referencing a tracked issue or ticket. Per MAINT-006, deferred maintenance or planned breaking changes marked by TODO/FIXME comments must be linked to a tracked ticket.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-eks",
+      "pr": 3690,
+      "detectedEcosystems": [
+        "terraform",
+        "powershell"
+      ],
+      "diffSha256": "45857abc1970e4968b4282f3da26454f43130d1140012095b688505a9f9f9433",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 289,
+      "status": "reviewed",
+      "jobId": "da51eb65-8ca9-4ed1-bc39-c34a1316d47c",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-s3-bucket",
+      "pr": 392,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "301029d69fbb21b82b8a2239e25add374349cac3084685434a90558c714ac81b",
+      "changedFileCount": 16,
+      "reviewableFileCount": 11,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 3562,
+      "status": "reviewed",
+      "jobId": "25545a02-57e0-439f-b03c-4a23850fd1f8",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "modules/vectors/main.tf",
+          "line": 5,
+          "exactQuote": "resource \"aws_s3vectors_vector_bucket\" \"this\" {",
+          "critique": "The resource `aws_s3vectors_vector_bucket` does not exist in the AWS Terraform provider. 'Amazon S3 Vectors' is a hallucinated service with fictional resources, IAM actions, and service principals.",
+          "source": "draft-reviewer"
+        },
+        {
+          "rule": "HAL-002",
+          "severity": "CRITICAL",
+          "path": "modules/vectors/versions.tf",
+          "line": 7,
+          "exactQuote": "      version = \">= 6.42\"",
+          "critique": "AWS Terraform provider version 6.42 does not exist. This fictitious provider constraint was generated to justify non-existent resources.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-s3-bucket",
+      "pr": 292,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "aba8357acdb3a8ce20ec43fef9c63e0324edc577b9afe3e8792f1b19c70a3403",
+      "changedFileCount": 3,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 740,
+      "status": "reviewed",
+      "jobId": "3f2d87f6-b6e7-458c-b729-278c7cc75bac",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "terraform",
+      "repo": "terraform-aws-modules/terraform-aws-s3-bucket",
+      "pr": 401,
+      "detectedEcosystems": [
+        "terraform"
+      ],
+      "diffSha256": "cc5bf0f6c4f235c9b69197b02c96865a07d632c16e1f5396226ae6bf042bca68",
+      "changedFileCount": 1,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 537,
+      "status": "reviewed",
+      "jobId": "344ccd9e-5502-4222-a6cd-7d693e11ce80",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "pester/Pester",
+      "pr": 3023,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "6629cf1e81d7da43f6f1be02e945c98c2243db43b5a4cb6f113da463bd31345c",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1723,
+      "status": "reviewed",
+      "jobId": "d17023b7-4311-4cc9-95a8-3a277a306d4b",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "pester/Pester",
+      "pr": 3022,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "2e59fc7154dc2cb9c7733290dbdf32c537a73b2ae071bd6be0a953057cf52a5e",
+      "changedFileCount": 6,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1711,
+      "status": "reviewed",
+      "jobId": "4df9f022-50c0-4684-b486-6b9deafdadd3",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "pester/Pester",
+      "pr": 3032,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "3b363b57d9dfaa0ff2e99e3262c135579d6365629d23d346d9181520aa64ae5d",
+      "changedFileCount": 4,
+      "reviewableFileCount": 4,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 912,
+      "status": "reviewed",
+      "jobId": "e13a25ca-142b-4bdc-8ba9-2bbfcfdb8b6c",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "pester/Pester",
+      "pr": 3028,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "8ce4927dc78823b28c761885fd360a5047887586362b342b7e825c7e677ee9ad",
+      "changedFileCount": 4,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 859,
+      "status": "reviewed",
+      "jobId": "1912edb6-8a1f-4b68-b398-14d7a2583758",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "ScoopInstaller/Scoop",
+      "pr": 6741,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "65747b1cc126d9589eaa1cba6be0a3767136f314d90af4b8543cdfd838d4d3a2",
+      "changedFileCount": 6,
+      "reviewableFileCount": 5,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 657,
+      "status": "reviewed",
+      "jobId": "c7e038f2-be6c-4e27-a36a-5def3240468c",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "ScoopInstaller/Scoop",
+      "pr": 6744,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "8c494b5f21e4b1af88b81e4bbdf25eb4bb7a702667d23bd302e885872ec3cabb",
+      "changedFileCount": 4,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 474,
+      "status": "reviewed",
+      "jobId": "0e740f01-e87f-432d-8b13-e9443864b357",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "ScoopInstaller/Scoop",
+      "pr": 6756,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "d77ca9f7e5802b84b801a4b1c31a0c728973c2f3d49b1064cc0b8521d3634713",
+      "changedFileCount": 2,
+      "reviewableFileCount": 1,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 273,
+      "status": "reviewed",
+      "jobId": "03dc2fc3-47e0-445a-82d3-fbba61c12100",
+      "route": "flash-cascade",
+      "suppressedEscalations": [
+        "second_opinion"
+      ],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "dahlbyk/posh-git",
+      "pr": 779,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "454e044e6379229b7c0233815648cd727a07e51831712110e15648fe635a544d",
+      "changedFileCount": 3,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 5662,
+      "status": "reviewed",
+      "jobId": "da15d856-d976-4408-b57b-21bfa11b517d",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": []
+    },
+    {
+      "language": "powershell",
+      "repo": "dahlbyk/posh-git",
+      "pr": 877,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "7808dec3625dcde94919e96134c73379e02859094760ea7e871df8b90560296d",
+      "changedFileCount": 4,
+      "reviewableFileCount": 3,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 1839,
+      "status": "reviewed",
+      "jobId": "3fb159c0-b379-47cf-b055-517e6915e97f",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "Condition 5 (Dead Code)",
+          "severity": "WARNING",
+          "path": "src/Utils.ps1",
+          "line": 269,
+          "exactQuote": "    $underTest = $false",
+          "critique": "The variable '$underTest' is declared and initialized, but it is never read or used anywhere in the function.",
+          "source": "draft-reviewer"
+        }
+      ]
+    },
+    {
+      "language": "powershell",
+      "repo": "dahlbyk/posh-git",
+      "pr": 885,
+      "detectedEcosystems": [
+        "powershell"
+      ],
+      "diffSha256": "5cca9a1dc64612d5bfbe5fe4a4bbf07cfd8f3deddfe6dc94546262d6ed794ced",
+      "changedFileCount": 2,
+      "reviewableFileCount": 2,
+      "omittedFilePaths": [],
+      "estimatedDiffTokens": 724,
+      "status": "reviewed",
+      "jobId": "b6788705-3095-4113-8c0a-7dc6faf6fb82",
+      "route": "flash-cascade",
+      "suppressedEscalations": [],
+      "findings": [
+        {
+          "rule": "[MAINT-006]",
+          "severity": "WARNING",
+          "path": "test/CheckRequirements.Tests.ps1",
+          "line": 43,
+          "exactQuote": "        # TODO: Test Cygwin warning and POSHGIT_CYGWIN_WARNING",
+          "critique": "An unlinked TODO comment was added, indicating incomplete test coverage and unaddressed technical debt without reference to a tracked issue or ticket.",
+          "source": "draft-reviewer"
+        }
+      ]
+    }
+  ]
+}

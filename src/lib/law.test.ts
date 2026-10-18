@@ -8,9 +8,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, expect, it, vi } from 'vitest';
-import { filterRulesByEcosystems, renderLawBlock } from '@/lib/law';
+import { parseFixtureDiff } from '@/lib/benchmark/rule-recall-manifest';
+import type { RuleRecallManifest } from '@/lib/benchmark/rule-recall-manifest';
+import { filterRulesByEcosystems, renderLawBlock, resolveLawTags } from '@/lib/law';
 import { GATED_LLM_EXTENSIONS } from '@/lib/pipeline/defaults';
-import { detectDiffEcosystems, detectRepoEcosystems } from '@/lib/pipeline/ecosystem-detection';
+import { KNOWN_ECOSYSTEMS, detectDiffEcosystems, detectRepoEcosystems } from '@/lib/pipeline/ecosystem-detection';
 
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
@@ -114,15 +116,37 @@ describe('renderLawBlock — kein IP-Leak in den System-Prompt (ROADMAP §12)', 
 });
 
 describe('Gate G6 — Law-Filter im polyglotten Repo (LANGUAGE_COVERAGE_SPEC §6.4)', () => {
-    /** TypeScript-Host mit einem Python-Service und einem Spring-Modul. */
-    const POLYGLOT_TREE_PATHS = [
-        'package.json', 'tsconfig.json', 'src/app/page.tsx',
-        'services/reports/pyproject.toml', 'services/reports/report_job.py',
-        'billing/pom.xml', 'billing/src/main/java/com/acme/billing/Ledger.java',
-    ];
+    /**
+     * TypeScript-Host. Jede Sprache kommt als einzelne Datei ohne Manifest
+     * dazu: der härteste Fall (Go ohne `go.mod`, Java ohne Spring, Python ohne
+     * `pyproject.toml`).
+     */
+    const HOST_TREE_PATHS = ['package.json', 'tsconfig.json', 'src/app/page.tsx'];
     const MANIFEST_CONTENTS: Readonly<Record<string, string>> = {
         'package.json': '{"dependencies":{"next":"16.2.4","react":"19.0.0"}}',
-        'billing/pom.xml': '<parent><artifactId>spring-boot-starter-parent</artifactId></parent>',
+    };
+    const loadHostManifest = (manifestPath: string): Promise<string | null> =>
+        Promise.resolve(MANIFEST_CONTENTS[manifestPath] ?? null);
+
+    /** Regeln je Endung laut Live-Tabelle (SQL 2026-10-03) — fest verdrahtet, damit der Test nicht nur die Erkennung mit sich selbst vergleicht. */
+    const C_FAMILY_RULE_IDS = [
+        'CONC-003', 'CONC-004', 'CONC-005', 'HAL-005', 'SEC-001', 'SEC-002', 'SEC-003',
+        'SEC-023', 'SEC-027', 'SEC-028', 'SEC-029',
+    ];
+    const POWERSHELL_RULE_IDS = ['SEC-011', 'SEC-048', 'SEC-049', 'SEC-050'];
+    const TAGGED_RULE_IDS_BY_EXTENSION: Readonly<Record<string, readonly string[]>> = {
+        '.py': ['ARCH-003', 'HAL-003', 'SEC-006', 'SEC-008', 'SEC-010', 'SEC-011', 'SEC-019', 'SEC-036'],
+        '.java': ['HAL-004', 'HAL-006', 'HAL-007', 'SEC-006', 'SEC-008', 'SEC-015', 'SEC-030'],
+        '.go': ['ARCH-005'],
+        '.c': C_FAMILY_RULE_IDS,
+        '.h': C_FAMILY_RULE_IDS,
+        '.cpp': C_FAMILY_RULE_IDS,
+        '.cc': C_FAMILY_RULE_IDS,
+        '.cxx': C_FAMILY_RULE_IDS,
+        '.hpp': C_FAMILY_RULE_IDS,
+        '.tf': ['INFRA-012', 'SEC-032', 'SEC-033', 'SEC-034'],
+        '.ps1': POWERSHELL_RULE_IDS,
+        '.psm1': POWERSHELL_RULE_IDS,
     };
 
     /** Snapshot der Live-Tabelle `golden_standards` (Drift-Check im Benchmark-Preflight). */
@@ -137,22 +161,93 @@ describe('Gate G6 — Law-Filter im polyglotten Repo (LANGUAGE_COVERAGE_SPEC §6
             buildRuleRow(inventoryRule.rule_id, inventoryRule.applies_to));
     }
 
-    it.each(GATED_LLM_EXTENSIONS)('keeps every rule tagged for the language of %s files in the filtered block', async (gatedExtension) => {
-        const repoEcosystems = await detectRepoEcosystems(
-            POLYGLOT_TREE_PATHS,
-            (manifestPath) => Promise.resolve(MANIFEST_CONTENTS[manifestPath] ?? null),
+    function loadRuleRecallManifest(): RuleRecallManifest {
+        const manifest: unknown = JSON.parse(
+            fs.readFileSync(path.join(process.cwd(), 'fixtures', 'rule-recall', 'manifest.json'), 'utf-8'),
         );
-        const languageEcosystems: readonly string[] = detectDiffEcosystems([`module/changed_file${gatedExtension}`]);
-        const inventoryRuleRows = loadInventoryRuleRows();
-        const taggedRuleIds = inventoryRuleRows
-            .filter((ruleRow) => ruleRow.applies_to?.some((ecosystemTag) => languageEcosystems.includes(ecosystemTag)))
+        if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+            throw new Error('manifest.json: kein Objekt.');
+        }
+        return manifest as RuleRecallManifest;
+    }
+
+    function filterInventoryFor(repoEcosystems: readonly string[]): string[] {
+        return filterRulesByEcosystems(loadInventoryRuleRows(), repoEcosystems).map((ruleRow) => ruleRow.rule_id);
+    }
+
+    it.each(GATED_LLM_EXTENSIONS)('keeps every rule tagged for the language of %s files in the filtered block', async (gatedExtension) => {
+        const languageFile = `module/changed_file${gatedExtension}`;
+        const repoEcosystems = await detectRepoEcosystems([...HOST_TREE_PATHS, languageFile], loadHostManifest);
+        const languageLawTags = resolveLawTags(detectDiffEcosystems([languageFile]));
+        const taggedRuleIds = loadInventoryRuleRows()
+            .filter((ruleRow) => ruleRow.applies_to?.some((ecosystemTag) => languageLawTags.has(ecosystemTag)))
             .map((ruleRow) => ruleRow.rule_id);
 
-        const filteredRuleIds = filterRulesByEcosystems(inventoryRuleRows, repoEcosystems)
-            .map((ruleRow) => ruleRow.rule_id);
+        const filteredRuleIds = filterInventoryFor(repoEcosystems);
 
-        expect(languageEcosystems).toHaveLength(1);
-        expect(taggedRuleIds.length).toBeGreaterThanOrEqual(7);
+        expect(taggedRuleIds.sort()).toEqual(TAGGED_RULE_IDS_BY_EXTENSION[gatedExtension]);
         expect(filteredRuleIds).toEqual(expect.arrayContaining(taggedRuleIds));
+    });
+
+    it('keeps the 31 rules the filter used to drop from every repo with a detected ecosystem', async () => {
+        const formerlyDroppedTags = new Set(['kubernetes', 'c', 'cpp', 'aws', 'terraform', 'powershell', 'solidity']);
+        const formerlyDroppedRuleIds = loadInventoryRuleRows()
+            .filter((ruleRow) => ruleRow.applies_to?.some((ecosystemTag) => formerlyDroppedTags.has(ecosystemTag))
+                && !ruleRow.applies_to.includes('python'))
+            .map((ruleRow) => ruleRow.rule_id);
+        const polyglotTreePaths = [
+            ...HOST_TREE_PATHS, 'k8s/api-deployment.yaml', 'native/codec/frame.c', 'infra/network/subnets.tf',
+            'scripts/deploy/prepare-host.ps1', 'contracts/Escrow.sol',
+        ];
+
+        const repoEcosystems = await detectRepoEcosystems(polyglotTreePaths, loadHostManifest);
+
+        expect(formerlyDroppedRuleIds).toHaveLength(31);
+        expect(filterInventoryFor(repoEcosystems)).toEqual(expect.arrayContaining(formerlyDroppedRuleIds));
+    });
+
+    it('gives every tagged rule at least one tag the detection can produce', () => {
+        const reachableLawTags = resolveLawTags(KNOWN_ECOSYSTEMS);
+        const unreachableRuleIds = loadInventoryRuleRows()
+            .filter((ruleRow) => (ruleRow.applies_to?.length ?? 0) > 0
+                && !ruleRow.applies_to?.some((ecosystemTag) => reachableLawTags.has(ecosystemTag)))
+            .map((ruleRow) => ruleRow.rule_id);
+
+        expect(unreachableRuleIds).toEqual([]);
+    });
+
+    it('keeps the Rust rules of a Rust repository that also has a PowerShell script', async () => {
+        const repoEcosystems = await detectRepoEcosystems(
+            ['Cargo.toml', 'src/main.rs', 'scripts/install.ps1'], loadHostManifest,
+        );
+
+        expect(filterInventoryFor(repoEcosystems)).toEqual(expect.arrayContaining(['CONC-003', 'SEC-008']));
+    });
+
+    it('keeps the Spring practices key next to the Java law key when the manifest names Spring', async () => {
+        const springTreePaths = [...HOST_TREE_PATHS, 'billing/pom.xml', 'billing/src/main/java/com/acme/billing/Ledger.java'];
+        const repoEcosystems = await detectRepoEcosystems(springTreePaths, (manifestPath) => Promise.resolve(
+            manifestPath === 'billing/pom.xml'
+                ? '<parent><artifactId>spring-boot-starter-parent</artifactId></parent>'
+                : MANIFEST_CONTENTS[manifestPath] ?? null,
+        ));
+
+        expect(repoEcosystems).toEqual(expect.arrayContaining(['java-spring', 'java']));
+    });
+
+    it('fixture manifest: polyglotEcosystems equal what the detection yields for a TypeScript host with the fixture files', async () => {
+        const manifest = loadRuleRecallManifest();
+        const polyglotFixtures = Object.entries(manifest).filter(([, manifestEntry]) => manifestEntry.polyglotEcosystems);
+
+        expect(polyglotFixtures.length).toBeGreaterThanOrEqual(5);
+        for (const [fixtureName, manifestEntry] of polyglotFixtures) {
+            const fixturePaths = parseFixtureDiff(
+                fixtureName,
+                fs.readFileSync(path.join(process.cwd(), 'fixtures', 'rule-recall', fixtureName), 'utf-8'),
+            ).map((fixtureFile) => fixtureFile.path);
+            const repoEcosystems = await detectRepoEcosystems(['package.json', 'tsconfig.json', ...fixturePaths], () => Promise.resolve(null));
+
+            expect(repoEcosystems, fixtureName).toEqual(manifestEntry.polyglotEcosystems);
+        }
     });
 });

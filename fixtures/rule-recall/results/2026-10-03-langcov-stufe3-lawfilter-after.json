@@ -1,0 +1,398 @@
+{
+  "capturedAt": "2026-10-03T09:30:52.474Z",
+  "models": {
+    "draft": "gemini-3.8-flash",
+    "verifier": "gemini-3.6-flash",
+    "escalation": "gemini-3.8-flash"
+  },
+  "cascadeOverrides": null,
+  "runsPerFixture": 1,
+  "pathMode": "model-potential",
+  "ecosystems": "polyglot",
+  "llmExtensions": [
+    ".py"
+  ],
+  "escalation": "disabled",
+  "results": [
+    {
+      "fixture": "r01-c-memory.diff",
+      "jobId": "26382b10-1101-4b20-af2f-383158b275fc",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 8,
+      "draftFindingCount": 8,
+      "survivingFindingCount": 8,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 57,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/net/session.c",
+          "ruleContains": "SEC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/telemetry/channel-store.c",
+          "ruleContains": "SEC-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/codec/image-plane.c",
+          "ruleContains": "SEC-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/crypto/keystore.c",
+          "ruleContains": "SEC-023",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "tools/config-prompt.c",
+          "ruleContains": "SEC-027",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/queue/job-queue.c",
+          "ruleContains": "SEC-028",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "src/log/audit-log.c",
+          "ruleContains": "SEC-029",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r01-c-memory.diff",
+          "path": "firmware/board/debug-uart.c",
+          "ruleContains": "HAL-005|HAL-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r02-c-concurrency.diff",
+      "jobId": "85c5a3fb-9b57-49c7-82b1-d197d73401c2",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 4,
+      "survivingFindingCount": 4,
+      "prescanFindingCount": 1,
+      "prescanDurationMs": 7,
+      "integrityScore": 95,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/worker/shutdown-flag.c",
+          "ruleContains": "CONC-003|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/sensors/pulse-counter.c",
+          "ruleContains": "CONC-004|CONC-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "firmware/comms/frame-rx.c",
+          "ruleContains": "CONC-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r02-c-concurrency.diff",
+          "path": "src/net/session-policy.c",
+          "ruleContains": "MAINT-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r11-kubernetes.diff",
+      "jobId": "36b864b8-7166-437f-a545-64f122aa903f",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 11,
+      "draftFindingCount": 11,
+      "survivingFindingCount": 11,
+      "prescanFindingCount": 14,
+      "prescanDurationMs": 50,
+      "integrityScore": 100,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/log-collector.yaml",
+          "ruleContains": "INFRA-001",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/report-worker.yaml",
+          "ruleContains": "INFRA-002",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/metrics-agent.yaml",
+          "ruleContains": "INFRA-003",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/backup-runner.yaml",
+          "ruleContains": "INFRA-004",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/ci-build-agent.yaml",
+          "ruleContains": "INFRA-005",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/invoice-sync.yaml",
+          "ruleContains": "INFRA-006",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/email-dispatcher.yaml",
+          "ruleContains": "INFRA-007",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/thumbnail-resizer.yaml",
+          "ruleContains": "INFRA-008",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/search-indexer.yaml",
+          "ruleContains": "INFRA-009",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/session-cache.yaml",
+          "ruleContains": "INFRA-010",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r11-kubernetes.diff",
+          "path": "k8s/checkout-gateway.yaml",
+          "ruleContains": "INFRA-011",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r12-terraform-aws.diff",
+      "jobId": "9d683ca1-3b3c-4fdd-ac2a-7829741934cd",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 4,
+      "draftFindingCount": 4,
+      "survivingFindingCount": 4,
+      "prescanFindingCount": 3,
+      "prescanDurationMs": 9,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/network/subnets.tf",
+          "ruleContains": "INFRA-012",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/exporter-role.tf",
+          "ruleContains": "SEC-032",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/order-functions.tf",
+          "ruleContains": "SEC-033",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r12-terraform-aws.diff",
+          "path": "infra/lambda/pdf-render.tf",
+          "ruleContains": "SEC-034",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    },
+    {
+      "fixture": "r13-powershell.diff",
+      "jobId": "ba05b1d1-5852-4208-a860-0a5ec11ceeed",
+      "route": "flash-cascade",
+      "negativeControl": false,
+      "fileCount": 3,
+      "draftFindingCount": 3,
+      "survivingFindingCount": 3,
+      "prescanFindingCount": 2,
+      "prescanDurationMs": 2,
+      "integrityScore": 98,
+      "suppressedEscalations": [],
+      "planted": [
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/install/bootstrap-agent.ps1",
+          "ruleContains": "SEC-048",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/deploy/prepare-host.ps1",
+          "ruleContains": "SEC-049",
+          "caughtByDraft": true,
+          "caughtByPrescan": true,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        },
+        {
+          "bundle": "r13-powershell.diff",
+          "path": "scripts/diagnostics/collect-dump.ps1",
+          "ruleContains": "SEC-050",
+          "caughtByDraft": true,
+          "caughtByPrescan": false,
+          "caughtBySecondOpinion": false,
+          "survivedVerifier": true,
+          "productionLane": "prescan-only"
+        }
+      ],
+      "falsePositives": []
+    }
+  ]
+}

@@ -57,8 +57,8 @@ describe('resolveReviewScopeConfig (LANGUAGE_COVERAGE_SPEC §6.3)', () => {
         vi.unstubAllEnvs();
     });
 
-    it('reads Python by default and Java only per repo config (gate result, LANGUAGE_COVERAGE_SPEC §6.5)', () => {
-        expect(DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions).toEqual(['.py']);
+    it('reads Python, Go and PowerShell by default; Java, C/C++ and Terraform only per repo config (gate results, LANGUAGE_COVERAGE_SPEC §6.5, §6.6)', () => {
+        expect(DEFAULT_REVIEW_SCOPE_CONFIG.llmExtensions).toEqual(['.py', '.go', '.ps1', '.psm1']);
     });
 
     it('uses the code default when the repo config has no usable reviewScope block', () => {
@@ -67,7 +67,7 @@ describe('resolveReviewScopeConfig (LANGUAGE_COVERAGE_SPEC §6.3)', () => {
     });
 
     it('takes the repo list, keeps only gated extensions, and treats the empty list as JS/TS only', () => {
-        expect(resolveReviewScopeConfig({ llmExtensions: ['.java', '.go', '.py', 42] }).llmExtensions)
+        expect(resolveReviewScopeConfig({ llmExtensions: ['.java', '.rs', '.py', 42] }).llmExtensions)
             .toEqual(['.py', '.java']);
         expect(resolveReviewScopeConfig({ llmExtensions: [] }).llmExtensions).toEqual([]);
     });

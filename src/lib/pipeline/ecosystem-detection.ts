@@ -23,6 +23,12 @@
  * Muss den `ecosystem`-Keys des reference_practices-Korpus entsprechen.
  * Erweiterbar (z.B. 'rust' in Tier 2) — Keys ohne Korpus-Zeilen sind harmlos,
  * die Retrieval-RPC liefert dann schlicht nichts.
+ *
+ * Die Keys ab `java` haben keine Korpus-Zeilen (LANGUAGE_COVERAGE_SPEC §6.6):
+ * sie existieren für den Law-Filter und heißen wie die `applies_to`-Tags der
+ * Golden Standards. Ohne sie nahm der Filter 31 Regeln aus jedem Repo mit
+ * erkanntem Ökosystem. Neue Keys nur anhängen: die Reihenfolge bestimmt die
+ * persistierte Spalte.
  */
 export const KNOWN_ECOSYSTEMS = [
     'nextjs',
@@ -32,6 +38,19 @@ export const KNOWN_ECOSYSTEMS = [
     'python',
     'go',
     'java-spring',
+    'java',
+    'c',
+    'cpp',
+    'terraform',
+    'powershell',
+    'kubernetes',
+    'solidity',
+    'rust',
+    'kotlin',
+    'scala',
+    'haskell',
+    'elixir',
+    'cobol',
 ] as const;
 
 export type Ecosystem = (typeof KNOWN_ECOSYSTEMS)[number];
@@ -48,9 +67,79 @@ const MAX_MANIFEST_FETCHES_PER_FAMILY = 3;
 
 const IGNORED_TREE_SEGMENTS = ['node_modules/', 'vendor/', '.git/'];
 
-const PYTHON_MANIFEST_BASENAMES = new Set(['pyproject.toml', 'requirements.txt', 'setup.py']);
 const JAVA_MANIFEST_BASENAMES = new Set(['pom.xml', 'build.gradle', 'build.gradle.kts']);
-const TYPESCRIPT_FILE_PATTERN = /\.(ts|tsx)$/;
+
+/** Manifeste und Projektdateien, deren bloße Existenz ein Ökosystem belegt. */
+const MANIFEST_BASENAME_ECOSYSTEMS: ReadonlyMap<string, Ecosystem> = new Map([
+    ['package.json', 'nodejs'],
+    ['tsconfig.json', 'typescript'],
+    ['go.mod', 'go'],
+    ['pyproject.toml', 'python'],
+    ['requirements.txt', 'python'],
+    ['setup.py', 'python'],
+    ['Cargo.toml', 'rust'],
+    ['Chart.yaml', 'kubernetes'],
+    ['kustomization.yaml', 'kubernetes'],
+    ['kustomization.yml', 'kubernetes'],
+]);
+
+/**
+ * Quelldatei-Endungen als Pfadsignal (LANGUAGE_COVERAGE_SPEC §6.6): eine
+ * Sprache ohne Manifest (Go ohne `go.mod`, Java ohne Spring, C, Terraform,
+ * PowerShell) ist sonst für den Law-Filter unsichtbar. Eine Datei genügt —
+ * wie schon bei `.ts`. Gilt für Repo- und Diff-Ebene.
+ *
+ * Jedes `applies_to`-Tag der Tabelle außer `aws` hat hier ein Signal. Sonst
+ * verlöre ein Repo, das bisher `[]` hatte (ungefilterter Block), mit dem
+ * ersten erkannten Pfad die Regeln seiner eigentlichen Sprache.
+ */
+const SOURCE_EXTENSION_ECOSYSTEMS: ReadonlyMap<string, Ecosystem> = new Map([
+    ['.ts', 'typescript'],
+    ['.tsx', 'typescript'],
+    ['.js', 'nodejs'],
+    ['.jsx', 'nodejs'],
+    ['.mjs', 'nodejs'],
+    ['.cjs', 'nodejs'],
+    ['.rs', 'rust'],
+    ['.kt', 'kotlin'],
+    ['.kts', 'kotlin'],
+    ['.scala', 'scala'],
+    ['.hs', 'haskell'],
+    ['.ex', 'elixir'],
+    ['.exs', 'elixir'],
+    ['.cbl', 'cobol'],
+    ['.cob', 'cobol'],
+    ['.py', 'python'],
+    ['.go', 'go'],
+    ['.java', 'java'],
+    ['.c', 'c'],
+    ['.h', 'c'],
+    ['.cpp', 'cpp'],
+    ['.cc', 'cpp'],
+    ['.cxx', 'cpp'],
+    ['.hpp', 'cpp'],
+    ['.tf', 'terraform'],
+    ['.ps1', 'powershell'],
+    ['.psm1', 'powershell'],
+    ['.sol', 'solidity'],
+]);
+
+/**
+ * Kubernetes-Manifeste haben keine eigene Endung. Als Signal zählt YAML unter
+ * einem der üblichen Verzeichnisse; `Chart.yaml` und `kustomization.yaml`
+ * stehen in MANIFEST_BASENAME_ECOSYSTEMS. Ohne Inhalts-Fetch: ein falsches
+ * Signal kostet nur zwölf zusätzliche Regeln im Prompt.
+ */
+const KUBERNETES_MANIFEST_PATH_PATTERN = /(^|\/)(k8s|kubernetes|manifests|helm|charts|kustomize)\/.*\.ya?ml$/i;
+
+/** Ökosysteme, die eine Quelldatei belegt — für Repo-Tree und Diff dieselbe Tabelle. */
+function detectSourceFileEcosystems(filePath: string): Ecosystem[] {
+    const sourceEcosystems: Ecosystem[] = [];
+    const extensionEcosystem = SOURCE_EXTENSION_ECOSYSTEMS.get(extractExtension(filePath));
+    if (extensionEcosystem) sourceEcosystems.push(extensionEcosystem);
+    if (KUBERNETES_MANIFEST_PATH_PATTERN.test(filePath)) sourceEcosystems.push('kubernetes');
+    return sourceEcosystems;
+}
 
 /**
  * Erkennt die Ökosysteme eines Repos aus Tree-Pfaden + Manifest-Inhalten.
@@ -75,14 +164,9 @@ export async function detectRepoEcosystems(
 
 function collectPathOnlySignals(relevantPaths: readonly string[], detected: Set<Ecosystem>): void {
     for (const treePath of relevantPaths) {
-        const basename = extractBasename(treePath);
-
-        if (basename === 'package.json') detected.add('nodejs');
-        if (basename === 'go.mod') detected.add('go');
-        if (basename === 'tsconfig.json' || TYPESCRIPT_FILE_PATTERN.test(basename)) {
-            detected.add('typescript');
-        }
-        if (PYTHON_MANIFEST_BASENAMES.has(basename)) detected.add('python');
+        const manifestEcosystem = MANIFEST_BASENAME_ECOSYSTEMS.get(extractBasename(treePath));
+        if (manifestEcosystem) detected.add(manifestEcosystem);
+        for (const sourceEcosystem of detectSourceFileEcosystems(treePath)) detected.add(sourceEcosystem);
     }
 }
 
@@ -177,7 +261,8 @@ const JS_FAMILY_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cj
 const REACT_EXTENSIONS = new Set(['.tsx', '.jsx']);
 /** Deckungsgleich mit der Smart-Context-Detection im Prompt-Builder. */
 const NEXTJS_BASENAMES = new Set(['layout.tsx', 'page.tsx', 'route.ts', 'route.tsx', 'middleware.ts']);
-const JAVA_EXTENSIONS = new Set(['.java', '.kt', '.kts']);
+/** Kandidaten für die Spring-Practices; ob das Repo Spring nutzt, entscheidet die Schnittmenge. */
+const JAVA_SPRING_CANDIDATE_EXTENSIONS = new Set(['.java', '.kt', '.kts']);
 
 /**
  * Kandidaten-Ökosysteme eines Diffs, rein aus den Dateipfaden.
@@ -197,9 +282,8 @@ export function detectDiffEcosystems(filePaths: readonly string[]): Ecosystem[] 
         }
         if (REACT_EXTENSIONS.has(extension)) detected.add('react');
         if (NEXTJS_BASENAMES.has(basename)) detected.add('nextjs');
-        if (extension === '.py') detected.add('python');
-        if (extension === '.go') detected.add('go');
-        if (JAVA_EXTENSIONS.has(extension)) detected.add('java-spring');
+        if (JAVA_SPRING_CANDIDATE_EXTENSIONS.has(extension)) detected.add('java-spring');
+        for (const sourceEcosystem of detectSourceFileEcosystems(filePath)) detected.add(sourceEcosystem);
     }
 
     return KNOWN_ECOSYSTEMS.filter((ecosystemKey) => detected.has(ecosystemKey));

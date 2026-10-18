@@ -32,23 +32,26 @@ export const DEFAULT_PIPELINE_CONFIG: Readonly<PipelineConfig> = {
 /**
  * Endungen, die per `reviewScope.llmExtensions` in die Modell-Review dürfen:
  * nur Sprachen, die die Gates G6–G9 gefahren haben (LANGUAGE_COVERAGE_SPEC
- * §6.4). Go fehlt bis zur geklärten Draft-Latenz (E7). Eine Endung außerhalb
- * dieser Liste wird aus jeder Repo-Config verworfen.
+ * §6.4; Python und Java in §6.5, Go, C/C++, Terraform und PowerShell in §6.6).
+ * Eine Endung außerhalb dieser Liste wird aus jeder Repo-Config verworfen.
  */
-export const GATED_LLM_EXTENSIONS: readonly string[] = ['.py', '.java'];
+export const GATED_LLM_EXTENSIONS: readonly string[] = [
+    '.py', '.java', '.go', '.c', '.h', '.cpp', '.cc', '.cxx', '.hpp', '.tf', '.ps1', '.psm1',
+];
 
 /**
  * Review-Umfang ohne Repo-Config (LANGUAGE_COVERAGE_SPEC §6.3). Die Liste
  * nennt, was die Modell-Review zusätzlich zu JS/TS liest.
  *
- * Python ist Default, weil G6–G9 grün sind (Spec §6.5). Java ist es nicht: im
- * Schattenlauf G8 war das einzige CRITICAL auf 10 echten Java-PRs ein
- * Fehlalarm (HAL-002 auf einem Import, den es seit Spring Boot 4 gibt). Java
- * bleibt je Repo einschaltbar. Wer diese Liste ändert, zieht im selben Commit
+ * Default ist, wer G6–G9 bestanden hat: Python (Spec §6.5), Go und PowerShell
+ * (Spec §6.6). Java, C/C++ und Terraform reißen G8: im Schattenlauf vom
+ * 2026-10-03 standen auf je 10 echten PRs 1, 1 und 5 falsche CRITICALs, sechs
+ * davon HAL-002 auf APIs, die jünger sind als das Wissen der Modelle. Sie
+ * bleiben je Repo einschaltbar. Wer diese Liste ändert, zieht im selben Commit
  * die Texte nach, die den Umfang nennen (Spec §7.2).
  */
 export const DEFAULT_REVIEW_SCOPE_CONFIG: Readonly<ReviewScopeConfig> = {
-    llmExtensions: ['.py'],
+    llmExtensions: ['.py', '.go', '.ps1', '.psm1'],
 };
 
 /**

@@ -119,7 +119,7 @@ describe('PUT /api/repos/[id]/settings — validator allowlist', () => {
             enabledStepIds: ['diff-loader'],
             activeConditionIds: [],
             overrideSmartDetection: false,
-            reviewScope: { llmExtensions: ['.py', '.go', '.java'] },
+            reviewScope: { llmExtensions: ['.py', '.rs', '.java'] },
         }), ROUTE_PARAMS);
 
         expect(persistedConfig().reviewScope).toEqual({ llmExtensions: ['.py', '.java'] });

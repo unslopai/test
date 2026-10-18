@@ -125,11 +125,30 @@ export function filterRulesByEcosystems(
         return [...standardRows];
     }
 
+    const repoLawTags = resolveLawTags(detectedEcosystems);
     return standardRows.filter((standardRow) => {
         const ruleEcosystemTags = standardRow.applies_to ?? [];
         return ruleEcosystemTags.length === 0
-            || ruleEcosystemTags.some((ecosystemTag) => detectedEcosystems.includes(ecosystemTag));
+            || ruleEcosystemTags.some((ecosystemTag) => repoLawTags.has(ecosystemTag));
     });
+}
+
+/**
+ * `applies_to`-Tags, die ein erkanntes Ökosystem zusätzlich zu seinem eigenen
+ * Namen trifft (LANGUAGE_COVERAGE_SPEC §6.6). Die Java-Regeln der Tabelle
+ * (HAL-004, HAL-006, HAL-007, SEC-006, SEC-008, SEC-015, SEC-030) tragen das
+ * Tag `java-spring`, ihr Text gilt aber für jedes Java. `java-spring` selbst
+ * bleibt der Key der Spring-Practices und entsteht nur mit Spring im Manifest.
+ */
+const IMPLIED_LAW_TAGS: ReadonlyMap<string, readonly string[]> = new Map([
+    ['java', ['java-spring']],
+]);
+
+/** Die Tags, mit denen der Law-Filter ein Repo vergleicht. Exportiert für Tests. */
+export function resolveLawTags(detectedEcosystems: readonly string[]): ReadonlySet<string> {
+    return new Set(detectedEcosystems.flatMap(
+        (detectedEcosystem) => [detectedEcosystem, ...(IMPLIED_LAW_TAGS.get(detectedEcosystem) ?? [])],
+    ));
 }
 
 /**
