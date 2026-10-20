@@ -6,7 +6,9 @@
  * Merge-Blocker macht, wird vom Team abgeschaltet, und dann schützt er nichts mehr.
  */
 import { describe, expect, it } from 'vitest';
-import { deriveDeterministicOnlyConclusion, deriveReviewConclusion, markCheckRunAiGenerated } from '@/lib/check-run';
+import {
+    deriveDeterministicOnlyConclusion, deriveReviewConclusion, markCheckRunAiGenerated, markIncompleteCoverage,
+} from '@/lib/check-run';
 import { FAILED_CHECK_RUN_COPY } from '@/lib/job-failure';
 import { capRepeatedRuleHits } from '@/lib/pipeline/prescan-hit-cap';
 import { buildReviewIssue } from '@/lib/pipeline/testing/context-fixture';
@@ -180,5 +182,21 @@ describe('KI-Kennzeichnung der Check-Summary (LEGAL_PAGES_SPEC §4a.3)', () => {
             expect(failedCheckCopy.summary).not.toContain('AI-generated');
             expect(failedCheckCopy.summary).not.toContain(AI_MARKER);
         }
+    });
+});
+
+describe('markIncompleteCoverage (Teilabdeckung, Entscheidung 2026-09-30)', () => {
+    it('macht aus success ein neutral mit ehrlichem Titel', () => {
+        expect(markIncompleteCoverage(deriveReviewConclusion([]))).toMatchObject({
+            conclusion: 'neutral',
+            title: 'No findings, review incomplete',
+        });
+    });
+
+    it('lässt failure und neutral aus Findings unverändert', () => {
+        const criticalResult = deriveReviewConclusion([buildReviewIssue({ severity: 'CRITICAL' })]);
+        const advisoryResult = deriveReviewConclusion([buildReviewIssue({ severity: 'WARNING' })]);
+        expect(markIncompleteCoverage(criticalResult)).toBe(criticalResult);
+        expect(markIncompleteCoverage(advisoryResult)).toBe(advisoryResult);
     });
 });

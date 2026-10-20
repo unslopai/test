@@ -21,7 +21,7 @@ import { postReviewIdempotently } from '@/lib/pipeline/review-posting';
 import { extractErrorMessage } from '@/lib/errors';
 import { appendAiDisclosure, isAiGeneratedRun } from '@/lib/ai-disclosure';
 import { buildDeterministicOnlySummary, resolvePublishedSummary } from '@/lib/pipeline/final-summary';
-import { describeNothingReviewed, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
+import { describeNothingReviewed, hasIncompleteCoverage, resolveReviewOutcome } from '@/lib/pipeline/review-scope';
 import { buildInlineComments, collectReportableIssues, formatReviewSummary, parseFindingMarker, partitionIssuesByAnchor } from '@/lib/pipeline/helpers';
 import { describeFindingVerification } from '@unslop/shared/verification-format';
 import {
@@ -298,7 +298,7 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
 
     await postReviewIdempotently(
         context,
-        '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.'
+        buildApprovalHeadline(context)
             + omittedNote
             // Der Satz ist ein Baustein, das Urteil dahinter hat ein Modell gefällt.
             + appendAiDisclosure(buildIntegrityScoreBlock(context, [])),
@@ -307,6 +307,13 @@ async function postApprovalComment(context: PipelineContext): Promise<void> {
     );
 
     console.log('[GitHubReporter] Kein Slop — Approval-Comment gepostet.');
+}
+
+/** Ohne volle Abdeckung kein ✅: der Kommentar sagt dasselbe wie der neutrale Check. */
+function buildApprovalHeadline(context: PipelineContext): string {
+    return hasIncompleteCoverage(context)
+        ? '⚠️ **Anti-Slop Gatekeeper**: No AI slop found in the reviewed parts, but this review is incomplete.'
+        : '✅ **Anti-Slop Gatekeeper**: No AI slop found. This code meets the quality standards.';
 }
 
 // =============================================================================

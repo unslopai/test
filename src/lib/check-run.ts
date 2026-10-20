@@ -198,6 +198,24 @@ export function deriveReviewConclusion(
 }
 
 /**
+ * Teilabdeckung ohne Findings (Entscheidung 2026-09-30, Kampagne große PRs):
+ * ist ein Teil des Reviews ausgefallen (Pre-Scan, Draft-Batch),
+ * darf der Check nicht grün „No AI slop found“ zeigen. `success` wird
+ * `neutral`; `failure` und `neutral` aus Findings oder Score-Gate bleiben,
+ * denn sie sagen schon, dass jemand hinsehen muss. Welche Teile fehlen,
+ * hängt der Aufrufer als Hinweiszeilen an.
+ */
+export function markIncompleteCoverage(checkRunResult: CheckRunResult): CheckRunResult {
+    if (checkRunResult.conclusion !== 'success') return checkRunResult;
+    return {
+        conclusion: 'neutral',
+        title: 'No findings, review incomplete',
+        summary: 'No AI slop found in the parts that were reviewed, but parts of this change were not checked. '
+            + 'See the notes below.',
+    };
+}
+
+/**
  * KI-Kennzeichnung der Check-Summary (Art. 50 Abs. 2 KI-VO, LEGAL_PAGES_SPEC
  * §4a.3). Der Aufrufer wendet sie nur auf das Urteil eines Laufs mit
  * Modell-Review an; „Deterministic checks only“, „Nothing to review“, der

@@ -5,9 +5,12 @@
  * das alte Verhalten wieder her.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildPipelineContext, buildPullRequestFile } from '@/lib/pipeline/testing/context-fixture';
+import {
+    buildCascadeState, buildPipelineContext, buildPrescanStats, buildPullRequestFile,
+} from '@/lib/pipeline/testing/context-fixture';
 import {
     describeNothingReviewed,
+    hasIncompleteCoverage,
     isPrescanScannable,
     planUnreviewableDiff,
     resolveReviewOutcome,
@@ -211,5 +214,21 @@ describe('describeNothingReviewed', () => {
             kind: 'nothing_to_review',
             reason: 'No reviewable code files in this pull request.',
         });
+    });
+});
+
+describe('hasIncompleteCoverage (Teilabdeckung, Entscheidung 2026-09-30)', () => {
+    it('meldet Pre-Scan-Ausfall und halben Draft, nicht aber einen Zeit-Skip', () => {
+        expect(hasIncompleteCoverage(buildPipelineContext({ prescanStats: buildPrescanStats() }))).toBe(false);
+        expect(hasIncompleteCoverage(buildPipelineContext({ prescanStats: null }))).toBe(false);
+        expect(hasIncompleteCoverage(buildPipelineContext({
+            prescanStats: buildPrescanStats({ degraded: true, degradedReason: 'HTTP 500' }),
+        }))).toBe(true);
+        expect(hasIncompleteCoverage(buildPipelineContext({
+            cascade: buildCascadeState({ draftUnreviewedFiles: ['src/lib/alpha.ts'] }),
+        }))).toBe(true);
+        expect(hasIncompleteCoverage(buildPipelineContext({
+            cascade: buildCascadeState({ skippedStages: ['verifier'] }),
+        }))).toBe(false);
     });
 });

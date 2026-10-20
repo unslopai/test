@@ -189,6 +189,11 @@ describe('githubReporterStep', () => {
         expect(String(createPullRequestReviewMock.mock.calls[0][4])).toContain(prescanFailedNotice);
         expect(String(createPullRequestReviewMock.mock.calls[1][4])).toContain(prescanFailedNotice);
         expect(String(createPullRequestReviewMock.mock.calls[2][4])).not.toContain(prescanFailedNotice);
+        // Ohne Findings kein ✅ bei Teilabdeckung (Entscheidung 2026-09-30).
+        expect(String(createPullRequestReviewMock.mock.calls[1][4])).toContain(
+            '⚠️ **Anti-Slop Gatekeeper**: No AI slop found in the reviewed parts, but this review is incomplete.',
+        );
+        expect(String(createPullRequestReviewMock.mock.calls[1][4])).not.toContain('✅');
     });
 
     it('behauptet keine Eskalation, wenn nur die Second Opinion ein stärkeres Modell gerufen hat', async () => {
